@@ -235,6 +235,85 @@ $translations = [
     'error.no_data_rows' => ['en' => 'No data rows in the sheet.', 'nl' => 'Geen gegevensrijen in het blad.', 'ar' => 'لا توجد صفوف بيانات في الورقة.'],
     'error.bulkgate_not_configured' => ['en' => 'BulkGate credentials are not configured. Go to Settings.', 'nl' => 'BulkGate-referenties zijn niet ingesteld. Ga naar Instellingen.', 'ar' => 'مفاتيح BulkGate غير مضبوطة. اذهب إلى الإعدادات.'],
     'error.whatsapp_not_configured' => ['en' => 'WhatsApp credentials are not configured (Settings → WhatsApp).', 'nl' => 'WhatsApp-referenties zijn niet ingesteld (Instellingen → WhatsApp).', 'ar' => 'بيانات WhatsApp غير مضبوطة (الإعدادات → WhatsApp).'],
+
+    // ---------- Batch: keys referenced by views but missing from JSON (2026-07-30) ----------
+
+    // Quick Entry page
+    'quickentry.back_to_grid'       => ['en' => '← Back to grid', 'nl' => '← Terug naar rooster', 'ar' => '← العودة إلى الجدول'],
+    'quickentry.change_student'     => ['en' => 'Change student', 'nl' => 'Wijzig student', 'ar' => 'غيّر الطالب'],
+    'quickentry.method_hint'        => ['en' => 'cash or bank', 'nl' => 'contant of bank', 'ar' => 'نقد أو بنك'],
+    'quickentry.nav_hint'           => ['en' => 'Use ↑↓ to navigate, Enter to select', 'nl' => 'Gebruik ↑↓ om te navigeren, Enter om te selecteren', 'ar' => 'استخدم ↑↓ للتنقّل و Enter للاختيار'],
+    'quickentry.paid'               => ['en' => 'Paid', 'nl' => 'Betaald', 'ar' => 'مدفوع'],
+    'quickentry.paid_pill'          => ['en' => 'Already paid this month', 'nl' => 'Deze maand al betaald', 'ar' => 'مدفوع بالفعل هذا الشهر'],
+    'quickentry.period'             => ['en' => 'Period', 'nl' => 'Periode', 'ar' => 'الفترة'],
+    'quickentry.saved_this_session' => ['en' => 'Saved this session', 'nl' => 'Deze sessie opgeslagen', 'ar' => 'المحفوظة في هذه الجلسة'],
+    'quickentry.search_hint'        => ['en' => 'Type to search students', 'nl' => 'Typ om studenten te zoeken', 'ar' => 'اكتب للبحث عن الطلاب'],
+    'quickentry.search_label'       => ['en' => 'Search student', 'nl' => 'Zoek student', 'ar' => 'بحث عن طالب'],
+    'quickentry.search_placeholder' => ['en' => 'Name, phone, or ID...', 'nl' => 'Naam, telefoon of ID...', 'ar' => 'الاسم أو الهاتف أو المعرّف...'],
+    'quickentry.session_log_title'  => ['en' => 'Session log', 'nl' => 'Sessielogboek', 'ar' => 'سجلّ الجلسة'],
+    'quickentry.session_total'      => ['en' => 'Session total', 'nl' => 'Sessietotaal', 'ar' => 'إجمالي الجلسة'],
+    'quickentry.student'            => ['en' => 'Student', 'nl' => 'Student', 'ar' => 'الطالب'],
+
+    // Import page
+    'import.title'                    => ['en' => 'Import from Excel', 'nl' => 'Importeer uit Excel', 'ar' => 'استيراد من Excel'],
+    'import.subtitle'                 => ['en' => 'Bulk-import students and payments from a spreadsheet.', 'nl' => 'Importeer studenten en betalingen uit een spreadsheet.', 'ar' => 'استورد الطلاب والدفعات دفعةً واحدة من ملف Excel.'],
+    'import.submit'                   => ['en' => 'Import file', 'nl' => 'Bestand importeren', 'ar' => 'استيراد الملف'],
+    'import.submitting'               => ['en' => 'Importing…', 'nl' => 'Bezig met importeren…', 'ar' => 'جارٍ الاستيراد…'],
+    'import.field.file'               => ['en' => 'Excel file', 'nl' => 'Excel-bestand', 'ar' => 'ملف Excel'],
+    'import.field.file_hint'          => ['en' => 'Drag & drop a file, or click to browse', 'nl' => 'Sleep een bestand hier, of klik om te bladeren', 'ar' => 'اسحب وأفلت ملفاً، أو انقر للاختيار'],
+    'import.field.file_supported'     => ['en' => 'Supported: .xlsx, .xls, .csv', 'nl' => 'Ondersteund: .xlsx, .xls, .csv', 'ar' => 'المدعوم: .xlsx, .xls, .csv'],
+    'import.field.year'               => ['en' => 'Year', 'nl' => 'Jaar', 'ar' => 'السنة'],
+    'import.field.year_hint'          => ['en' => 'Used to interpret month columns (e.g. 2026).', 'nl' => 'Gebruikt om de maandkolommen te interpreteren (bv. 2026).', 'ar' => 'تُستخدم لتفسير أعمدة الأشهر (مثلاً 2026).'],
+    'import.requirements.title'       => ['en' => 'File requirements', 'nl' => 'Bestandsvereisten', 'ar' => 'متطلّبات الملف'],
+    'import.requirements.columns'     => ['en' => 'Columns: name, phone, plus one column per month (1..12).', 'nl' => 'Kolommen: naam, telefoon, plus één kolom per maand (1..12).', 'ar' => 'الأعمدة: الاسم، الهاتف، بالإضافة إلى عمود لكل شهر (١..١٢).'],
+    'import.requirements.numeric'     => ['en' => 'Amounts must be numeric.', 'nl' => 'Bedragen moeten numeriek zijn.', 'ar' => 'يجب أن تكون المبالغ رقمية.'],
+    'import.requirements.zero'        => ['en' => '0 or blank = unpaid.', 'nl' => '0 of leeg = onbetaald.', 'ar' => '٠ أو فارغ = غير مدفوع.'],
+    'import.requirements.x'           => ['en' => "'x' means paid in full using the default fee.", 'nl' => "'x' betekent volledig betaald met het standaardtarief.", 'ar' => "'x' تعني مدفوع بالكامل بالرسم الافتراضي."],
+
+    // Campaign pages
+    'campaign.back_to_log'         => ['en' => '← Back to log', 'nl' => '← Terug naar log', 'ar' => '← العودة إلى السجل'],
+    'campaign.new'                 => ['en' => 'New campaign', 'nl' => 'Nieuwe campagne', 'ar' => 'حملة جديدة'],
+    'campaign.tag'                 => ['en' => 'Tag', 'nl' => 'Label', 'ar' => 'الوسم'],
+    'campaign.started'             => ['en' => 'Started', 'nl' => 'Gestart', 'ar' => 'بدأت'],
+    'campaign.finished'            => ['en' => 'Finished', 'nl' => 'Voltooid', 'ar' => 'انتهت'],
+    'campaign.recipient'           => ['en' => 'Recipient', 'nl' => 'Ontvanger', 'ar' => 'المستلم'],
+    'campaign.recipients_section'  => ['en' => 'Recipients', 'nl' => 'Ontvangers', 'ar' => 'المستلمون'],
+    'campaign.original_message'    => ['en' => 'Original message', 'nl' => 'Origineel bericht', 'ar' => 'الرسالة الأصلية'],
+    'campaign.last_error'          => ['en' => 'Last error', 'nl' => 'Laatste fout', 'ar' => 'آخر خطأ'],
+    'campaign.empty_title'         => ['en' => 'No campaigns yet', 'nl' => 'Nog geen campagnes', 'ar' => 'لا توجد حملات بعد'],
+    'campaign.empty_subtitle'      => ['en' => 'Send your first campaign — it will appear here with delivery status.', 'nl' => 'Verstuur uw eerste campagne — deze verschijnt hier met verzendstatus.', 'ar' => 'أرسل أوّل حملة — ستظهر هنا مع حالة الإرسال.'],
+    'campaign.empty_cta'           => ['en' => 'Create campaign', 'nl' => 'Campagne aanmaken', 'ar' => 'إنشاء حملة'],
+    'campaign.empty_recipients'    => ['en' => 'No recipients on this campaign yet.', 'nl' => 'Nog geen ontvangers in deze campagne.', 'ar' => 'لا يوجد مستلمون في هذه الحملة بعد.'],
+
+    // Common table headers / labels
+    'common.cost'   => ['en' => 'Cost', 'nl' => 'Kosten', 'ar' => 'التكلفة'],
+    'common.date'   => ['en' => 'Date', 'nl' => 'Datum', 'ar' => 'التاريخ'],
+    'common.failed' => ['en' => 'Failed', 'nl' => 'Mislukt', 'ar' => 'فشلت'],
+    'common.month'  => ['en' => 'Month', 'nl' => 'Maand', 'ar' => 'الشهر'],
+    'common.open'   => ['en' => 'Open', 'nl' => 'Open', 'ar' => 'مفتوحة'],
+    'common.period' => ['en' => 'Period', 'nl' => 'Periode', 'ar' => 'الفترة'],
+    'common.remove' => ['en' => 'Remove', 'nl' => 'Verwijderen', 'ar' => 'إزالة'],
+    'common.sent'   => ['en' => 'Sent', 'nl' => 'Verzonden', 'ar' => 'أُرسلت'],
+    'common.type'   => ['en' => 'Type', 'nl' => 'Type', 'ar' => 'النوع'],
+
+    // Copy-to-clipboard tooltip
+    'copy.hint' => ['en' => 'Click to copy', 'nl' => 'Klik om te kopiëren', 'ar' => 'انقر للنسخ'],
+
+    // Reports
+    'reports.todays_messages' => ['en' => "Today's messages", 'nl' => 'Berichten van vandaag', 'ar' => 'رسائل اليوم'],
+
+    // SMS meter component (all with :remaining / :segments / :count / :reduce / :chars placeholders where applicable)
+    'sms_meter.sms_short'              => ['en' => 'SMS', 'nl' => 'SMS', 'ar' => 'رسالة'],
+    'sms_meter.encoding_gsm'           => ['en' => 'GSM-7', 'nl' => 'GSM-7', 'ar' => 'GSM-7'],
+    'sms_meter.encoding_gsm_hint'      => ['en' => '160 chars per SMS', 'nl' => '160 tekens per SMS', 'ar' => '١٦٠ حرفاً لكل رسالة'],
+    'sms_meter.encoding_unicode'       => ['en' => 'Unicode', 'nl' => 'Unicode', 'ar' => 'يونيكود'],
+    'sms_meter.encoding_unicode_hint'  => ['en' => '70 chars per SMS (Arabic/emoji)', 'nl' => '70 tekens per SMS (Arabisch/emoji)', 'ar' => '٧٠ حرفاً لكل رسالة (عربي/رموز)'],
+    'sms_meter.aria_chars'             => ['en' => 'Character counter', 'nl' => 'Tekenteller', 'ar' => 'عدّاد الأحرف'],
+    'sms_meter.aria_segments'          => ['en' => 'SMS segments', 'nl' => 'SMS-segmenten', 'ar' => 'أجزاء الرسالة'],
+    'sms_meter.hint_empty'             => ['en' => 'Start typing to see character count.', 'nl' => 'Begin te typen om de tekens te tellen.', 'ar' => 'ابدأ الكتابة لعرض عدد الأحرف.'],
+    'sms_meter.hint_room'              => ['en' => ':remaining characters left in this segment.', 'nl' => 'Nog :remaining tekens in dit segment.', 'ar' => 'متبقٍّ :remaining حرفاً في هذا الجزء.'],
+    'sms_meter.hint_close'             => ['en' => 'Almost at the next segment (:remaining chars left).', 'nl' => 'Bijna aan het volgende segment (:remaining tekens over).', 'ar' => 'قريب من الجزء التالي (:remaining حرفاً متبقّياً).'],
+    'sms_meter.hint_overflow'          => ['en' => 'Message will send as :segments parts. Remove :chars chars to save :reduce.', 'nl' => 'Bericht wordt verstuurd als :segments delen. Verwijder :chars tekens om :reduce te besparen.', 'ar' => 'ستُرسل الرسالة كـ :segments أجزاء. احذف :chars حرفاً لتوفير :reduce.'],
 ];
 
 $locales = ['en', 'nl', 'ar'];
