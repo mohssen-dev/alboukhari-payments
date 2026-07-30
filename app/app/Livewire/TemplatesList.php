@@ -67,13 +67,13 @@ class TemplatesList extends Component
         }
 
         $this->editing = false;
-        $this->dispatch('flash', message: 'تم الحفظ ✓');
+        $this->dispatch('flash', message: __('flash.saved'));
     }
 
     public function delete(int $id)
     {
         Template::findOrFail($id)->delete();
-        $this->dispatch('flash', message: 'تم الحذف ✓');
+        $this->dispatch('flash', message: __('flash.deleted'));
     }
 
     public function duplicate(int $id)
@@ -86,7 +86,7 @@ class TemplatesList extends Component
             'body' => $orig->body,
             'default_for' => 'none',
         ]);
-        $this->dispatch('flash', message: 'تم النسخ ✓');
+        $this->dispatch('flash', message: __('flash.duplicated'));
     }
 
     public function getCounterProperty(): array

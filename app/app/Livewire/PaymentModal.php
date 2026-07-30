@@ -28,6 +28,13 @@ class PaymentModal extends Component
     public float $dueAmount = 0;
     public float $paidSoFar = 0;
 
+    public function mount(?int $initialStudentId = null, ?int $initialYear = null, ?int $initialMonth = null): void
+    {
+        if ($initialStudentId && $initialYear && $initialMonth) {
+            $this->open($initialStudentId, $initialYear, $initialMonth);
+        }
+    }
+
     #[On('open-payment-modal')]
     public function open(int $studentId, int $year, int $month): void
     {
@@ -67,6 +74,12 @@ class PaymentModal extends Component
 
     public function close(): void
     {
+        $this->resetFormState();
+        $this->dispatch('close-modal');
+    }
+
+    private function resetFormState(): void
+    {
         $this->reset(['isOpen', 'studentId', 'year', 'month', 'amount', 'method', 'note', 'paid_at', 'editingPaymentId', 'existingPayments', 'studentName', 'dueAmount', 'paidSoFar']);
         $this->method = 'cash';
     }
@@ -83,10 +96,16 @@ class PaymentModal extends Component
 
     public function deletePayment(int $paymentId): void
     {
-        $p = Payment::findOrFail($paymentId);
-        $p->delete();
+        try {
+            $p = Payment::findOrFail($paymentId);
+            $p->delete();
+        } catch (\Throwable $e) {
+            report($e);
+            $this->dispatch('toast', message: __('flash.send_error') . ' ' . $e->getMessage(), type: 'error');
+            return;
+        }
         $this->dispatch('payment-saved', studentId: $this->studentId);
-        $this->dispatch('flash', message: 'تم حذف الدفعة ✓');
+        $this->dispatch('toast', message: __('flash.payment_deleted'), type: 'success');
         $this->open($this->studentId, $this->year, $this->month);
     }
 
@@ -106,38 +125,56 @@ class PaymentModal extends Component
             'note' => 'nullable|string|max:500',
         ]);
 
-        if ($this->editingPaymentId) {
-            $p = Payment::findOrFail($this->editingPaymentId);
-            $p->update([
-                'amount' => $this->amount,
-                'method' => $this->method,
-                'note' => $this->note ?: null,
-                'paid_at' => $this->paid_at,
-            ]);
-        } else {
-            Payment::create([
-                'student_id' => $this->studentId,
-                'period_year' => $this->year,
-                'period_month' => $this->month,
-                'amount' => $this->amount,
-                'method' => $this->method,
-                'note' => $this->note ?: null,
-                'paid_at' => $this->paid_at,
-            ]);
+        // Block payments for months outside the student's enrollment window.
+        // Legacy imports bypass this check (they set method='legacy_zero' / 'bank' directly).
+        $student = Student::find($this->studentId);
+        if ($student && FeeResolver::isOutsideEnrollment($student, $this->year, $this->month)) {
+            $this->dispatch('toast', message: __('status.not_enrolled') . ' — ' . $student->name, type: 'error');
+            $this->close();
+            return;
+        }
+
+        try {
+            if ($this->editingPaymentId) {
+                $p = Payment::findOrFail($this->editingPaymentId);
+                $p->update([
+                    'amount' => $this->amount,
+                    'method' => $this->method,
+                    'note' => $this->note ?: null,
+                    'paid_at' => $this->paid_at,
+                ]);
+            } else {
+                Payment::create([
+                    'student_id' => $this->studentId,
+                    'period_year' => $this->year,
+                    'period_month' => $this->month,
+                    'amount' => $this->amount,
+                    'method' => $this->method,
+                    'note' => $this->note ?: null,
+                    'paid_at' => $this->paid_at,
+                ]);
+            }
+        } catch (\Throwable $e) {
+            report($e);
+            $this->dispatch('toast', message: __('flash.send_error') . ' ' . $e->getMessage(), type: 'error');
+            return;
         }
 
         $this->dispatch('payment-saved', studentId: $this->studentId);
-        $this->dispatch('flash', message: 'تم حفظ الدفعة ✓');
+        $this->dispatch('toast', message: __('flash.payment_saved'), type: 'success');
 
         if ($next) {
-            // Find next student to focus on (same month)
             $nextStudent = Student::where('id', '>', $this->studentId)
                 ->where('is_hidden', false)
                 ->orderBy('id')
                 ->first();
-            $this->close();
             if ($nextStudent) {
-                $this->open($nextStudent->id, $this->year, $this->month);
+                $year = $this->year;
+                $month = $this->month;
+                $this->resetFormState();
+                $this->open($nextStudent->id, $year, $month);
+            } else {
+                $this->close();
             }
         } else {
             $this->close();

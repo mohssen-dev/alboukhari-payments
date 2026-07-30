@@ -8,10 +8,22 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Spatie\Activitylog\Models\Concerns\LogsActivity;
+use Spatie\Activitylog\Support\LogOptions;
 
 class Student extends Model
 {
-    use SoftDeletes;
+    use SoftDeletes, LogsActivity;
+
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->logOnly(['name', 'family_id', 'phone_primary_e164', 'allow_sms', 'is_hidden', 'is_blocked_messages', 'is_in_person', 'default_fee_amount', 'withdrawn_at'])
+            ->logOnlyDirty()
+            ->dontLogEmptyChanges()
+            ->useLogName('student');
+    }
+
 
     protected $fillable = [
         'external_id',
@@ -79,6 +91,18 @@ class Student extends Model
 
     public function activeSuspension(): ?StudentSuspension
     {
+        if ($this->relationLoaded('suspensions')) {
+            $now = now();
+            return $this->suspensions
+                ->filter(function (StudentSuspension $s) use ($now) {
+                    if ($s->starts_at->gt($now)) return false;
+                    if ($s->ends_at !== null && $s->ends_at->lt($now)) return false;
+                    return true;
+                })
+                ->sortByDesc('id')
+                ->first();
+        }
+
         return $this->suspensions()
             ->where('starts_at', '<=', now())
             ->where(function ($q) {

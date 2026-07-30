@@ -16,9 +16,9 @@ class SendController extends Controller
     {
         if ($request->input('action') === 'resume') {
             HaltService::resume();
-            return back()->with('flash', 'تم استئناف الإرسال ✓');
+            return back()->with('flash', __('flash.send_resumed'));
         }
         HaltService::halt();
-        return back()->with('flash', 'تم إيقاف الإرسال فوراً 🔴');
+        return back()->with('flash', __('flash.send_halted'));
     }
 }

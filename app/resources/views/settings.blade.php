@@ -14,11 +14,11 @@
         <div style="display:flex;gap:10px;font-size:12px">
             <span class="pill {{ $bgConfigured ? 'pill-success' : 'pill-muted' }}">
                 <span class="status-dot {{ $bgConfigured ? 'ok' : 'off' }}"></span>
-                BulkGate {{ $bgConfigured ? 'Connected' : 'Not configured' }}
+                BulkGate {{ $bgConfigured ? __('Connected') : __('Not configured') }}
             </span>
             <span class="pill {{ $waConfigured ? 'pill-success' : 'pill-muted' }}">
                 <span class="status-dot {{ $waConfigured ? 'ok' : 'off' }}"></span>
-                WhatsApp {{ $waConfigured ? 'Connected' : 'Not configured' }}
+                WhatsApp {{ $waConfigured ? __('Connected') : __('Not configured') }}
             </span>
         </div>
     </div>
@@ -30,7 +30,7 @@
                 <span class="icon">⚙️</span> {{ __('General') }}
             </button>
             <button :class="{ 'active': tab === 'bulkgate' }" @click="tab='bulkgate'; updateUrl()">
-                <span class="icon">📲</span> BulkGate (SMS)
+                <span class="icon">📲</span> BulkGate <span dir="ltr">(SMS)</span>
             </button>
             <button :class="{ 'active': tab === 'whatsapp' }" @click="tab='whatsapp'; updateUrl()">
                 <span class="icon">💬</span> WhatsApp
@@ -44,7 +44,7 @@
 
             <hr style="border:none;border-top:1px solid var(--color-border);margin:8px 0">
 
-            <a href="{{ route('settings.test_bulkgate') }}" style="display:block;padding:10px 14px;text-decoration:none;color:var(--color-primary);font-size:12px;font-weight:600" x-show="false">Test BulkGate</a>
+            <a href="{{ route('settings.test_bulkgate') }}" style="display:block;padding:10px 14px;text-decoration:none;color:var(--color-primary);font-size:12px;font-weight:600" x-show="false">{{ __('Test connection') }}</a>
         </div>
 
         {{-- ===== Tab Panels ===== --}}
@@ -104,16 +104,16 @@
                         </p>
 
                         <div class="form-group">
-                            <label>Application ID</label>
+                            <label>{{ __('settings.field.application_id') }}</label>
                             <input type="text" name="bulkgate_app_id" class="form-input" value="{{ $settings['bulkgate_app_id'] }}" placeholder="e.g. 12345">
                         </div>
 
                         <div class="form-group">
                             <label>
-                                Application Token
-                                <span class="field-script-default">🔒 encrypted</span>
+                                {{ __('settings.field.application_token') }}
+                                <span class="field-script-default">{{ __('settings.encrypted_hint') }}</span>
                             </label>
-                            <input type="password" name="bulkgate_app_token" class="form-input" value="{{ $settings['bulkgate_app_token_masked'] }}" placeholder="{{ $settings['bulkgate_app_token_masked'] ? '••••• already set' : 'paste your token' }}">
+                            <input type="password" name="bulkgate_app_token" class="form-input" value="{{ $settings['bulkgate_app_token_masked'] }}" placeholder="{{ $settings['bulkgate_app_token_masked'] ? __('settings.token_already_set') : __('settings.paste_your_token') }}">
                             <div class="field-help">{{ __('Leave blank to keep current value.') }}</div>
                         </div>
                     </div>
@@ -124,7 +124,7 @@
                         <div class="form-row cols-2">
                             <div class="form-group">
                                 <label>
-                                    Sender ID Type
+                                    {{ __('settings.field.sender_id_type') }}
                                     <span class="field-script-default">SCRIPT: text</span>
                                 </label>
                                 <input type="text" name="bulkgate_sender_id" class="form-input" value="{{ $settings['bulkgate_sender_id'] }}">
@@ -132,7 +132,7 @@
                             </div>
                             <div class="form-group">
                                 <label>
-                                    Sender ID Value
+                                    {{ __('settings.field.sender_id_value') }}
                                     <span class="field-script-default">SCRIPT: Al Boukhari</span>
                                 </label>
                                 <input type="text" name="bulkgate_sender_id_value" class="form-input" value="{{ $settings['bulkgate_sender_id_value'] }}">
@@ -177,7 +177,7 @@
                     <p class="field-help mb-3">{{ __('Send a test SMS to verify your settings work. Saves you from sending bulk before confirming.') }}</p>
                     <form method="POST" action="{{ route('settings.test_bulkgate') }}" style="display:flex;gap:8px">
                         @csrf
-                        <input type="text" name="test_phone" class="form-input" placeholder="+316xxxxxxxx (your own phone)" style="flex:1">
+                        <input type="text" name="test_phone" class="form-input" placeholder="{{ __('settings.test_phone_placeholder') }}" style="flex:1">
                         <button type="submit" class="btn btn-warning">📨 {{ __('Send test SMS') }}</button>
                     </form>
                 </div>
@@ -213,43 +213,43 @@
                     <h3 style="margin-top:0">🔑 {{ __('API Credentials') }}</h3>
 
                     <div class="form-group">
-                        <label>Phone Number ID</label>
+                        <label>{{ __('settings.field.phone_number_id') }}</label>
                         <input type="text" name="whatsapp_phone_number_id" class="form-input" value="{{ $settings['whatsapp_phone_number_id'] }}" placeholder="e.g. 105467932...">
                         <div class="field-help">{{ __('Found in: Meta Developer Console → WhatsApp → API Setup') }}</div>
                     </div>
 
                     <div class="form-group">
-                        <label>Business Account ID (WABA ID)</label>
+                        <label>{{ __('settings.field.business_account_id') }}</label>
                         <input type="text" name="whatsapp_business_account_id" class="form-input" value="{{ $settings['whatsapp_business_account_id'] }}" placeholder="e.g. 102345876...">
                     </div>
 
                     <div class="form-group">
                         <label>
-                            Permanent Access Token
-                            <span class="field-script-default">🔒 encrypted</span>
+                            {{ __('settings.field.access_token') }}
+                            <span class="field-script-default">{{ __('settings.encrypted_hint') }}</span>
                         </label>
-                        <input type="password" name="whatsapp_access_token" class="form-input" value="{{ $settings['whatsapp_access_token_masked'] }}" placeholder="{{ $settings['whatsapp_access_token_masked'] ? '••••• already set' : 'EAAxxxxxxxxxxxxxxx...' }}">
+                        <input type="password" name="whatsapp_access_token" class="form-input" value="{{ $settings['whatsapp_access_token_masked'] }}" placeholder="{{ $settings['whatsapp_access_token_masked'] ? __('settings.token_already_set') : 'EAAxxxxxxxxxxxxxxx...' }}">
                         <div class="field-help">{{ __('Generate a permanent token (not the temporary 24h one).') }}</div>
                     </div>
 
                     <div class="form-group">
                         <label>
-                            App Secret (optional, for webhook security)
-                            <span class="field-script-default">🔒 encrypted</span>
+                            {{ __('settings.field.app_secret') }}
+                            <span class="field-script-default">{{ __('settings.encrypted_hint') }}</span>
                         </label>
-                        <input type="password" name="whatsapp_app_secret" class="form-input" value="{{ $settings['whatsapp_app_secret_masked'] }}" placeholder="{{ $settings['whatsapp_app_secret_masked'] ? '••••• already set' : '' }}">
+                        <input type="password" name="whatsapp_app_secret" class="form-input" value="{{ $settings['whatsapp_app_secret_masked'] }}" placeholder="{{ $settings['whatsapp_app_secret_masked'] ? __('settings.token_already_set') : '' }}">
                     </div>
 
                     <div class="form-group">
-                        <label>Webhook Verify Token</label>
-                        <input type="text" name="whatsapp_webhook_verify_token" class="form-input" value="{{ $settings['whatsapp_webhook_verify_token'] }}" placeholder="any random string of your choice">
+                        <label>{{ __('settings.field.webhook_verify_token') }}</label>
+                        <input type="text" name="whatsapp_webhook_verify_token" class="form-input" value="{{ $settings['whatsapp_webhook_verify_token'] }}" placeholder="{{ __('settings.webhook_verify_placeholder') }}">
                         <div class="field-help">{{ __('Configure the same token in Meta webhook settings.') }}</div>
                     </div>
 
                     @if ($waConfigured)
                         <div style="background:var(--color-surface-alt);padding:10px 14px;border-radius:var(--radius);font-size:12px;font-family:ui-monospace,monospace">
-                            <div><strong>Webhook URL:</strong> <code>{{ url('/webhooks/whatsapp') }}</code></div>
-                            <div class="mt-2"><strong>Verify endpoint:</strong> <code>GET {{ url('/webhooks/whatsapp') }}</code></div>
+                            <div><strong>{{ __('settings.webhook_url') }}:</strong> <code>{{ url('/webhooks/whatsapp') }}</code></div>
+                            <div class="mt-2"><strong>{{ __('settings.verify_endpoint') }}:</strong> <code>GET {{ url('/webhooks/whatsapp') }}</code></div>
                         </div>
                     @endif
                 </div>
