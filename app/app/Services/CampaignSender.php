@@ -127,13 +127,13 @@ class CampaignSender
     {
         $student = \App\Models\Student::findOrFail($studentId);
         if (HaltService::isHalted()) {
-            throw new \RuntimeException('الإرسال موقَف من قبل المسؤول.');
+            throw new \RuntimeException(__('error.send_halted_by_admin'));
         }
         if (!$student->canReceiveMessages()) {
-            throw new \RuntimeException('الطالب لا يستقبل رسائل: ' . $student->skipReason());
+            throw new \RuntimeException(__('error.student_cannot_receive') . ' ' . $student->skipReason());
         }
         if (!HaltService::tryTakeQuota(1)) {
-            throw new \RuntimeException('تجاوزت الحد الساعي.');
+            throw new \RuntimeException(__('error.hourly_quota_exceeded'));
         }
 
         $count = \App\Support\SmsCounter::count($body, Setting::get('force_ascii','1') === '1');

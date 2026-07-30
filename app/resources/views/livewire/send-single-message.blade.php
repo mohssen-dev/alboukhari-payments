@@ -1,10 +1,23 @@
 <div>
     @if ($isOpen)
-        <div class="modal-backdrop" wire:click.self="close" @keydown.window.escape="$wire.close()">
+        <div
+            x-data="{
+                closing: false,
+                close() {
+                    if (this.closing) return;
+                    this.closing = true;
+                    setTimeout(() => $wire.close(), 160);
+                }
+            }"
+            class="modal-backdrop"
+            :class="{ 'modal-closing': closing }"
+            @click.self="close()"
+            @keydown.window.escape="close()"
+        >
             <div class="modal-box" style="width:560px" @click.stop>
                 <div class="modal-header">
                     <h3>📲 {{ __('Message to') }} {{ $studentName }}</h3>
-                    <button class="btn btn-sm btn-ghost" wire:click="close">✕</button>
+                    <button type="button" class="btn btn-sm btn-ghost" @click="close()" aria-label="{{ __('common.close') }}">✕</button>
                 </div>
                 <div class="modal-body">
                     <div class="summary-item" style="margin-bottom:14px">
@@ -29,11 +42,15 @@
                     </div>
 
                     <div class="form-group">
-                        <label>{{ __('send.body') }}</label>
-                        <textarea class="form-textarea" wire:model.live.debounce.300ms="body" rows="6" placeholder="Type your message..."></textarea>
-                        @if ($counter)
-                            <x-sms-meter :counter="$counter" />
-                        @endif
+                        <label>
+                            {{ __('send.body') }}
+                            @if ($counter)
+                                <span style="float:right;font-size:11px;color:{{ $counter['segments'] > 1 ? 'var(--color-danger)' : 'var(--color-success)' }};font-weight:700">
+                                    📊 {{ $counter['length'] }}/{{ $counter['max_per_segment'] }} — <strong>{{ $counter['segments'] }} SMS</strong>
+                                </span>
+                            @endif
+                        </label>
+                        <textarea class="form-textarea" wire:model.live.debounce.300ms="body" rows="6" placeholder="{{ __('send.type_message_placeholder') }}"></textarea>
                     </div>
 
                     @if ($resultMessage)
@@ -43,8 +60,11 @@
                     @endif
                 </div>
                 <div class="modal-footer">
-                    <button class="btn" wire:click="close">{{ __('common.cancel') }}</button>
-                    <button class="btn btn-primary" wire:click="send" wire:loading.attr="disabled">📨 {{ __('Send now') }}</button>
+                    <button type="button" class="btn" @click="close()">{{ __('common.cancel') }}</button>
+                    <button type="button" class="btn btn-primary" wire:click="send" wire:loading.attr="disabled" wire:target="send">
+                        <span wire:loading.remove wire:target="send">📨 {{ __('Send now') }}</span>
+                        <span wire:loading wire:target="send"><span class="spinner-sm"></span> …</span>
+                    </button>
                 </div>
             </div>
         </div>

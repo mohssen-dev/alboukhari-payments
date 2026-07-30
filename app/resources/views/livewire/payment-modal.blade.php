@@ -1,49 +1,28 @@
 <div>
-    <div
-        wire:ignore
-        x-data="paymentModal(@js([
-            'monthNames' => $monthNames,
-            'lang' => app()->getLocale(),
-            'i18n' => [
-                'title'          => __('payment.title'),
-                'due'            => __('payment.due'),
-                'paid_so_far'    => __('payment.paid_so_far'),
-                'remaining'      => __('payment.remaining'),
-                'amount'         => __('payment.amount'),
-                'method'         => __('payment.method'),
-                'shortcuts'      => __('payment.shortcuts'),
-                'method_cash'    => __('payment.method_cash'),
-                'method_bank'    => __('payment.method_bank'),
-                'date'           => __('payment.date'),
-                'note'           => __('payment.note'),
-                'cancel'         => __('payment.cancel'),
-                'save'           => __('payment.save'),
-                'save_and_next'  => __('payment.save_and_next'),
-                'existing'       => __('Existing payments this month'),
-                'confirm_delete' => __('common.confirm'),
-                'error_invalid'  => __('Could not save payment'),
-            ],
-        ]))"
-        @open-payment-modal.window="open($event.detail)"
-        @open-payment-modal-fast.window="open($event.detail)"
-        @payment-saved.window="if (!_savingSelf) close()"
-    >
-        <template x-if="isOpen">
-            <div
-                class="modal-backdrop"
-                @click.self="close()"
-                @keydown.window.escape="close()"
-                @keydown.window.ctrl.enter.prevent="save(true)"
-            >
-                <div class="modal-box" @click.stop>
-                    <div class="modal-header">
-                        <h3>
-                            💶 <span x-text="i18n.title"></span> &mdash;
-                            <span x-text="studentName"></span>
-                            <span class="text-muted fw-600">/ <span x-text="monthName"></span> <span x-text="year"></span></span>
-                        </h3>
-                        <button type="button" class="btn btn-sm btn-ghost" @click="close()" aria-label="Close">✕</button>
-                    </div>
+    @if ($isOpen)
+        <div
+            x-data="{
+                closing: false,
+                close() {
+                    if (this.closing) return;
+                    this.closing = true;
+                    setTimeout(() => $wire.close(), 160);
+                }
+            }"
+            x-init="$nextTick(() => document.getElementById('payment-amount-input')?.focus())"
+            class="modal-backdrop"
+            :class="{ 'modal-closing': closing }"
+            @click.self="close()"
+            @keydown.window.escape="close()"
+            @keydown.window.ctrl.enter.prevent="$wire.save(true)"
+        >
+            <div class="modal-box" @click.stop>
+                <div class="modal-header">
+                    <h3>💶 {{ __('payment.title') }} — {{ $studentName }}
+                        <span class="text-muted fw-600">/ {{ $monthName }} {{ $year }}</span>
+                    </h3>
+                    <button type="button" class="btn btn-sm btn-ghost" @click="close()" aria-label="{{ __('common.close') }}">✕</button>
+                </div>
 
                     <div class="modal-body">
                         <div class="summary-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:14px">
@@ -134,18 +113,98 @@
                         </div>
                     </div>
 
-                    <div class="modal-footer">
-                        <button type="button" class="btn" @click="close()">
-                            <span x-text="i18n.cancel"></span> (Esc)
-                        </button>
-                        <button type="button" class="btn btn-soft-success" @click="save(false)" :disabled="saving">
-                            <span x-show="!saving">💾 <span x-text="i18n.save"></span></span>
-                            <span x-show="saving" x-cloak>…</span>
-                        </button>
-                        <button type="button" class="btn btn-primary" @click="save(true)" :disabled="saving" title="Ctrl+Enter">
-                            ↩ <span x-text="i18n.save_and_next"></span>
-                        </button>
+                    @if (count($existingPayments) > 0)
+                        <div style="margin-bottom:14px;padding:10px;background:var(--color-warning-soft);border-radius:var(--radius)">
+                            <strong class="fs-xs" style="text-transform:uppercase;letter-spacing:0.06em">{{ __('Existing payments this month') }}:</strong>
+                            <table style="width:100%;margin-top:6px;font-size:12px">
+                                @foreach ($existingPayments as $p)
+                                    <tr>
+                                        <td style="padding:4px">{{ $p['paid_at'] }}</td>
+                                        <td style="padding:4px">{{ $p['method_icon'] }} {{ $p['method_label'] }}</td>
+                                        <td style="padding:4px;text-align:end;font-weight:700">{{ number_format($p['amount'], 2) }} €</td>
+                                        <td style="padding:4px">
+                                            <button type="button" class="btn btn-sm" wire:click="editExisting({{ $p['id'] }})" wire:loading.attr="disabled" wire:target="editExisting({{ $p['id'] }})">
+                                                <span wire:loading.remove wire:target="editExisting({{ $p['id'] }})">✏️</span>
+                                                <span wire:loading wire:target="editExisting({{ $p['id'] }})" class="spinner-sm"></span>
+                                            </button>
+                                            <button type="button" class="btn btn-sm btn-soft-danger" wire:click="deletePayment({{ $p['id'] }})" wire:confirm="{{ __('common.confirm') }}" wire:loading.attr="disabled" wire:target="deletePayment({{ $p['id'] }})">
+                                                <span wire:loading.remove wire:target="deletePayment({{ $p['id'] }})">🗑️</span>
+                                                <span wire:loading wire:target="deletePayment({{ $p['id'] }})" class="spinner-sm"></span>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            </table>
+                        </div>
+                    @endif
+
+                    <div class="form-group">
+                        <label>{{ __('payment.amount') }} (€)</label>
+                        <input
+                            id="payment-amount-input"
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            class="form-input"
+                            wire:model="amount"
+                            style="font-size:22px;font-weight:700;text-align:center;padding:12px"
+                            required
+                            x-on:keydown.enter.prevent.stop="$wire.save(false)"
+                        >
+                        @error('amount') <small class="text-danger">{{ $message }}</small> @enderror
                     </div>
+
+                    <div class="form-group">
+                        <label>{{ __('payment.method') }} <small class="text-muted">{{ __('payment.shortcuts') }}</small></label>
+                        <div
+                            class="method-toggle"
+                            @keydown.window.n.prevent="if (!['INPUT','TEXTAREA'].includes(document.activeElement.tagName)) $wire.setMethod('cash')"
+                            @keydown.window.b.prevent="if (!['INPUT','TEXTAREA'].includes(document.activeElement.tagName)) $wire.setMethod('bank')"
+                        >
+                            <button type="button" class="cash {{ $method === 'cash' ? 'active' : '' }}" wire:click="setMethod('cash')">
+                                💵 {{ __('payment.method_cash') }}
+                            </button>
+                            <button type="button" class="bank {{ $method === 'bank' ? 'active' : '' }}" wire:click="setMethod('bank')">
+                                🏦 {{ __('payment.method_bank') }}
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="form-row cols-2">
+                        <div class="form-group">
+                            <label>{{ __('payment.date') }}</label>
+                            <input type="date" class="form-input" wire:model="paid_at" required>
+                        </div>
+                        <div class="form-group">
+                            <label>{{ __('payment.note') }}</label>
+                            <input type="text" class="form-input" wire:model="note" placeholder="...">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn" @click="close()">{{ __('payment.cancel') }} (Esc)</button>
+                    <button
+                        type="button"
+                        class="btn btn-soft-success"
+                        wire:click="save(false)"
+                        wire:loading.attr="disabled"
+                        wire:target="save"
+                    >
+                        <span wire:loading.remove wire:target="save">💾 {{ __('payment.save') }}</span>
+                        <span wire:loading wire:target="save"><span class="spinner-sm"></span> {{ __('payment.save') }}…</span>
+                    </button>
+                    <button
+                        type="button"
+                        class="btn btn-primary"
+                        wire:click="save(true)"
+                        title="{{ __('payment.save_shortcut_hint') }}"
+                        wire:loading.attr="disabled"
+                        wire:target="save"
+                    >
+                        <span wire:loading.remove wire:target="save">↩ {{ __('payment.save_and_next') }}</span>
+                        <span wire:loading wire:target="save"><span class="spinner-sm"></span> …</span>
+                    </button>
                 </div>
             </div>
         </template>

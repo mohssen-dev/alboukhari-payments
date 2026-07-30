@@ -34,6 +34,7 @@ class StudentImporter
         'markers_created' => 0,
         'phones_invalid' => 0,
         'skipped_rows' => 0,
+        'enrolled_at_set' => 0,
     ];
 
     public function import(string $filePath, ?int $yearForMonths = null): array
@@ -45,7 +46,7 @@ class StudentImporter
         $data = $sheet->toArray(null, true, true, false); // 0-indexed columns
 
         if (count($data) < 2) {
-            throw new \RuntimeException('لا توجد صفوف بيانات في الورقة.');
+            throw new \RuntimeException(__('error.no_data_rows'));
         }
 
         $headerRow = $data[0];
@@ -117,7 +118,15 @@ class StudentImporter
                     $this->stats['students_updated']++;
                 }
 
-                $this->importMonths($student, $row, $monthCols, $yearForMonths);
+                $firstActivityMonth = $this->importMonths($student, $row, $monthCols, $yearForMonths);
+
+                // Auto-set enrolled_at from the first month with real activity,
+                // but never overwrite a value the admin explicitly set.
+                if ($firstActivityMonth !== null && $student->enrolled_at === null) {
+                    $student->enrolled_at = sprintf('%04d-%02d-01', $yearForMonths, $firstActivityMonth);
+                    $student->save();
+                    $this->stats['enrolled_at_set']++;
+                }
             }
             DB::commit();
         } catch (\Throwable $e) {
@@ -143,8 +152,15 @@ class StudentImporter
         return $family;
     }
 
-    private function importMonths(Student $student, array $row, array $monthCols, int $year): void
+    /**
+     * Returns the first month (1-12) that had any activity — payment or marker —
+     * or null if the row had none. Used to infer enrolled_at.
+     */
+    private function importMonths(Student $student, array $row, array $monthCols, int $year): ?int
     {
+        $firstActivity = null;
+        ksort($monthCols);
+
         foreach ($monthCols as $monthNum => $colIdx) {
             $raw = $this->cell($row, $colIdx);
             if ($raw === null || $raw === '') continue;
@@ -164,6 +180,7 @@ class StudentImporter
                     []
                 );
                 $this->stats['markers_created']++;
+                $firstActivity = $firstActivity ?? $monthNum;
                 continue;
             }
 
@@ -188,8 +205,11 @@ class StudentImporter
                     'note' => 'مستورد من Excel',
                 ]);
                 $this->stats['payments_created']++;
+                $firstActivity = $firstActivity ?? $monthNum;
             }
         }
+
+        return $firstActivity;
     }
 
     private function rowHasData(array $row, array $idx): bool

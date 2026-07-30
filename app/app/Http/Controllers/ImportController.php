@@ -25,19 +25,16 @@ class ImportController extends Controller
         try {
             $stats = $importer->import($path, $year);
         } catch (\Throwable $e) {
-            return back()
-                ->with('flash', __('import.flash.failed', ['error' => $e->getMessage()]))
-                ->with('flash_type', 'error');
+            return back()->with('flash', __('flash.import_failed') . ' ' . $e->getMessage())->with('flash_type', 'error');
         }
 
-        $msg = __('import.flash.success', [
-            'created'  => $stats['students_created'],
-            'updated'  => $stats['students_updated'],
-            'families' => $stats['families_created'],
+        $msg = __('flash.import_success', [
+            'students' => $stats['students_created'] . '/' . $stats['students_updated'],
             'payments' => $stats['payments_created'],
-            'markers'  => $stats['markers_created'],
-            'invalid'  => $stats['phones_invalid'],
-        ]);
+        ])
+            . ' · ' . __('family.title') . ': +' . $stats['families_created']
+            . ' · X: ' . $stats['markers_created']
+            . ' · ✗ ' . $stats['phones_invalid'];
 
         return redirect()->route('home')->with('flash', $msg)->with('flash_type', 'success');
     }

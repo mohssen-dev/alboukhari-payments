@@ -22,6 +22,8 @@ class StudentPanel extends Component
     public string $phone_secondary_raw = '';
     public ?float $default_fee_amount = null;
     public string $notes = '';
+    public ?string $enrolled_at = null;
+    public ?string $withdrawn_at = null;
 
     // Suspension
     public string $suspend_starts_at = '';
@@ -39,14 +41,16 @@ class StudentPanel extends Component
     public string $surcharge_reason = '';
 
     protected $listeners = [
-        'close-panels' => 'close',
         'open-student-panel' => 'switchStudent',
+        'close-student-panel' => 'closeSelf',
         'payment-saved' => '$refresh',
     ];
 
-    public function mount(int $studentId)
+    public function mount(?int $studentId = null)
     {
-        $this->loadStudent($studentId);
+        if ($studentId) {
+            $this->loadStudent($studentId);
+        }
     }
 
     public function switchStudent(int $studentId)
@@ -55,25 +59,55 @@ class StudentPanel extends Component
         $this->tab = 'payments';
     }
 
+    /**
+     * Clear panel state → next render outputs empty view → panel disappears.
+     * Used by the close-student-panel event so the panel component doesn't rely on a parent.
+     */
+    public function closeSelf(): void
+    {
+        $this->reset([
+            'studentId', 'tab', 'name', 'phone_primary_raw', 'phone_secondary_raw',
+            'default_fee_amount', 'notes', 'enrolled_at', 'withdrawn_at',
+            'suspend_starts_at', 'suspend_ends_at', 'suspend_reason',
+            'override_month', 'override_amount', 'override_reason',
+            'surcharge_month', 'surcharge_amount', 'surcharge_reason',
+        ]);
+    }
+
     private function loadStudent(int $id)
     {
-        $student = Student::with(['family.students', 'payments', 'markers', 'suspensions'])->findOrFail($id);
+        $student = Student::with(['family.students', 'payments', 'markers', 'suspensions', 'surcharges', 'feeOverrides'])->findOrFail($id);
         $this->studentId = $student->id;
         $this->name = $student->name;
         $this->phone_primary_raw = $student->phone_primary_raw ?? '';
         $this->phone_secondary_raw = $student->phone_secondary_raw ?? '';
         $this->default_fee_amount = $student->default_fee_amount ? (float) $student->default_fee_amount : null;
         $this->notes = $student->notes ?? '';
+        $this->enrolled_at = $student->enrolled_at?->format('Y-m-d');
+        $this->withdrawn_at = $student->withdrawn_at?->format('Y-m-d');
     }
 
+    /**
+     * الإغلاق يتم عبر الأب (StudentsGrid::closeStudent) — هذه دالة قديمة بقيت لتوافق رجعي.
+     * لا تصفّر studentId محلياً لأن ذلك يجعل render() ينفجر مع findOrFail(null).
+     */
     public function close()
     {
         $this->dispatch('close-student');
-        $this->studentId = null;
     }
 
     public function saveBasic()
     {
+        // Normalize empty-string date inputs to null BEFORE validating —
+        // Laravel treats "" as an invalid date and breaks after_or_equal comparisons.
+        $this->enrolled_at = $this->enrolled_at ?: null;
+        $this->withdrawn_at = $this->withdrawn_at ?: null;
+
+        $this->validate([
+            'enrolled_at' => 'nullable|date',
+            'withdrawn_at' => 'nullable|date|after_or_equal:enrolled_at',
+        ]);
+
         $student = Student::findOrFail($this->studentId);
         $student->name = trim($this->name);
         $student->phone_primary_raw = $this->phone_primary_raw ?: null;
@@ -82,9 +116,11 @@ class StudentPanel extends Component
         $student->phone_secondary_e164 = \App\Support\PhoneNormalizer::normalize($this->phone_secondary_raw);
         $student->default_fee_amount = $this->default_fee_amount;
         $student->notes = $this->notes ?: null;
+        $student->enrolled_at = $this->enrolled_at ?: null;
+        $student->withdrawn_at = $this->withdrawn_at ?: null;
         $student->save();
 
-        $this->dispatch('flash', message: __('common.flash_saved'));
+        $this->dispatch('flash', message: __('flash.saved'));
     }
 
     public function toggleFlag(string $flag)
@@ -94,7 +130,7 @@ class StudentPanel extends Component
         $student = Student::findOrFail($this->studentId);
         $student->{$flag} = !$student->{$flag};
         $student->save();
-        $this->dispatch('flash', message: __('common.flash_updated'));
+        $this->dispatch('flash', message: __('flash.updated'));
     }
 
     public function addSuspension()
@@ -115,13 +151,13 @@ class StudentPanel extends Component
         $this->suspend_starts_at = '';
         $this->suspend_ends_at = '';
         $this->suspend_reason = '';
-        $this->dispatch('flash', message: __('flash.suspension_added'));
+        $this->dispatch('flash', message: __('flash.suspension_created'));
     }
 
     public function removeSuspension(int $id)
     {
         StudentSuspension::where('id', $id)->where('student_id', $this->studentId)->delete();
-        $this->dispatch('flash', message: __('common.flash_deleted'));
+        $this->dispatch('flash', message: __('flash.deleted'));
     }
 
     public function addOverride()
@@ -147,13 +183,13 @@ class StudentPanel extends Component
 
         $this->override_amount = null;
         $this->override_reason = '';
-        $this->dispatch('flash', message: __('flash.fee_override_saved'));
+        $this->dispatch('flash', message: __('flash.override_added'));
     }
 
     public function removeOverride(int $id)
     {
         StudentMonthlyFeeOverride::where('id', $id)->where('student_id', $this->studentId)->delete();
-        $this->dispatch('flash', message: __('common.flash_deleted'));
+        $this->dispatch('flash', message: __('flash.deleted'));
     }
 
     public function addSurcharge()
@@ -181,7 +217,7 @@ class StudentPanel extends Component
     public function removeSurcharge(int $id)
     {
         StudentSurcharge::where('id', $id)->where('student_id', $this->studentId)->delete();
-        $this->dispatch('flash', message: __('common.flash_deleted'));
+        $this->dispatch('flash', message: __('flash.deleted'));
     }
 
     public function openPayment(int $month)
@@ -189,9 +225,28 @@ class StudentPanel extends Component
         $this->dispatch('open-payment-modal', studentId: $this->studentId, year: (int) date('Y'), month: $month);
     }
 
+    public function openFamily()
+    {
+        $this->dispatch('open-family-modal', studentId: $this->studentId);
+    }
+
+    public function openSendMessage()
+    {
+        $this->dispatch('open-send-message', studentId: $this->studentId);
+    }
+
     public function render()
     {
-        $student = Student::with(['family.students', 'payments', 'markers', 'suspensions'])->findOrFail($this->studentId);
+        // حماية دفاعية: إذا فُقد studentId لأي سبب، اعرض div فارغ بدل الانهيار
+        if (!$this->studentId) {
+            return view('livewire.student-panel-empty');
+        }
+
+        $student = Student::with(['family.students', 'payments', 'markers', 'suspensions', 'surcharges', 'feeOverrides'])->find($this->studentId);
+        if (!$student) {
+            return view('livewire.student-panel-empty');
+        }
+
         $year = (int) date('Y');
         $months = MonthNames::full();
 

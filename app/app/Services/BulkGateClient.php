@@ -25,7 +25,7 @@ class BulkGateClient
         $forceAscii = Setting::get('force_ascii', '1') === '1';
 
         if (empty($appId) || empty($appToken)) {
-            throw new \RuntimeException('مفاتيح BulkGate غير مضبوطة. اذهب إلى الإعدادات.');
+            throw new \RuntimeException(__('error.bulkgate_not_configured'));
         }
 
         $numbers = is_array($phones) ? array_values($phones) : [$phones];

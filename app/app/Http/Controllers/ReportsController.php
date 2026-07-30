@@ -29,40 +29,46 @@ class ReportsController extends Controller
         $monthPaidBank = (float) Payment::where('period_year', $year)->where('period_month', $month)->where('method', 'bank')->sum('amount');
         $monthTotal = $monthPaidCash + $monthPaidBank;
 
-        // المتأخرون الآن
+        // Single query load, batch resolvers — avoids N+1 and 12× per-cell work.
+        $allStudents = Student::canMessage()
+            ->with(['payments', 'markers', 'feeOverrides', 'surcharges', 'suspensions'])
+            ->get();
+
         $overdue = [];
-        $allStudents = Student::canMessage()->get();
+        $topDebtors = [];
         foreach ($allStudents as $st) {
-            $status = MonthStatusResolver::resolve($st, $year, $month);
-            if (in_array($status, ['unpaid', 'late', 'partial'])) {
-                $bal = FeeResolver::balance($st, $year, $month);
+            $statuses = MonthStatusResolver::resolveAll($st, $year);
+            $paidAll = FeeResolver::paidAllMonths($st, $year);
+            $dueAll = FeeResolver::dueAllMonths($st, $year);
+
+            // Current-month overdue
+            $curStatus = $statuses[$month];
+            if ($curStatus === 'unpaid' || $curStatus === 'late' || $curStatus === 'partial') {
                 $overdue[] = [
                     'student' => $st,
-                    'status' => $status,
-                    'balance' => $bal,
+                    'status' => $curStatus,
+                    'balance' => $dueAll[$month] - $paidAll[$month],
                 ];
             }
-        }
-        usort($overdue, fn($a, $b) => $b['balance'] <=> $a['balance']);
 
-        // أكثر المتأخرين (تراكم سنوي)
-        $topDebtors = [];
-        foreach (Student::canMessage()->get() as $st) {
+            // Full-year accumulation for top debtors
             $totalBal = 0;
             $monthsBehind = 0;
             for ($m = 1; $m <= 12; $m++) {
-                $status = MonthStatusResolver::resolve($st, $year, $m);
-                if (in_array($status, ['unpaid', 'late', 'partial'])) {
-                    $totalBal += FeeResolver::balance($st, $year, $m);
-                    if (in_array($status, ['unpaid', 'late'])) $monthsBehind++;
+                $s = $statuses[$m];
+                if ($s === 'unpaid' || $s === 'late' || $s === 'partial') {
+                    $totalBal += ($dueAll[$m] - $paidAll[$m]);
+                    if ($s === 'unpaid' || $s === 'late') $monthsBehind++;
                 }
             }
             if ($monthsBehind >= 2) {
                 $topDebtors[] = compact('st', 'totalBal', 'monthsBehind');
             }
         }
+        usort($overdue, fn($a, $b) => $b['balance'] <=> $a['balance']);
         usort($topDebtors, fn($a, $b) => $b['totalBal'] <=> $a['totalBal']);
         $topDebtors = array_slice($topDebtors, 0, 30);
+        unset($allStudents);
 
         // التحصيل الشهري للسنة
         $monthlyTotals = [];

@@ -1,7 +1,23 @@
 <div
-    x-data="studentsGrid({{ json_encode(array_values($rowsJson)) }}, @js(__('actions.bulk_confirm')), {{ $year }})"
+    x-data="studentsGrid()"
     x-init="init()"
 >
+    {{-- البيانات المُمرَّرة لـ Alpine — تتجدّد تلقائياً مع كل re-render من Livewire --}}
+    <script type="application/json" data-grid-rows>@json(array_values($rowsJson))</script>
+
+    {{-- Top progress bar shown during any Livewire round-trip. Gives instant feedback while server processes. --}}
+    <div class="livewire-progress" wire:loading.delay.shortest>
+        <div class="livewire-progress-bar"></div>
+    </div>
+
+    @if ($focus)
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;font-size:12px;color:var(--color-text-muted)">
+            <span>🎯 <strong>{{ __('grid.title_focus') }}</strong></span>
+            <a href="{{ route('home') }}" wire:navigate class="btn btn-sm btn-ghost">← {{ __('grid.exit_focus') }}</a>
+        </div>
+    @endif
+
+    @unless ($focus)
     {{-- ====== KPI Strip ====== --}}
     <div class="kpi-grid">
         <div class="kpi info">
@@ -48,10 +64,12 @@
         </div>
 
         <div class="actions-group">
-            <a href="{{ route('quick-entry') }}" class="btn btn-warning btn-sm">⚡ {{ __('actions.quick_entry') }}</a>
-            <a href="{{ route('import.form') }}" class="btn btn-success btn-sm">📥 {{ __('actions.import_excel') }}</a>
+            <a href="{{ route('quick-entry') }}" wire:navigate class="btn btn-warning btn-sm">⚡ {{ __('actions.quick_entry') }}</a>
+            <a href="{{ route('import.form') }}" wire:navigate class="btn btn-success btn-sm">📥 {{ __('actions.import_excel') }}</a>
+            <a href="{{ route('grid.focus') }}" wire:navigate class="btn btn-sm">🎯 {{ __('grid.open_focus') }}</a>
         </div>
     </div>
+    @endunless
 
     {{-- ====== Bulk Action Bar (appears when items selected) ====== --}}
     <div class="bulk-bar" x-show="selectedIds.length > 0" x-cloak x-transition>
@@ -163,7 +181,12 @@
                         </td>
                         <td class="sticky-col col-id">{{ $student->external_id ?? $student->id }}</td>
                         <td class="sticky-col col-name">
-                            <a href="#" class="row-link" wire:click.prevent="openStudent({{ $student->id }})">
+                            <a href="#"
+                               class="row-link"
+                               wire:click.prevent="openPayment({{ $student->id }}, {{ (int) date('n') }})"
+                               wire:loading.class="row-link-busy"
+                               wire:target="openPayment({{ $student->id }}, {{ (int) date('n') }})"
+                               title="{{ __('actions.add_payment') }} ({{ __('filters.month') }} {{ (int) date('n') }})">
                                 {{ $student->name }}
                             </a>
                         </td>
@@ -176,8 +199,12 @@
                         </td>
                         <td>
                             @if ($siblingsCount > 0)
-                                <span class="sibling-badge" wire:click="openStudent({{ $student->id }})" title="{{ __('Click to view family') }}">
-                                    👨‍👧 {{ $siblingsCount }}
+                                <span class="sibling-badge" wire:click="openFamily({{ $student->id }})" wire:loading.class="badge-busy" wire:target="openFamily({{ $student->id }})" title="{{ __('actions.show_family') }}">
+                                    👨‍👧 {{ $siblingsCount + 1 }}
+                                </span>
+                            @else
+                                <span class="sibling-badge-solo" wire:click="openFamily({{ $student->id }})" wire:loading.class="badge-busy" wire:target="openFamily({{ $student->id }})" title="{{ __('actions.show_family') }}">
+                                    👤
                                 </span>
                             @endif
                         </td>
@@ -186,34 +213,38 @@
                                 $d = $monthData[$student->id][$m] ?? ['status' => 'not_due', 'paid' => 0, 'due' => 0, 'methodIcon' => ''];
                                 $class = match ($d['status']) {
                                     'paid' => 'cell-paid',
+                                    'paid_advance' => 'cell-paid-advance',
                                     'partial' => 'cell-partial',
                                     'unpaid' => 'cell-unpaid',
                                     'late' => 'cell-late',
                                     'legacy_zero' => 'cell-legacy-zero',
+                                    'not_enrolled' => 'cell-not-enrolled',
                                     default => 'cell-notdue',
                                 };
                                 $display = match ($d['status']) {
-                                    'paid', 'partial' => number_format($d['paid'], 0),
+                                    'paid', 'paid_advance', 'partial' => number_format($d['paid'], 0),
                                     'legacy_zero' => '0',
                                     'late' => 'X',
                                     'unpaid' => '·',
+                                    'not_enrolled' => '−',
                                     default => '',
                                 };
                             @endphp
                             <td
                                 class="cell-month {{ $class }}"
-                                data-student-id="{{ $student->id }}"
-                                data-student-name="{{ $student->name }}"
-                                data-month="{{ $m }}"
-                                data-due="{{ $d['due'] ?? 0 }}"
-                                data-paid="{{ $d['paid'] ?? 0 }}"
-                                title="{{ $months[$m] }} — {{ \App\Services\MonthStatusResolver::label($d['status']) }}"
+                                wire:click="openPayment({{ $student->id }}, {{ $m }})"
+                                wire:loading.class.delay.shortest="cell-busy"
+                                wire:target="openPayment({{ $student->id }}, {{ $m }})"
+                                role="button"
+                                tabindex="0"
+                                title="{{ $months[$m] }} — {{ \App\Services\MonthStatusResolver::label($d['status']) }} · {{ __('actions.add_payment') }}"
                             >
                                 <div class="cell-content">
                                     <span class="amount">{{ $display }}</span>
                                     @if ($d['methodIcon'])
                                         <span class="method-icon">{{ $d['methodIcon'] }}</span>
                                     @endif
+                                    <span class="cell-hint" aria-hidden="true">+</span>
                                 </div>
                             </td>
                         @endforeach
@@ -232,27 +263,26 @@
                         </td>
                         <td>
                             <div class="dropdown" x-data="{ open: false }" @click.outside="open = false">
-                                <button class="icon-btn" @click="open = !open" aria-haspopup="true" :aria-expanded="open">⋮</button>
-                                <template x-if="open">
-                                    <div class="dropdown-menu" x-transition>
-                                        <a href="#" wire:click.prevent="openStudent({{ $student->id }})">👁️ {{ __('actions.view_details') }}</a>
-                                        <button @click.prevent="open = false; const cell = document.querySelector(`tr[wire\\:key='row-{{ $student->id }}'] td.cell-month[data-month='{{ (int) date('n') }}']`); if (cell) cell.click();">💶 {{ __('actions.add_payment') }}</button>
-                                        <button wire:click="$dispatch('open-send-message', { studentId: {{ $student->id }} })">📲 {{ __('actions.send_message') }}</button>
-                                        <div class="divider"></div>
-                                        <button wire:click="toggleFlag({{ $student->id }}, 'is_hidden')">
-                                            {{ $student->is_hidden ? '👁️ '.__('actions.unhide') : '🙈 '.__('actions.hide') }}
-                                        </button>
-                                        <button wire:click="toggleFlag({{ $student->id }}, 'is_blocked_messages')">
-                                            {{ $student->is_blocked_messages ? '✅ '.__('actions.unblock_messages') : '🚫 '.__('actions.block_messages') }}
-                                        </button>
-                                        <button wire:click="toggleFlag({{ $student->id }}, 'is_in_person')">
-                                            {{ $student->is_in_person ? '🚪 '.__('actions.remove_in_person') : '🏠 '.__('actions.mark_in_person') }}
-                                        </button>
-                                        <button wire:click="toggleFlag({{ $student->id }}, 'excluded_from_send_all')">
-                                            {{ $student->excluded_from_send_all ? '✓ '.__('actions.include_bulk') : '🚷 '.__('actions.exclude_bulk') }}
-                                        </button>
-                                    </div>
-                                </template>
+                                <button class="icon-btn" @click="open = !open">⋮</button>
+                                <div class="dropdown-menu" x-show="open" x-transition x-cloak>
+                                    <a href="#" wire:click.prevent="openStudent({{ $student->id }})">👁️ {{ __('actions.view_details') }}</a>
+                                    <button wire:click="openPayment({{ $student->id }}, {{ (int) date('n') }})">💶 {{ __('actions.add_payment') }}</button>
+                                    <button wire:click="openFamily({{ $student->id }})">👨‍👩‍👧‍👦 {{ __('actions.show_family') }}</button>
+                                    <button wire:click="openSendMessage({{ $student->id }})">📲 {{ __('actions.send_message') }}</button>
+                                    <div class="divider"></div>
+                                    <button wire:click="toggleFlag({{ $student->id }}, 'is_hidden')">
+                                        {{ $student->is_hidden ? '👁️ Unhide' : '🙈 Hide' }}
+                                    </button>
+                                    <button wire:click="toggleFlag({{ $student->id }}, 'is_blocked_messages')">
+                                        {{ $student->is_blocked_messages ? '✅ Unblock' : '🚫 Block messages' }}
+                                    </button>
+                                    <button wire:click="toggleFlag({{ $student->id }}, 'is_in_person')">
+                                        {{ $student->is_in_person ? '🚪 Remove in-person' : '🏠 In-person' }}
+                                    </button>
+                                    <button wire:click="toggleFlag({{ $student->id }}, 'excluded_from_send_all')">
+                                        {{ $student->excluded_from_send_all ? '✓ Include in bulk' : '🚷 Exclude bulk' }}
+                                    </button>
+                                </div>
                             </div>
                         </td>
                     </tr>
@@ -273,17 +303,15 @@
         {{ $students->links() }}
     </div>
 
-    @if ($openStudentId)
-        @livewire('student-panel', ['studentId' => $openStudentId], key('panel-'.$openStudentId))
-    @endif
+    {{-- Modals + student panel live in layouts/app.blade.php, not here.
+         They subscribe to events (open-payment-modal, open-family-modal, etc.)
+         so opening one does NOT trigger a grid re-render. --}}
 </div>
 
 <script>
-    function studentsGrid(initialRows, bulkConfirmTpl, year) {
+    function studentsGrid() {
         return {
-            rows: initialRows,
-            year: parseInt(year) || (new Date()).getFullYear(),
-            bulkConfirmTpl: bulkConfirmTpl || 'Apply this change to :count student(s)?',
+            rows: [],
             search: '',
             clientFilter: 'all',
             sortKey: 'id',
@@ -291,8 +319,44 @@
             selectedIds: [],
 
             init() {
-                // Listen for shortcut
+                // أوّل تحميل: اقرأ من العنصر <script data-grid-rows>
+                this.syncRowsFromDom();
                 this.$watch('search', () => { /* triggers reactivity */ });
+
+                // تجديد البيانات مع كل تحديث من Livewire — يحلّ مشكلة perPage>100
+                if (window.Livewire) {
+                    const refresh = () => this.$nextTick(() => this.syncRowsFromDom());
+                    Livewire.hook('morph.updated', ({ el }) => {
+                        if (this.$el.contains(el)) refresh();
+                    });
+                    Livewire.hook('morph.added', ({ el }) => {
+                        if (this.$el.contains(el)) refresh();
+                    });
+                    Livewire.hook('commit', ({ succeed }) => { succeed(refresh); });
+                }
+            },
+
+            syncRowsFromDom() {
+                const dataEl = this.$el.querySelector('script[data-grid-rows]');
+                if (!dataEl) return;
+                try {
+                    const newRows = JSON.parse(dataEl.textContent || '[]');
+                    // فقط استبدِل إذا تغيّرت الأطوال أو محتوى أوّل عنصر — تجنّب re-renders زائدة
+                    if (
+                        newRows.length !== this.rows.length ||
+                        (newRows.length > 0 && this.rows.length > 0 && newRows[0].id !== this.rows[0].id)
+                    ) {
+                        this.rows = newRows;
+                        // تنظيف selectedIds من الـIDs التي لم تعد ظاهرة في الجدول
+                        const visibleIds = new Set(newRows.map(r => r.id));
+                        this.selectedIds = this.selectedIds.filter(id => visibleIds.has(id));
+                    } else {
+                        // البيانات لكنها قد تكون محدّثة (مبالغ، حالات…) — استبدلها على أي حال
+                        this.rows = newRows;
+                    }
+                } catch (e) {
+                    console.error('[studentsGrid] parse error:', e);
+                }
             },
 
             // Delegated click: open payment modal instantly when a month cell is clicked.

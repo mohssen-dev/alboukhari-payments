@@ -1,5 +1,5 @@
 @if ($paginator->hasPages())
-    <nav class="pagination" role="navigation" aria-label="Pagination">
+    <nav class="pagination" role="navigation" aria-label="{{ __('Pagination Navigation') }}">
         <div class="pagination-info">
             {!! __('Showing :first to :last of :total', [
                 'first' => $paginator->firstItem() ?? 0,
