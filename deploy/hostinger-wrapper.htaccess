@@ -1,0 +1,49 @@
+# =========================================================================
+# Wrapper .htaccess for Hostinger — place this at public_html/.htaccess
+# (NOT committed by the repo — this is a MANUAL server-only file)
+#
+# It rewrites every request /foo → /laravel/public/foo, while blocking any
+# direct access to Laravel internals (.env, vendor, app, storage, etc.).
+#
+# Server layout it expects:
+#   /home/<user>/domains/<domain>/public_html/
+#       ├── .htaccess          ← this file (server-only)
+#       └── laravel/           ← the cloned Git repo
+#           ├── app/           <- app source (blocked from web)
+#           ├── vendor/        <- Composer packages (blocked)
+#           ├── .env           <- secrets (blocked)
+#           ├── storage/       <- runtime data (blocked)
+#           └── app/public/    <- Laravel's real web root (served)
+# =========================================================================
+
+RewriteEngine On
+
+# --- 1. Block direct access to sensitive Laravel files/dirs ---
+# Requests to /laravel/.env, /laravel/vendor/, /laravel/app/, /laravel/storage/, etc.
+# get a 403 before ever touching PHP.
+RewriteRule ^laravel/(\.env|\.git|vendor|app|bootstrap|config|database|resources|routes|storage|tests|composer\.(json|lock)|artisan|phpunit\.xml)($|/) - [F,L]
+
+# --- 2. Serve real files from public/ if they exist (CSS, images, fonts) ---
+RewriteCond %{REQUEST_FILENAME} -f
+RewriteRule ^ - [L]
+
+# --- 3. Otherwise, route everything into Laravel's front controller ---
+# NOTE the path segment is "laravel/app/public" because the Laravel source
+# lives under `app/` in THIS repo (not at repo root). If you deploy a plain
+# Laravel install, change to "laravel/public/index.php" instead.
+RewriteRule ^(.*)$ laravel/app/public/index.php?/$1 [L,QSA]
+
+# --- 4. Redirect old HTTP → HTTPS (safety net; Hostinger usually enforces this too) ---
+RewriteCond %{HTTPS} off
+RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+# --- 5. Security headers ---
+<IfModule mod_headers.c>
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set X-Frame-Options "SAMEORIGIN"
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+    Header always set Permissions-Policy "geolocation=(), microphone=(), camera=()"
+</IfModule>
+
+# --- 6. Optional: hide server signature ---
+ServerSignature Off
