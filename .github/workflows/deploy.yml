@@ -1,19 +1,15 @@
 name: Deploy to Hostinger
 
-# Full deploy = git pull + composer install + migrate + cache rebuild.
-# Fires on every push to main so the site auto-syncs completely (not just files).
-# Also triggerable manually from the GitHub UI or via `gh workflow run deploy.yml`.
+# MANUAL ONLY. GitHub Actions is currently disabled due to billing on this
+# account — we deploy via `bash ~/deploy-payments.sh` over SSH instead.
+# When billing is fixed, re-enable auto-deploy by uncommenting the `push:` block below.
 on:
-  push:
-    branches: [main]
-    paths-ignore:
-      - '**/*.md'
-      - 'PLAN.md'
-      - 'FINAL_PLAN.md'
-      - 'SUGGESTIONS.md'
-      - 'UI_PLAN.md'
-      - '.gitignore'
-      - '.editorconfig'
+  # push:
+  #   branches: [main]
+  #   paths-ignore:
+  #     - '**/*.md'
+  #     - '.gitignore'
+  #     - '.editorconfig'
   workflow_dispatch:
 
 # Serialize deploys so two pushes never overlap on the server.
