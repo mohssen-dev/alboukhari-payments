@@ -6,6 +6,7 @@ use App\Models\Payment;
 use App\Models\Student;
 use App\Services\FeeResolver;
 use App\Services\MonthNames;
+use Livewire\Attributes\On;
 use Livewire\Component;
 
 class PaymentModal extends Component
@@ -38,34 +39,40 @@ class PaymentModal extends Component
     public function open(int $studentId, int $year, int $month): void
     {
         $student = Student::findOrFail($studentId);
-        return [
-            'studentName' => $student->name,
-            'due'         => FeeResolver::dueAmount($student, $year, $month),
-            'paid'        => FeeResolver::paidAmount($student, $year, $month),
-        ];
-    }
+        $this->studentId = $studentId;
+        $this->year = $year;
+        $this->month = $month;
+        $this->studentName = $student->name;
 
-    public function loadExistingPayments(int $studentId, int $year, int $month): array
-    {
-        $student = Student::findOrFail($studentId);
-        return $student->payments()
+        $this->dueAmount = FeeResolver::dueAmount($student, $year, $month);
+        $this->paidSoFar = FeeResolver::paidAmount($student, $year, $month);
+
+        $remaining = $this->dueAmount - $this->paidSoFar;
+        $this->amount = $remaining > 0 ? $remaining : $this->dueAmount;
+        $this->method = 'cash';
+        $this->note = '';
+        $this->paid_at = now()->format('Y-m-d');
+        $this->editingPaymentId = null;
+
+        $this->existingPayments = $student->payments()
             ->where('period_year', $year)
             ->where('period_month', $month)
             ->orderBy('paid_at')
             ->get()
-            ->map(fn ($p) => [
-                'id'           => $p->id,
-                'amount'       => (float) $p->amount,
-                'method'       => $p->method,
+            ->map(fn($p) => [
+                'id' => $p->id,
+                'amount' => (float) $p->amount,
+                'method' => $p->method,
                 'method_label' => $p->methodLabel(),
-                'method_icon'  => $p->methodIcon(),
-                'paid_at'      => $p->paid_at->format('Y-m-d'),
-                'note'         => $p->note,
-            ])
-            ->toArray();
+                'method_icon' => $p->methodIcon(),
+                'paid_at' => $p->paid_at->format('Y-m-d'),
+                'note' => $p->note,
+            ])->toArray();
+
+        $this->isOpen = true;
     }
 
-    public function savePaymentAlpine(array $payload): array
+    public function close(): void
     {
         $this->resetFormState();
         $this->dispatch('close-modal');
@@ -107,6 +114,7 @@ class PaymentModal extends Component
         if (in_array($method, ['cash', 'bank'], true)) {
             $this->method = $method;
         }
+    }
 
     public function save(bool $next = false): void
     {
@@ -175,8 +183,7 @@ class PaymentModal extends Component
 
     public function render()
     {
-        return view('livewire.payment-modal', [
-            'monthNames' => MonthNames::full(),
-        ]);
+        $monthName = $this->month ? (MonthNames::full()[$this->month] ?? '') : '';
+        return view('livewire.payment-modal', compact('monthName'));
     }
 }

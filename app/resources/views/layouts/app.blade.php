@@ -199,69 +199,15 @@
 
 <script>
     document.addEventListener('keydown', (e) => {
-        const tag = document.activeElement?.tagName;
-        const typing = ['INPUT', 'TEXTAREA', 'SELECT'].includes(tag) || document.activeElement?.isContentEditable;
-
         if (e.key === 'Escape') {
             window.dispatchEvent(new CustomEvent('close-panels'));
-            return;
         }
-        if (typing) return;
-
-        if (e.key === '/') {
+        if (e.key === '/' && !['INPUT','TEXTAREA','SELECT'].includes(document.activeElement.tagName)) {
             e.preventDefault();
             const search = document.querySelector('.search-global, input.search');
             if (search) search.focus();
-        } else if (e.key === '?') {
-            e.preventDefault();
-            window.dispatchEvent(new CustomEvent('open-shortcuts'));
         }
     });
-
-    // Click-to-copy — works on any element with [data-copy] or .copyable
-    (function () {
-        const labels = {
-            copied: @json(__('copy.copied')),
-            failed: @json(__('copy.failed')),
-        };
-
-        function fallbackCopy(text) {
-            const ta = document.createElement('textarea');
-            ta.value = text;
-            ta.setAttribute('readonly', '');
-            ta.style.position = 'fixed';
-            ta.style.top = '-1000px';
-            document.body.appendChild(ta);
-            ta.select();
-            let ok = false;
-            try { ok = document.execCommand('copy'); } catch (_) {}
-            document.body.removeChild(ta);
-            return ok ? Promise.resolve() : Promise.reject();
-        }
-
-        function flash(type, message) {
-            window.dispatchEvent(new CustomEvent('toast', { detail: { type, message } }));
-        }
-
-        document.addEventListener('click', (e) => {
-            const el = e.target.closest('[data-copy], .copyable');
-            if (!el) return;
-            if (el.classList.contains('is-empty') || el.hasAttribute('disabled')) return;
-            const text = (el.dataset.copy ?? el.textContent ?? '').trim();
-            if (!text || text === '—') return;
-            e.preventDefault();
-            const promise = (navigator.clipboard && window.isSecureContext)
-                ? navigator.clipboard.writeText(text)
-                : fallbackCopy(text);
-            promise.then(() => {
-                el.classList.add('copied');
-                setTimeout(() => el.classList.remove('copied'), 1200);
-                flash('success', labels.copied + ' · ' + text);
-            }).catch(() => {
-                flash('error', labels.failed);
-            });
-        });
-    })();
 </script>
 
 </body>

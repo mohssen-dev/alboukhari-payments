@@ -18,13 +18,10 @@ class FeeResolver
     }
 
     /**
-     * Resolve the applied fee for one student × month:
-     * 1) per-student-month override
-     * 2) student's default
-     * 3) global default
-     *
-     * Reads from eager-loaded `feeOverrides` collection when available
-     * to avoid N+1 queries inside grid renders.
+     * يحسب الرسم المطبَّق لطالب لشهر:
+     * 1) إن وُجد override لطالب × شهر => يستخدمه
+     * 2) وإلا إن وُجد رسم خاص بالطالب => يستخدمه
+     * 3) وإلا => الرسم الافتراضي العام
      */
     public static function resolve(Student $student, int $year, int $month): float
     {

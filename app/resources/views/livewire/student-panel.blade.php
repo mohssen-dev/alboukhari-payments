@@ -38,23 +38,11 @@
             <div class="summary-grid">
                 <div class="summary-item">
                     <div class="label">📞 {{ __('columns.phone') }}</div>
-                    <div class="value" style="font-family:ui-monospace,monospace;font-size:13px">
-                        @if ($student->phone_primary_e164)
-                            <button type="button" class="copyable" title="{{ __('copy.hint') }}" aria-label="{{ __('copy.hint') }}: {{ $student->phone_primary_e164 }}">{{ $student->phone_primary_e164 }}</button>
-                        @else
-                            <span class="text-soft">—</span>
-                        @endif
-                    </div>
+                    <div class="value" style="font-family:ui-monospace,monospace;font-size:13px">{{ $student->phone_primary_e164 ?: '—' }}</div>
                 </div>
                 <div class="summary-item">
                     <div class="label">📞₂ Secondary</div>
-                    <div class="value" style="font-family:ui-monospace,monospace;font-size:13px">
-                        @if ($student->phone_secondary_e164)
-                            <button type="button" class="copyable" title="{{ __('copy.hint') }}" aria-label="{{ __('copy.hint') }}: {{ $student->phone_secondary_e164 }}">{{ $student->phone_secondary_e164 }}</button>
-                        @else
-                            <span class="text-soft">—</span>
-                        @endif
-                    </div>
+                    <div class="value" style="font-family:ui-monospace,monospace;font-size:13px">{{ $student->phone_secondary_e164 ?: '—' }}</div>
                 </div>
                 <div class="summary-item">
                     <div class="label">💶 {{ __('panel.balance') }}</div>
@@ -64,9 +52,7 @@
                 </div>
                 <div class="summary-item">
                     <div class="label">🆔 ID</div>
-                    <div class="value">
-                        <button type="button" class="copyable" title="{{ __('copy.hint') }}" aria-label="{{ __('copy.hint') }}: {{ $student->external_id ?? $student->id }}">{{ $student->external_id ?? $student->id }}</button>
-                    </div>
+                    <div class="value">{{ $student->external_id ?? $student->id }}</div>
                 </div>
             </div>
 
@@ -96,7 +82,7 @@
                         <tr style="background:var(--color-surface-alt)">
                             <th style="padding:8px;text-align:start;font-size:11px;text-transform:uppercase;color:var(--color-text-muted)">{{ __('filters.month') }}</th>
                             <th style="padding:8px;font-size:11px;text-transform:uppercase;color:var(--color-text-muted)">{{ __('payment.due') }}</th>
-                            <th style="padding:8px;font-size:11px;text-transform:uppercase;color:var(--color-text-muted)">{{ __('panel.payments.paid') }}</th>
+                            <th style="padding:8px;font-size:11px;text-transform:uppercase;color:var(--color-text-muted)">{{ __('Paid') }}</th>
                             <th style="padding:8px;font-size:11px;text-transform:uppercase;color:var(--color-text-muted)">{{ __('payment.remaining') }}</th>
                             <th style="padding:8px"></th>
                         </tr>
@@ -134,7 +120,7 @@
 
             {{-- Tab: Fees --}}
             @if ($tab === 'fees')
-                <h4 style="margin-top:0">💶 {{ __('panel.fees.overrides_title') }}</h4>
+                <h4 style="margin-top:0">💶 {{ __('Monthly fee overrides') }}</h4>
                 @if ($student->feeOverrides->count() > 0)
                     <table style="width:100%;border-collapse:collapse;font-size:13px;margin-bottom:14px">
                         @foreach ($student->feeOverrides as $ov)
@@ -160,7 +146,7 @@
 
                 <hr style="margin:22px 0;border:none;border-top:1px solid var(--color-border)">
 
-                <h4>➕ {{ __('panel.fees.surcharges_title') }}</h4>
+                <h4>➕ {{ __('Surcharges (extra fees)') }}</h4>
                 @if ($student->surcharges->count() > 0)
                     <table style="width:100%;border-collapse:collapse;font-size:13px;margin-bottom:14px">
                         @foreach ($student->surcharges as $sur)
@@ -187,7 +173,7 @@
 
             {{-- Tab: Settings --}}
             @if ($tab === 'settings')
-                <h4 style="margin-top:0">{{ __('panel.control_flags') }}</h4>
+                <h4 style="margin-top:0">{{ __('Control flags') }}</h4>
                 <div class="form-row cols-2">
                     <button class="btn {{ $student->is_hidden ? 'btn-warning' : '' }}" wire:click="toggleFlag('is_hidden')">
                         {{ $student->is_hidden ? '👁️ ' . __('actions.toggle_hidden') : '🙈 ' . __('actions.toggle_hidden') }}
@@ -205,14 +191,12 @@
 
                 <hr style="margin:22px 0;border:none;border-top:1px solid var(--color-border)">
 
-                <h4>⏸️ {{ __('panel.suspension.title') }}</h4>
+                <h4>⏸️ {{ __('Temporary suspension') }}</h4>
                 @php $active = $student->activeSuspension(); @endphp
                 @if ($active)
                     @php
-                        $rangeLabel = __('panel.suspension.range', [
-                            'from' => $active->starts_at->format('Y-m-d'),
-                            'to' => $active->ends_at ? $active->ends_at->format('Y-m-d') : __('panel.suspension.open_ended'),
-                        ]);
+                        $suspendStarts = $active->starts_at->format('Y-m-d');
+                        $suspendEnds = $active->ends_at ? $active->ends_at->format('Y-m-d') : __('panel.open_ended');
                     @endphp
                     <div class="pill pill-warning" style="display:block;padding:10px 12px;margin-bottom:10px">
                         {{ __('filters.suspended') }} · {{ __('panel.from') }} <strong>{{ $suspendStarts }}</strong> {{ __('to') }}
@@ -304,7 +288,7 @@
                         </div>
                     </div>
                 @empty
-                    <p class="text-soft" style="text-align:center;padding:30px">{{ __('panel.messages.empty') }}</p>
+                    <p class="text-soft" style="text-align:center;padding:30px">No messages yet.</p>
                 @endforelse
             @endif
         </div>

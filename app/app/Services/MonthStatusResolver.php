@@ -120,40 +120,6 @@ class MonthStatusResolver
         return self::resolveAll($student, $year)[$month];
     }
 
-    private static function hasPaymentMethod(Student $student, int $year, int $month, string $method): bool
-    {
-        if ($student->relationLoaded('payments')) {
-            return $student->payments->contains(
-                fn ($p) => (int) $p->period_year === $year
-                    && (int) $p->period_month === $month
-                    && $p->method === $method
-            );
-        }
-
-        return $student->payments()
-            ->where('period_year', $year)
-            ->where('period_month', $month)
-            ->where('method', $method)
-            ->exists();
-    }
-
-    private static function hasMarker(Student $student, int $year, int $month, string $type): bool
-    {
-        if ($student->relationLoaded('markers')) {
-            return $student->markers->contains(
-                fn ($m) => (int) $m->period_year === $year
-                    && (int) $m->period_month === $month
-                    && $m->type === $type
-            );
-        }
-
-        return $student->markers()
-            ->where('period_year', $year)
-            ->where('period_month', $month)
-            ->where('type', $type)
-            ->exists();
-    }
-
     public static function colorClass(string $status): string
     {
         return match ($status) {

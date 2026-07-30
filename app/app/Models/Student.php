@@ -104,9 +104,9 @@ class Student extends Model
         }
 
         return $this->suspensions()
-            ->where('starts_at', '<=', $now)
-            ->where(function ($q) use ($now) {
-                $q->whereNull('ends_at')->orWhere('ends_at', '>=', $now);
+            ->where('starts_at', '<=', now())
+            ->where(function ($q) {
+                $q->whereNull('ends_at')->orWhere('ends_at', '>=', now());
             })
             ->latest()
             ->first();

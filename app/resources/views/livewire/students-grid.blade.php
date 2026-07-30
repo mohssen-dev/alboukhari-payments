@@ -76,9 +76,9 @@
         <strong x-text="`${selectedIds.length} ${selectedIds.length === 1 ? '{{ __('Student') }}' : '{{ __('Students') }}'}`"></strong>
         <span style="opacity:0.7">{{ __('selected') }}</span>
         <span style="flex:1"></span>
-        <button class="btn btn-sm" @click="bulk('is_hidden', true)">🙈 {{ __('actions.bulk_hide') }}</button>
-        <button class="btn btn-sm" @click="bulk('is_blocked_messages', true)">🚫 {{ __('actions.bulk_block') }}</button>
-        <button class="btn btn-sm" @click="bulk('is_in_person', true)">🏠 {{ __('actions.mark_in_person') }}</button>
+        <button class="btn btn-sm" @click="bulk('is_hidden', true, @js(__('confirm.bulk_hide', ['count' => '__COUNT__'])))">🙈 {{ __('actions.bulk_hide') }}</button>
+        <button class="btn btn-sm" @click="bulk('is_blocked_messages', true, @js(__('confirm.bulk_block', ['count' => '__COUNT__'])))">🚫 {{ __('actions.bulk_block') }}</button>
+        <button class="btn btn-sm" @click="bulk('is_in_person', true, @js(__('confirm.bulk_in_person', ['count' => '__COUNT__'])))">🏠 {{ __('In-person') }}</button>
         <button class="btn btn-sm btn-danger" @click="clearSelection()">✕ {{ __('actions.bulk_clear') }}</button>
     </div>
 
@@ -131,7 +131,7 @@
 
     {{-- ====== The Grid ====== --}}
     <div class="grid-wrap">
-        <table class="students-grid" @click="onCellClick($event)">
+        <table class="students-grid">
             <thead>
                 <tr>
                     <th class="sticky-col col-checkbox">
@@ -191,11 +191,7 @@
                             </a>
                         </td>
                         <td style="font-family:ui-monospace,monospace;font-size:11px;color:var(--color-text-muted)">
-                            @if ($student->phone_primary_e164)
-                                <button type="button" class="copyable" title="{{ __('copy.hint') }}" aria-label="{{ __('copy.hint') }}: {{ $student->phone_primary_e164 }}">{{ $student->phone_primary_e164 }}</button>
-                            @else
-                                <span class="text-soft">—</span>
-                            @endif
+                            {{ $student->phone_primary_e164 ?: '—' }}
                         </td>
                         <td>
                             @if ($siblingsCount > 0)
@@ -210,7 +206,7 @@
                         </td>
                         @foreach (range(1, 12) as $m)
                             @php
-                                $d = $monthData[$student->id][$m] ?? ['status' => 'not_due', 'paid' => 0, 'due' => 0, 'methodIcon' => ''];
+                                $d = $monthData[$student->id][$m] ?? ['status' => 'not_due', 'paid' => 0, 'methodIcon' => ''];
                                 $class = match ($d['status']) {
                                     'paid' => 'cell-paid',
                                     'paid_advance' => 'cell-paid-advance',
@@ -359,26 +355,6 @@
                 }
             },
 
-            // Delegated click: open payment modal instantly when a month cell is clicked.
-            // Avoids one wire:click binding per cell (1200+ on a full grid) and skips
-            // the server round-trip — Alpine has all the data it needs in data-* attrs.
-            onCellClick(event) {
-                const cell = event.target.closest('td.cell-month');
-                if (!cell) return;
-                event.preventDefault();
-                event.stopPropagation();
-                window.dispatchEvent(new CustomEvent('open-payment-modal-fast', {
-                    detail: {
-                        studentId:   parseInt(cell.dataset.studentId),
-                        studentName: cell.dataset.studentName || '',
-                        year:        this.year,
-                        month:       parseInt(cell.dataset.month),
-                        due:         parseFloat(cell.dataset.due) || 0,
-                        paid:        parseFloat(cell.dataset.paid) || 0,
-                    },
-                }));
-            },
-
             isVisible(id) {
                 const row = this.rows.find(r => r.id === id);
                 if (!row) return false;
@@ -463,8 +439,8 @@
 
             bulk(flag, value, promptTemplate) {
                 if (this.selectedIds.length === 0) return;
-                const msg = this.bulkConfirmTpl.replace(':count', this.selectedIds.length);
-                if (!confirm(msg)) return;
+                const msg = (promptTemplate || '').replace('__COUNT__', this.selectedIds.length);
+                if (msg && !confirm(msg)) return;
                 @this.bulkAction(this.selectedIds, flag, value);
                 this.clearSelection();
             },

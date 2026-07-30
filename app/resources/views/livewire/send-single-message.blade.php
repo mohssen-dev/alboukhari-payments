@@ -22,13 +22,7 @@
                 <div class="modal-body">
                     <div class="summary-item" style="margin-bottom:14px">
                         <div class="label">📞 {{ __('columns.phone') }}</div>
-                        <div class="value" style="font-family:ui-monospace,monospace">
-                            @if ($studentPhone)
-                                <button type="button" class="copyable" title="{{ __('copy.hint') }}" aria-label="{{ __('copy.hint') }}: {{ $studentPhone }}">{{ $studentPhone }}</button>
-                            @else
-                                <span class="text-soft">—</span>
-                            @endif
-                        </div>
+                        <div class="value" style="font-family:ui-monospace,monospace">{{ $studentPhone }}</div>
                     </div>
 
                     <div class="form-group">

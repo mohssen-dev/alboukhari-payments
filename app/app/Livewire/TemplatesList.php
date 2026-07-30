@@ -81,7 +81,7 @@ class TemplatesList extends Component
         $orig = Template::findOrFail($id);
         Template::create([
             'code' => $orig->code . '_copy_' . time(),
-            'name' => $orig->name . ' (' . __('templates.copy_suffix') . ')',
+            'name' => $orig->name . ' (نسخة)',
             'language' => $orig->language,
             'body' => $orig->body,
             'default_for' => 'none',
