@@ -1,178 +1,216 @@
-# 🚀 دليل النشر على الاستضافة المشتركة (cPanel/Plesk)
+# 🚀 دليل النشر على Hostinger — Git-based auto-sync
 
-> النظام يعمل بدون Vite ولا Node — كل الـ assets محمولة من CDN. يكفيك PHP 8.3+ و MySQL.
+نمط النشر: **دفع (push) إلى `main` → GitHub Actions يفتح SSH إلى Hostinger → `git pull` + `composer install` + `migrate` + `cache rebuild` تلقائياً**.
 
-## ✅ متطلبات الاستضافة
+هذا الملف يشرح الإعداد لمرّة واحدة، ثم كيف تعمل التحديثات بعد ذلك.
 
-- **PHP**: 8.3 أو أحدث (8.5 مدعوم)
-- **MySQL/MariaDB**: 5.7+ أو 10.3+
-- **Extensions المطلوبة**: `pdo_mysql`, `mbstring`, `openssl`, `tokenizer`, `xml`, `ctype`, `json`, `fileinfo`, `bcmath`, `gd` (للـ Excel)
-- **مساحة**: ≥ 200MB
-- **Composer**: لا حاجة على الخادم (نرفع `vendor/`)
+---
 
-## 📦 الخطوات
+## 🖥️ متطلبات الاستضافة
 
-### 1) تجهيز محلياً
+- **Hostinger Business** (يدعم SSH + Git). خطط أرخص لا تدعم SSH — لن يعمل النشر التلقائي.
+- **PHP ≥ 8.3** مع الإكستنشنز: `pdo_mysql, mbstring, openssl, tokenizer, xml, ctype, json, fileinfo, bcmath, gd, zip, intl`
+- **MySQL/MariaDB** (SQLite لا يصلح للإنتاج على استضافة مشتركة)
+- **Composer 2** (مثبَّت افتراضياً على Hostinger Business)
+- **Git 2** (مثبَّت افتراضياً)
+- **SSL** — أنشئ عبر Hostinger (Let's Encrypt مجاني)
+
+---
+
+## 📁 هيكل الملفات على السيرفر
+
+```
+/home/u475164459/domains/payments.alboukhari.nl/
+└── public_html/
+    ├── .htaccess          ← ملف خادم يدوي (نسخة من deploy/hostinger-wrapper.htaccess)
+    └── laravel/           ← Git clone للمستودع
+        ├── app/           ← مصدر Laravel (محجوب من الويب)
+        ├── vendor/
+        ├── deploy/
+        ├── .env           ← أسرار (محجوبة من الويب)
+        ├── .github/
+        └── app/public/    ← جذر الويب الحقيقي (يُقدَّم عبر wrapper)
+```
+
+**مهم**: الـ Laravel app داخل مجلد `app/` وليس في جذر المستودع. لذا الـ wrapper يوجّه إلى `laravel/app/public/index.php`.
+
+---
+
+## 1️⃣ إعداد لمرّة واحدة (Onboarding)
+
+### أ) على Hostinger — قاعدة البيانات
+
+من hPanel → **Databases → MySQL Databases**:
+1. أنشئ قاعدة جديدة (مثلاً `u475164459_payments`)
+2. أنشئ مستخدماً بكلمة سر قوية
+3. اربطهما بصلاحيات ALL PRIVILEGES
+4. سجّل: DB_NAME, DB_USER, DB_PASSWORD
+
+### ب) على Hostinger — SSH + Git
+
+من hPanel → **Advanced → SSH Access**:
+1. فعّل SSH
+2. ولّد أو أضف SSH Key
+3. سجّل: `SSH host` (مثل `ssh.hostinger.com` أو `de-fra-webXX.main-hosting.eu`)، `port` (عادة `65002`)، `username` (مثل `u475164459`)
+
+### ج) استنساخ المستودع على السيرفر
+
 ```bash
-cd /d/sheet_to_web/app
-composer install --optimize-autoloader --no-dev
-php artisan config:clear
-php artisan view:clear
-php artisan route:clear
+ssh -p 65002 u475164459@YOUR_SSH_HOST
+cd ~/domains/payments.alboukhari.nl/public_html
+git clone https://github.com/M9hs3n/alboukhari-payments.git laravel
+cd laravel
+composer install --no-dev --optimize-autoloader --no-interaction
+cp app/.env.production.example app/.env
 ```
 
-### 2) رفع الملفات إلى الاستضافة
+عدّل `app/.env` من nano/vim وضع:
+- قيم DB الحقيقية
+- كلمة سر SMTP
+- APP_URL الفعلي
 
-ارفع كل محتوى مجلّد `app/` ما عدا `node_modules/` (لا يوجد عندنا أصلاً).
-
-**هيكل cPanel المُوصى به:**
-```
-/home/USER/
-├── boukhari/           ← مجلد المشروع (خاص بك، ليس في public_html)
-│   ├── app/
-│   ├── bootstrap/
-│   ├── config/
-│   ├── database/
-│   ├── public/          ← هذا الذي يجب أن يُعرض
-│   ├── resources/
-│   ├── routes/
-│   ├── storage/
-│   ├── vendor/
-│   ├── .env
-│   └── artisan
-└── public_html/         ← مجلد الويب الافتراضي
-    └── (انسخ محتوى boukhari/public/ هنا أو اربط رمزياً)
-```
-
-### 3) ربط `public_html`
-
-**خيار أ (الأبسط)**: انسخ محتوى `boukhari/public/*` إلى `public_html/` وعدّل `index.php`:
-
-```php
-// في public_html/index.php
-require __DIR__.'/../boukhari/vendor/autoload.php';
-$app = require_once __DIR__.'/../boukhari/bootstrap/app.php';
-```
-
-**خيار ب (Subdomain)**: أنشئ Subdomain يشير إلى `boukhari/public/`.
-
-### 4) ضبط `.env` على الخادم
-
-```env
-APP_NAME="مدرسة البخاري"
-APP_ENV=production
-APP_DEBUG=false
-APP_URL=https://yourdomain.com
-APP_TIMEZONE=Europe/Amsterdam
-APP_LOCALE=ar
-
-DB_CONNECTION=mysql
-DB_HOST=localhost
-DB_PORT=3306
-DB_DATABASE=USER_boukhari
-DB_USERNAME=USER_admin
-DB_PASSWORD=secret-pass
-
-CACHE_STORE=database
-SESSION_DRIVER=database
-QUEUE_CONNECTION=database
-
-BULKGATE_APP_ID=...
-BULKGATE_APP_TOKEN=...
-BULKGATE_SENDER_ID=text
-BULKGATE_SENDER_ID_VALUE="Al Boukhari"
-BULKGATE_DEFAULT_COUNTRY=NL
-```
-
-### 5) توليد APP_KEY وتشغيل migrations
-
-عبر **Terminal في cPanel** أو **SSH**:
+ثم:
 ```bash
-cd ~/boukhari
+cd app
 php artisan key:generate
 php artisan migrate --force
-php artisan db:seed --force
+php artisan db:seed --class=DefaultAdminSeeder --force   # يُنشئ حساب أدمن أوّلي
+php artisan storage:link 2>/dev/null || ln -s ../storage/app/public public/storage
 php artisan config:cache
 php artisan route:cache
 php artisan view:cache
+chmod -R 775 storage bootstrap/cache
 ```
 
-### 6) ضبط الصلاحيات
+### د) رفع wrapper .htaccess
 
+من hPanel → File Manager → `public_html/`:
+- انسخ محتوى [`deploy/hostinger-wrapper.htaccess`](deploy/hostinger-wrapper.htaccess) إلى ملف جديد اسمه `.htaccess` مباشرة داخل `public_html/`
+
+### هـ) اختبار مبدئي
+
+افتح `https://payments.alboukhari.nl/` — يجب أن تظهر شاشة تسجيل الدخول.
+
+سجّل دخول بالحساب الأولي (أنشأه seeder) وغيّر كلمة السر فوراً من `/profile`.
+
+---
+
+## 2️⃣ إعداد GitHub Actions — النشر التلقائي
+
+هذا يُشغَّل عبر [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml) عند كل push إلى `main`.
+
+من GitHub → repo → **Settings → Secrets and variables → Actions → New repository secret**، أضف:
+
+| Secret | القيمة |
+|---|---|
+| `SSH_HOST` | مثل `de-fra-web2071.main-hosting.eu` |
+| `SSH_USER` | مثل `u475164459` |
+| `SSH_PORT` | مثل `65002` |
+| `SSH_PRIVATE_KEY` | محتوى ملف مفتاح SSH الخاص (يبدأ بـ `-----BEGIN OPENSSH PRIVATE KEY-----`) |
+| `DEPLOY_PATH` | مثل `/home/u475164459/domains/payments.alboukhari.nl/public_html/laravel` |
+| `APP_URL` | `https://payments.alboukhari.nl` |
+
+**توليد SSH key** (على جهازك المحلي):
 ```bash
-chmod -R 755 ~/boukhari
-chmod -R 775 ~/boukhari/storage ~/boukhari/bootstrap/cache
+ssh-keygen -t ed25519 -f ~/.ssh/hostinger_payments -C "github-actions-payments"
+# الملف الخاص (السرّي): ~/.ssh/hostinger_payments
+# الملف العام (الذي يُرفع للسيرفر): ~/.ssh/hostinger_payments.pub
 ```
 
-### 7) ضبط Cron (للتذكير الدوري)
-
-في cPanel → Cron Jobs، أضف:
-```
-* * * * * cd /home/USER/boukhari && /usr/local/bin/php artisan schedule:run >> /dev/null 2>&1
-```
-
-(لو `php` غير `/usr/local/bin/php`، اسأل الدعم الفني للاستضافة.)
-
-### 8) اختبار
-
-افتح `https://yourdomain.com/` — يجب أن تظهر الشاشة الرئيسية.
-
-افتح `https://yourdomain.com/up` — يجب أن تعرض "OK".
-
----
-
-## 🔧 استكشاف الأخطاء
-
-### الصفحة بيضاء
-- فعّل `APP_DEBUG=true` مؤقتاً وأعد التحميل لمعرفة الخطأ.
-- تحقق من `storage/logs/laravel-*.log`.
-
-### "MissingAppKeyException"
-- شغّل `php artisan key:generate`.
-
-### "could not find driver"
-- فعّل extension `pdo_mysql` من cPanel → Select PHP Version.
-
-### "Permission denied"
-- صلاحيات `storage/` و `bootstrap/cache/` يجب أن تكون 775.
-
-### Tailwind لا يظهر
-- النظام يستخدم Tailwind CDN — تأكد أن الخادم يستطيع الوصول للإنترنت الخارجي.
-- بديل: نزّل ملف `tailwind.min.css` من https://cdn.jsdelivr.net/npm/tailwindcss/dist/tailwind.min.css وضعه في `public/assets/css/` وعدّل الـ Layout.
-
----
-
-## 🔐 الأمان
-
-- ❌ **لا ترفع** `.env` على Git
-- ❌ **لا تترك** `APP_DEBUG=true` في الإنتاج
-- ✅ **استخدم HTTPS** (Let's Encrypt مجاني عبر cPanel)
-- ✅ **نسخ احتياطي يومي** للقاعدة (إعدادات cPanel → Backups)
-- ✅ **مفاتيح BulkGate** تُحفظ مشفّرة في DB
-
----
-
-## 📊 التشغيل الأول
-
-1. افتح `/import` وارفع `2026 send_students_pay_re_finale.xlsx`
-2. افتح `/settings` وأدخل مفاتيح BulkGate
-3. افتح `/templates` وعدّل القوالب لو أردت
-4. من `/send` اختر "اختبر على رقمي" للتأكد
-5. ابدأ الإرسال الفعلي
-
----
-
-## ⚙️ Optimization (اختياري)
-
+ثم على السيرفر:
 ```bash
-php artisan config:cache
-php artisan route:cache
-php artisan view:cache
-php artisan event:cache
-composer dump-autoload --optimize
+mkdir -p ~/.ssh && chmod 700 ~/.ssh
+cat ~/.ssh/hostinger_payments.pub >> ~/.ssh/authorized_keys
+chmod 600 ~/.ssh/authorized_keys
 ```
 
-لإلغاء عند التطوير:
+واختبر:
 ```bash
+ssh -i ~/.ssh/hostinger_payments -p 65002 u475164459@YOUR_HOST 'echo OK'
+```
+
+انسخ محتوى `~/.ssh/hostinger_payments` (الخاص) كاملاً إلى GitHub Secret `SSH_PRIVATE_KEY`.
+
+---
+
+## 3️⃣ التحديثات الروتينية (بعد الإعداد)
+
+من جهازك المحلي:
+```bash
+git add .
+git commit -m "feat: whatever"
+git push origin main
+```
+
+GitHub Actions يشتغل تلقائياً:
+1. يفتح SSH إلى السيرفر
+2. `git pull --ff-only origin main`
+3. `composer install --no-dev --optimize-autoloader`
+4. `php artisan migrate --force`
+5. `php artisan config:cache && route:cache && view:cache`
+6. Health check: `curl -sSI $APP_URL`
+
+راقب النشر من GitHub → repo → **Actions**.
+
+### تشغيل النشر يدوياً
+
+من GitHub UI → **Actions → Deploy to Hostinger → Run workflow**، أو من الطرفية:
+```bash
+gh workflow run deploy.yml
+```
+
+---
+
+## 4️⃣ الأعمال التي تتطلّب SSH يدوي
+
+هذه لا يقوم بها الـ workflow ولا يمكن أتمتتها:
+
+| العمل | الأمر |
+|---|---|
+| إضافة seeder جديد (أول مرة) | `php artisan db:seed --class=Foo --force` |
+| Rollback migration | `php artisan migrate:rollback --step=1` |
+| مسح كل الكاش (نادراً) | `php artisan optimize:clear` |
+| نسخة احتياطية DB | `mysqldump -u USER -p DB > backup.sql` |
+| قراءة السجلات | `tail -f storage/logs/laravel.log` |
+
+---
+
+## 5️⃣ استكشاف الأعطال
+
+| الخطأ | السبب المحتمل | الحل |
+|---|---|---|
+| **500 Server Error** | `.env` غير مضبوط، `APP_KEY` فارغ، صلاحيات storage خاطئة | `tail -50 app/storage/logs/laravel.log` |
+| **419 Page Expired** | `SESSION_DOMAIN` غير مطابق | امسح `app/storage/framework/sessions/*` واضبط `SESSION_DOMAIN=null` |
+| **CSS/JS لا تظهر** | wrapper .htaccess يحجب `/assets/` | تحقق من قواعد Rewrite في الـ wrapper |
+| **`Could not find driver`** | `pdo_mysql` غير مفعّل | hPanel → PHP Configuration → Extensions |
+| **GitHub Action تفشل بـ Permission denied** | مفتاح SSH خاطئ في Secrets أو غير مضاف لـ authorized_keys | أعد اختبار SSH يدوياً |
+| **`fatal: refusing to merge unrelated histories`** | Git على السيرفر ليس نسخة نظيفة من remote | `git reset --hard origin/main` (يحذف تعديلات السيرفر — احتفظ بنسخة من `.env` أولاً!) |
+
+---
+
+## 6️⃣ التراجع (Rollback)
+
+**الأسرع**: من طرفية السيرفر
+```bash
+cd $DEPLOY_PATH
+git log --oneline -5             # حدّد commit سليم
+git reset --hard <good-sha>
+composer install --no-dev
+php artisan migrate --force      # إن كانت هناك migrations للتراجع، شغّل migrate:rollback بدلاً
 php artisan optimize:clear
+php artisan optimize
 ```
+
+**الأنظف**: من GitHub — revert الـ commit المشكل بـ PR جديد، ادمج، والـ workflow سيُشغَّل تلقائياً.
+
+---
+
+## 7️⃣ قائمة فحص أمنيّة نهائية
+
+- [ ] `APP_ENV=production` و `APP_DEBUG=false` في `.env`
+- [ ] `SESSION_SECURE_COOKIE=true` و HTTPS مفروض
+- [ ] كلمة سر حساب الأدمن الأولي غُيّرت
+- [ ] `.env` غير قابل للقراءة عبر الويب: `curl -I https://payments.alboukhari.nl/laravel/.env` يجب أن يعطي 403
+- [ ] `.git/` غير قابل للقراءة: `curl -I https://payments.alboukhari.nl/laravel/.git/config` يجب أن يعطي 403
+- [ ] نسخة احتياطية يومية لـ DB من hPanel → Backups
+- [ ] `SSH_PRIVATE_KEY` في GitHub Secrets وليس في الكود

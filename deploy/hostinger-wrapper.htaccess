@@ -1,0 +1,57 @@
+# =========================================================================
+# Wrapper .htaccess for Hostinger — place this at public_html/.htaccess
+# (NOT committed to the app itself — this is a MANUAL server-only file)
+#
+# It rewrites every request → /laravel/app/public/... while blocking any
+# direct access to Laravel internals (.env, vendor, app source, storage).
+#
+# Server layout it expects:
+#   /home/<user>/domains/<domain>/public_html/
+#       ├── .htaccess          ← this file (server-only)
+#       └── laravel/           ← the cloned Git repo (whole alboukhari-payments)
+#           ├── app/           ← Laravel is nested here
+#           │   ├── public/    ← Laravel's real web root (served)
+#           │   ├── .env       ← secrets (blocked)
+#           │   ├── vendor/    ← Composer packages (blocked)
+#           │   └── ...
+#           ├── .github/
+#           ├── deploy/
+#           └── DEPLOY.md
+# =========================================================================
+
+RewriteEngine On
+
+# --- 1. Deny sensitive top-level files/dirs inside laravel/ ---
+RewriteRule ^laravel/(\.env|\.git|composer\.(json|lock)|artisan|phpunit\.xml)($|/) - [F,L]
+RewriteRule ^laravel/(vendor|bootstrap|config|database|routes|resources|storage|tests|deploy|scripts|\.github)($|/) - [F,L]
+
+# --- 2. Block /laravel/app/* EXCEPT /laravel/app/public/* ---
+# (the app source is under app/ but only app/public/ should be web-facing)
+RewriteCond %{REQUEST_URI} ^/laravel/app/
+RewriteCond %{REQUEST_URI} !^/laravel/app/public/
+RewriteRule ^ - [F,L]
+
+# --- 3. Deny secrets inside app/public/ too (defense in depth) ---
+RewriteRule ^laravel/app/public/\.env - [F,L]
+
+# --- 4. Serve real static files (CSS/JS/images) directly, skip PHP ---
+RewriteCond %{DOCUMENT_ROOT}/laravel/app/public/%{REQUEST_URI} -f
+RewriteRule ^(.*)$ laravel/app/public/$1 [L]
+
+# --- 5. All other requests → Laravel's front controller ---
+RewriteRule ^(.*)$ laravel/app/public/index.php?/$1 [L,QSA]
+
+# --- 6. Force HTTPS (safety net; Hostinger usually enforces this too) ---
+RewriteCond %{HTTPS} off
+RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+# --- 7. Security headers ---
+<IfModule mod_headers.c>
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set X-Frame-Options "SAMEORIGIN"
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+    Header always set Permissions-Policy "geolocation=(), microphone=(), camera=()"
+</IfModule>
+
+# --- 8. Hide server signature ---
+ServerSignature Off

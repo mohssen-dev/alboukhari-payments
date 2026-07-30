@@ -1,0 +1,70 @@
+name: Deploy to Hostinger
+
+# Full deploy = git pull + composer install + migrate + cache rebuild.
+# Fires on every push to main so the site auto-syncs completely (not just files).
+# Also triggerable manually from the GitHub UI or via `gh workflow run deploy.yml`.
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - '**/*.md'
+      - 'PLAN.md'
+      - 'FINAL_PLAN.md'
+      - 'SUGGESTIONS.md'
+      - 'UI_PLAN.md'
+      - '.gitignore'
+      - '.editorconfig'
+  workflow_dispatch:
+
+# Serialize deploys so two pushes never overlap on the server.
+# The newer commit queues behind the older one and always runs last.
+concurrency:
+  group: deploy-hostinger-payments
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Full deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SSH_PORT }}
+          command_timeout: 10m
+          script: |
+            set -e
+            # Adjust this path to match where you cloned the repo on the server.
+            # Standard Hostinger layout: /home/<user>/domains/<domain>/public_html/laravel
+            cd ${{ secrets.DEPLOY_PATH }}
+
+            echo "===== Before ====="
+            git log --oneline -1
+
+            echo ""
+            echo "===== git pull ====="
+            git pull --ff-only origin main
+
+            echo ""
+            echo "===== composer install ====="
+            /usr/local/bin/composer install --no-dev --optimize-autoloader --no-interaction
+
+            echo ""
+            echo "===== migrate ====="
+            /usr/bin/php artisan migrate --force
+
+            echo ""
+            echo "===== cache rebuild ====="
+            /usr/bin/php artisan config:cache
+            /usr/bin/php artisan route:cache
+            /usr/bin/php artisan view:clear
+            /usr/bin/php artisan view:cache
+
+            echo ""
+            echo "===== After ====="
+            git log --oneline -1
+            echo ""
+            echo "===== HTTP health check ====="
+            curl -sSI ${{ secrets.APP_URL }} | head -3 || echo "health check skipped"
