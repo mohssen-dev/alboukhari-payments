@@ -20,32 +20,48 @@ class StudentsGrid extends Component
     public int $year;
     public int $perPage = 100;
 
-    public ?int $openStudentId = null;
+    /** When true, hides the KPI/actions chrome — pure grid + filters only. */
+    public bool $focus = false;
 
     protected $queryString = ['filterStatus', 'year'];
 
-    public function mount()
+    /**
+     * Modals + student panel are mounted persistently in layouts/app.blade.php
+     * and communicate via broadcast events. Actions here just fire events —
+     * the grid itself does NOT re-render, keeping interactions snappy.
+     */
+    public function mount(bool $focus = false)
     {
         $this->year = (int) date('Y');
+        $this->focus = $focus;
     }
 
     public function updatingFilterStatus() { $this->resetPage(); }
     public function updatingYear() { $this->resetPage(); }
+    public function updatingPerPage() { $this->resetPage(); }
 
     public function openStudent(int $studentId)
     {
-        $this->openStudentId = $studentId;
         $this->dispatch('open-student-panel', studentId: $studentId);
-    }
-
-    public function closeStudent()
-    {
-        $this->openStudentId = null;
+        $this->skipRender(); // No grid state changed — save the expensive re-render.
     }
 
     public function openPayment(int $studentId, int $month): void
     {
         $this->dispatch('open-payment-modal', studentId: $studentId, year: $this->year, month: $month);
+        $this->skipRender();
+    }
+
+    public function openFamily(int $studentId): void
+    {
+        $this->dispatch('open-family-modal', studentId: $studentId);
+        $this->skipRender();
+    }
+
+    public function openSendMessage(int $studentId): void
+    {
+        $this->dispatch('open-send-message', studentId: $studentId);
+        $this->skipRender();
     }
 
     protected $listeners = [
@@ -77,11 +93,12 @@ class StudentsGrid extends Component
     {
         $query = Student::query()
             ->with([
-                'family.students',
+                'family:id,guardian_name,is_blocked_messages',
+                'family.students:id,family_id,name',
                 'payments',
-                'feeOverrides',
-                'surcharges',
                 'markers',
+                'surcharges',
+                'feeOverrides',
                 'suspensions',
             ]);
 
@@ -109,19 +126,36 @@ class StudentsGrid extends Component
             $monthData[$student->id] = [];
             $siblingsCount = $student->family_id ? max(0, $student->family->students->count() - 1) : 0;
             $totalBalance = 0;
+
+            // Batch-compute all 12 months in one pass (avoids 12 * 3 = 36 redundant filter loops per student).
+            $statuses = MonthStatusResolver::resolveAll($student, $this->year);
+            $paidAll  = FeeResolver::paidAllMonths($student, $this->year);
+            $dueAll   = FeeResolver::dueAllMonths($student, $this->year);
+
+            // Pre-bucket the year's cash/bank payments by month for the method icon lookup.
+            $lastMethodByMonth = [];
+            foreach ($student->payments as $p) {
+                if ($p->period_year !== $this->year) continue;
+                if ($p->method !== 'cash' && $p->method !== 'bank') continue;
+                $m = $p->period_month;
+                $existing = $lastMethodByMonth[$m] ?? null;
+                if (!$existing || $p->paid_at > $existing->paid_at) {
+                    $lastMethodByMonth[$m] = $p;
+                }
+            }
+
             foreach (range(1, 12) as $m) {
-                $status = MonthStatusResolver::resolve($student, $this->year, $m);
-                $paid = FeeResolver::paidAmount($student, $this->year, $m);
-                $due = FeeResolver::dueAmount($student, $this->year, $m);
+                $status = $statuses[$m];
+                $paid = $paidAll[$m];
+                $due = $dueAll[$m];
                 $methodIcon = '';
-                if ($paid > 0) {
-                    $lastPayment = $student->payments->where('period_year', $this->year)->where('period_month', $m)->whereIn('method', ['cash','bank'])->sortByDesc('paid_at')->first();
-                    $methodIcon = $lastPayment ? $lastPayment->methodIcon() : '';
+                if ($paid > 0 && isset($lastMethodByMonth[$m])) {
+                    $methodIcon = $lastMethodByMonth[$m]->methodIcon();
                 } elseif ($status === 'legacy_zero') {
                     $methodIcon = '🏦';
                 }
                 $monthData[$student->id][$m] = compact('status', 'paid', 'due', 'methodIcon');
-                if (in_array($status, ['unpaid', 'late', 'partial'])) {
+                if ($status === 'unpaid' || $status === 'late' || $status === 'partial') {
                     $totalBalance += ($due - $paid);
                 }
             }

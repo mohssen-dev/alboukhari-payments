@@ -111,11 +111,11 @@ class SendCampaign extends Component
     public function sendTest()
     {
         if (empty($this->testPhone)) {
-            $this->dispatch('flash', message: __('send.error_no_phone'));
+            $this->dispatch('flash', message: __('flash.enter_test_phone'));
             return;
         }
         if (empty(trim($this->body))) {
-            $this->dispatch('flash', message: __('send.error_no_body'));
+            $this->dispatch('flash', message: __('flash.enter_message_body'));
             return;
         }
 
@@ -134,9 +134,9 @@ class SendCampaign extends Component
                 'status' => $result['status'],
                 'tag' => 'TEST',
             ]);
-            $this->dispatch('flash', message: __('send.test_sent', ['phone' => $this->testPhone, 'status' => $result['status']]));
+            $this->dispatch('flash', message: __('flash.test_sent', ['phone' => $this->testPhone]) . ' (' . $result['status'] . ')');
         } catch (\Throwable $e) {
-            $this->dispatch('flash', message: __('send.send_failed', ['error' => $e->getMessage()]));
+            $this->dispatch('flash', message: __('flash.send_error') . ' ' . $e->getMessage());
         }
     }
 
@@ -144,7 +144,7 @@ class SendCampaign extends Component
     {
         $this->preview();
         if (!$this->previewStats || $this->previewStats['total_recipients'] === 0) {
-            $this->dispatch('flash', message: __('send.error_no_recipients'));
+            $this->dispatch('flash', message: __('flash.no_recipients'));
             return;
         }
 
@@ -188,11 +188,7 @@ class SendCampaign extends Component
         $campaign = Campaign::find($this->campaignId);
         $sender = app(CampaignSender::class);
         $r = $sender->sendCampaign($campaign);
-        $this->resultMessage = __('send.launch_result', [
-            'sent' => (int) ($r['sent'] ?? 0),
-            'failed' => (int) ($r['failed'] ?? 0),
-            'status' => (string) ($r['status'] ?? ''),
-        ]);
+        $this->resultMessage = __('Sent') . ': ' . ($r['sent'] ?? 0) . ' · ' . __('Failed') . ': ' . ($r['failed'] ?? 0) . ' · ' . __('columns.status') . ': ' . ($r['status'] ?? '');
 
         $this->dispatch('flash', message: $this->resultMessage);
     }

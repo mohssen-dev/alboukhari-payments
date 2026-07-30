@@ -21,6 +21,13 @@ class SendSingleMessage extends Component
     public string $body = '';
     public string $resultMessage = '';
 
+    public function mount(?int $initialStudentId = null): void
+    {
+        if ($initialStudentId) {
+            $this->open($initialStudentId);
+        }
+    }
+
     #[On('open-send-message')]
     public function open(int $studentId): void
     {
@@ -37,6 +44,7 @@ class SendSingleMessage extends Component
     public function close(): void
     {
         $this->reset(['isOpen', 'studentId', 'studentName', 'studentPhone', 'templateId', 'body', 'resultMessage']);
+        $this->dispatch('close-modal');
     }
 
     public function updatedTemplateId()

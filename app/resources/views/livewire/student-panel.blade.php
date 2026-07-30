@@ -1,9 +1,19 @@
-<div>
-    <div class="side-panel-backdrop" wire:click="close"></div>
-    <div class="side-panel">
+<div
+    x-data="{
+        closing: false,
+        close() {
+            if (this.closing) return;
+            this.closing = true;
+            setTimeout(() => $wire.closeSelf(), 180);
+        }
+    }"
+    @keydown.window.escape="close()"
+>
+    <div class="side-panel-backdrop" :class="{ 'panel-closing': closing }" @click="close()"></div>
+    <div class="side-panel" :class="{ 'panel-closing': closing }">
         <div class="side-panel-header">
             <h2>{{ $student->name }}</h2>
-            <button class="btn btn-sm btn-ghost" wire:click="close" title="{{ __('common.close') }} (Esc)">✕</button>
+            <button type="button" class="btn btn-sm btn-ghost" @click="close()" title="{{ __('common.close_esc') }}" aria-label="{{ __('common.close') }}">✕</button>
         </div>
 
         {{-- Siblings strip --}}
@@ -12,10 +22,13 @@
                 <div class="siblings-strip">
                     <strong class="fs-xs text-muted" style="text-transform:uppercase;letter-spacing:0.06em">👨‍👩‍👧‍👦 {{ __('panel.siblings') }}:</strong>
                     @foreach ($siblings as $sib)
-                        <span class="sibling-chip" wire:click="switchStudent({{ $sib->id }})">
+                        <span class="sibling-chip" wire:click="switchStudent({{ $sib->id }})" title="{{ __('actions.view_details') }}">
                             {{ $sib->name }}
                         </span>
                     @endforeach
+                    <button type="button" class="btn btn-sm btn-soft-primary" wire:click="openFamily" style="margin-inline-start:auto">
+                        👨‍👩‍👧‍👦 {{ __('actions.show_family') }}
+                    </button>
                 </div>
             </div>
         @endif
@@ -25,23 +38,11 @@
             <div class="summary-grid">
                 <div class="summary-item">
                     <div class="label">📞 {{ __('columns.phone') }}</div>
-                    <div class="value" style="font-family:ui-monospace,monospace;font-size:13px">
-                        @if ($student->phone_primary_e164)
-                            <button type="button" class="copyable" title="{{ __('copy.hint') }}" aria-label="{{ __('copy.hint') }}: {{ $student->phone_primary_e164 }}">{{ $student->phone_primary_e164 }}</button>
-                        @else
-                            <span class="text-soft">—</span>
-                        @endif
-                    </div>
+                    <div class="value" style="font-family:ui-monospace,monospace;font-size:13px">{{ $student->phone_primary_e164 ?: '—' }}</div>
                 </div>
                 <div class="summary-item">
                     <div class="label">📞₂ Secondary</div>
-                    <div class="value" style="font-family:ui-monospace,monospace;font-size:13px">
-                        @if ($student->phone_secondary_e164)
-                            <button type="button" class="copyable" title="{{ __('copy.hint') }}" aria-label="{{ __('copy.hint') }}: {{ $student->phone_secondary_e164 }}">{{ $student->phone_secondary_e164 }}</button>
-                        @else
-                            <span class="text-soft">—</span>
-                        @endif
-                    </div>
+                    <div class="value" style="font-family:ui-monospace,monospace;font-size:13px">{{ $student->phone_secondary_e164 ?: '—' }}</div>
                 </div>
                 <div class="summary-item">
                     <div class="label">💶 {{ __('panel.balance') }}</div>
@@ -51,9 +52,7 @@
                 </div>
                 <div class="summary-item">
                     <div class="label">🆔 ID</div>
-                    <div class="value">
-                        <button type="button" class="copyable" title="{{ __('copy.hint') }}" aria-label="{{ __('copy.hint') }}: {{ $student->external_id ?? $student->id }}">{{ $student->external_id ?? $student->id }}</button>
-                    </div>
+                    <div class="value">{{ $student->external_id ?? $student->id }}</div>
                 </div>
             </div>
 
@@ -63,7 +62,7 @@
 
             {{-- Quick actions --}}
             <div style="display:flex;gap:6px;margin-bottom:18px">
-                <button class="btn btn-primary btn-sm" style="flex:1" wire:click="$dispatch('open-send-message', { studentId: {{ $student->id }} })">📲 {{ __('actions.send_message') }}</button>
+                <button class="btn btn-primary btn-sm" style="flex:1" wire:click="openSendMessage">📲 {{ __('actions.send_message') }}</button>
                 <button class="btn btn-soft-success btn-sm" style="flex:1" wire:click="openPayment({{ (int) date('n') }})">💶 {{ __('actions.add_payment') }}</button>
             </div>
 
@@ -83,7 +82,7 @@
                         <tr style="background:var(--color-surface-alt)">
                             <th style="padding:8px;text-align:start;font-size:11px;text-transform:uppercase;color:var(--color-text-muted)">{{ __('filters.month') }}</th>
                             <th style="padding:8px;font-size:11px;text-transform:uppercase;color:var(--color-text-muted)">{{ __('payment.due') }}</th>
-                            <th style="padding:8px;font-size:11px;text-transform:uppercase;color:var(--color-text-muted)">{{ __('panel.payments.paid') }}</th>
+                            <th style="padding:8px;font-size:11px;text-transform:uppercase;color:var(--color-text-muted)">{{ __('Paid') }}</th>
                             <th style="padding:8px;font-size:11px;text-transform:uppercase;color:var(--color-text-muted)">{{ __('payment.remaining') }}</th>
                             <th style="padding:8px"></th>
                         </tr>
@@ -121,7 +120,7 @@
 
             {{-- Tab: Fees --}}
             @if ($tab === 'fees')
-                <h4 style="margin-top:0">💶 {{ __('panel.fees.overrides_title') }}</h4>
+                <h4 style="margin-top:0">💶 {{ __('Monthly fee overrides') }}</h4>
                 @if ($student->feeOverrides->count() > 0)
                     <table style="width:100%;border-collapse:collapse;font-size:13px;margin-bottom:14px">
                         @foreach ($student->feeOverrides as $ov)
@@ -140,14 +139,14 @@
                             <option value="{{ $num }}">{{ $name }}</option>
                         @endforeach
                     </select>
-                    <input type="number" step="0.01" class="form-input" wire:model="override_amount" placeholder="{{ __('panel.fees.amount_placeholder') }}">
+                    <input type="number" step="0.01" class="form-input" wire:model="override_amount" placeholder="{{ __('panel.amount_placeholder') }}">
                 </div>
-                <input type="text" class="form-input mt-2" wire:model="override_reason" placeholder="{{ __('panel.fees.reason_optional_placeholder') }}">
-                <button class="btn btn-primary mt-2" wire:click="addOverride">+ {{ __('panel.fees.add_override') }}</button>
+                <input type="text" class="form-input mt-2" wire:model="override_reason" placeholder="{{ __('panel.reason_optional') }}">
+                <button class="btn btn-primary mt-2" wire:click="addOverride">+ {{ __('Add override') }}</button>
 
                 <hr style="margin:22px 0;border:none;border-top:1px solid var(--color-border)">
 
-                <h4>➕ {{ __('panel.fees.surcharges_title') }}</h4>
+                <h4>➕ {{ __('Surcharges (extra fees)') }}</h4>
                 @if ($student->surcharges->count() > 0)
                     <table style="width:100%;border-collapse:collapse;font-size:13px;margin-bottom:14px">
                         @foreach ($student->surcharges as $sur)
@@ -166,61 +165,64 @@
                             <option value="{{ $num }}">{{ $name }}</option>
                         @endforeach
                     </select>
-                    <input type="number" step="0.01" class="form-input" wire:model="surcharge_amount" placeholder="{{ __('panel.fees.amount_placeholder') }}">
+                    <input type="number" step="0.01" class="form-input" wire:model="surcharge_amount" placeholder="{{ __('panel.amount_placeholder') }}">
                 </div>
-                <input type="text" class="form-input mt-2" wire:model="surcharge_reason" placeholder="{{ __('panel.fees.reason_required_placeholder') }}">
-                <button class="btn btn-primary mt-2" wire:click="addSurcharge">+ {{ __('panel.fees.add_surcharge') }}</button>
+                <input type="text" class="form-input mt-2" wire:model="surcharge_reason" placeholder="{{ __('panel.reason_required') }}">
+                <button class="btn btn-primary mt-2" wire:click="addSurcharge">+ {{ __('Add surcharge') }}</button>
             @endif
 
             {{-- Tab: Settings --}}
             @if ($tab === 'settings')
-                <h4 style="margin-top:0">{{ __('panel.control_flags') }}</h4>
+                <h4 style="margin-top:0">{{ __('Control flags') }}</h4>
                 <div class="form-row cols-2">
                     <button class="btn {{ $student->is_hidden ? 'btn-warning' : '' }}" wire:click="toggleFlag('is_hidden')">
-                        {{ $student->is_hidden ? '👁️ '.__('actions.unhide') : '🙈 '.__('actions.hide') }}
+                        {{ $student->is_hidden ? '👁️ ' . __('actions.toggle_hidden') : '🙈 ' . __('actions.toggle_hidden') }}
                     </button>
                     <button class="btn {{ $student->is_blocked_messages ? 'btn-danger' : '' }}" wire:click="toggleFlag('is_blocked_messages')">
-                        {{ $student->is_blocked_messages ? '✅ '.__('actions.unblock_messages') : '🚫 '.__('actions.block_messages') }}
+                        {{ $student->is_blocked_messages ? '✅ ' . __('actions.toggle_blocked') : '🚫 ' . __('actions.toggle_blocked') }}
                     </button>
                     <button class="btn {{ $student->is_in_person ? 'btn-warning' : '' }}" wire:click="toggleFlag('is_in_person')">
-                        {{ $student->is_in_person ? '🚪 '.__('actions.remove_in_person') : '🏠 '.__('actions.mark_in_person') }}
+                        {{ $student->is_in_person ? '🚪 ' . __('actions.toggle_in_person') : '🏠 ' . __('actions.toggle_in_person') }}
                     </button>
                     <button class="btn {{ $student->excluded_from_send_all ? 'btn-warning' : '' }}" wire:click="toggleFlag('excluded_from_send_all')">
-                        {{ $student->excluded_from_send_all ? '✓ '.__('actions.include_bulk') : '🚷 '.__('actions.exclude_bulk') }}
+                        {{ $student->excluded_from_send_all ? '✓ ' . __('actions.toggle_exclude_send_all') : '🚷 ' . __('actions.toggle_exclude_send_all') }}
                     </button>
                 </div>
 
                 <hr style="margin:22px 0;border:none;border-top:1px solid var(--color-border)">
 
-                <h4>⏸️ {{ __('panel.suspension.title') }}</h4>
+                <h4>⏸️ {{ __('Temporary suspension') }}</h4>
                 @php $active = $student->activeSuspension(); @endphp
                 @if ($active)
                     @php
-                        $rangeLabel = __('panel.suspension.range', [
-                            'from' => $active->starts_at->format('Y-m-d'),
-                            'to' => $active->ends_at ? $active->ends_at->format('Y-m-d') : __('panel.suspension.open_ended'),
-                        ]);
+                        $suspendStarts = $active->starts_at->format('Y-m-d');
+                        $suspendEnds = $active->ends_at ? $active->ends_at->format('Y-m-d') : __('panel.open_ended');
                     @endphp
-                    <div class="pill pill-warning" style="display:flex;align-items:center;gap:8px;padding:10px 12px;margin-bottom:10px">
-                        <span>{{ $rangeLabel }}@if ($active->reason) — {{ $active->reason }} @endif</span>
-                        <button class="btn btn-sm btn-danger" wire:click="removeSuspension({{ $active->id }})" style="margin-inline-start:auto">{{ __('panel.suspension.cancel') }}</button>
+                    <div class="pill pill-warning" style="display:block;padding:10px 12px;margin-bottom:10px">
+                        {{ __('filters.suspended') }} · {{ __('panel.from') }} <strong>{{ $suspendStarts }}</strong> {{ __('to') }}
+                        <strong>{{ $suspendEnds }}</strong>
+                        @if ($active->reason) — {{ $active->reason }} @endif
+                        <button class="btn btn-sm btn-danger"
+                                wire:click="removeSuspension({{ $active->id }})"
+                                wire:confirm="{{ __('confirm.cancel_suspension', ['starts' => $suspendStarts, 'ends' => $suspendEnds]) }}"
+                                style="margin-inline-start:auto">{{ __('panel.end_suspension') }}</button>
                     </div>
                 @endif
                 <div class="form-row cols-2">
                     <div class="form-group">
-                        <label>{{ __('panel.suspension.from') }}</label>
+                        <label>{{ __('panel.from') }}</label>
                         <input type="date" class="form-input" wire:model="suspend_starts_at">
                     </div>
                     <div class="form-group">
-                        <label>{{ __('panel.suspension.to_optional') }}</label>
+                        <label>{{ __('to') }}</label>
                         <input type="date" class="form-input" wire:model="suspend_ends_at">
                     </div>
                 </div>
                 <div class="form-group">
-                    <label>{{ __('panel.suspension.reason_optional') }}</label>
+                    <label>{{ __('panel.reason_optional') }}</label>
                     <input type="text" class="form-input" wire:model="suspend_reason">
                 </div>
-                <button class="btn btn-primary" wire:click="addSuspension">+ {{ __('panel.suspension.add') }}</button>
+                <button class="btn btn-primary" wire:click="addSuspension">+ {{ __('Temporary suspension') }}</button>
             @endif
 
             {{-- Tab: Profile --}}
@@ -230,20 +232,35 @@
                     <input type="text" class="form-input" wire:model="name">
                 </div>
                 <div class="form-group">
-                    <label>{{ __('panel.profile.primary_phone') }}</label>
-                    <input type="text" class="form-input" wire:model="phone_primary_raw" placeholder="{{ __('panel.profile.phone_placeholder') }}">
-                    <small class="text-muted">{{ __('panel.profile.phone_hint') }}</small>
+                    <label>{{ __('panel.primary_phone') }}</label>
+                    <input type="text" class="form-input" wire:model="phone_primary_raw" placeholder="06xxxxxxxx">
                 </div>
                 <div class="form-group">
-                    <label>{{ __('panel.profile.secondary_phone') }}</label>
-                    <input type="text" class="form-input" wire:model="phone_secondary_raw" placeholder="{{ __('panel.profile.phone_placeholder') }}">
+                    <label>{{ __('panel.secondary_phone') }}</label>
+                    <input type="text" class="form-input" wire:model="phone_secondary_raw">
                 </div>
                 <div class="form-group">
-                    <label>{{ __('panel.profile.default_fee_label') }}</label>
-                    <input type="number" step="0.01" class="form-input" wire:model="default_fee_amount" placeholder="{{ __('panel.profile.default_fee_placeholder') }}">
+                    <label>{{ __('Default monthly fee') }}</label>
+                    <input type="number" step="0.01" class="form-input" wire:model="default_fee_amount" placeholder="e.g. 25.00">
                 </div>
+
+                <div class="form-row cols-2">
+                    <div class="form-group">
+                        <label>📅 {{ __('panel.enrolled_at') }}</label>
+                        <input type="date" class="form-input" wire:model="enrolled_at">
+                        <div class="field-help">{{ __('panel.enrolled_help') }}</div>
+                        @error('enrolled_at') <small class="text-danger">{{ $message }}</small> @enderror
+                    </div>
+                    <div class="form-group">
+                        <label>🚪 {{ __('panel.withdrawn_at') }}</label>
+                        <input type="date" class="form-input" wire:model="withdrawn_at">
+                        <div class="field-help">{{ __('panel.withdrawn_help') }}</div>
+                        @error('withdrawn_at') <small class="text-danger">{{ $message }}</small> @enderror
+                    </div>
+                </div>
+
                 <div class="form-group">
-                    <label>{{ __('panel.profile.notes_label') }}</label>
+                    <label>{{ __('panel.notes') }}</label>
                     <textarea class="form-textarea" wire:model="notes"></textarea>
                 </div>
                 <button class="btn btn-primary" wire:click="saveBasic">💾 {{ __('common.save') }}</button>
@@ -251,7 +268,7 @@
 
             {{-- Tab: Messages --}}
             @if ($tab === 'messages')
-                <button class="btn btn-primary mb-3" wire:click="$dispatch('open-send-message', { studentId: {{ $student->id }} })">
+                <button class="btn btn-primary mb-3" wire:click="openSendMessage">
                     📲 {{ __('actions.send_message') }}
                 </button>
                 @php
@@ -271,7 +288,7 @@
                         </div>
                     </div>
                 @empty
-                    <p class="text-soft" style="text-align:center;padding:30px">{{ __('panel.messages.empty') }}</p>
+                    <p class="text-soft" style="text-align:center;padding:30px">No messages yet.</p>
                 @endforelse
             @endif
         </div>

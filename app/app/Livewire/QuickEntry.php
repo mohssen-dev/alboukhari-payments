@@ -80,7 +80,7 @@ class QuickEntry extends Component
         $this->reset(['search', 'selectedStudentId', 'amount', 'method', 'note']);
         $this->method = 'cash';
 
-        $this->dispatch('flash', message: __('flash.quick_saved', ['amount' => number_format((float) $payment->amount, 2)]));
+        $this->dispatch('flash', message: __('flash.quick_saved', ['amount' => (string) $payment->amount]));
         $this->dispatch('focus-search');
     }
 

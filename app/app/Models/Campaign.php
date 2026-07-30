@@ -5,9 +5,22 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Spatie\Activitylog\Models\Concerns\LogsActivity;
+use Spatie\Activitylog\Support\LogOptions;
 
 class Campaign extends Model
 {
+    use LogsActivity;
+
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->logOnly(['type', 'status', 'total_recipients', 'sent_count', 'failed_count', 'started_at', 'finished_at'])
+            ->logOnlyDirty()
+            ->dontLogEmptyChanges()
+            ->useLogName('campaign');
+    }
+
     protected $fillable = [
         'type', 'status', 'period_year', 'period_month', 'threshold_amount',
         'template_id', 'body_template', 'tag', 'group_by_family',

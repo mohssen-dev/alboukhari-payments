@@ -101,12 +101,33 @@ class SettingsController extends Controller
             $client = app(\App\Services\BulkGateClient::class);
             $phone = $request->input('test_phone');
             if (!$phone) {
-                return back()->with('flash', '✗ Phone number required')->with('flash_type', 'error');
+                return back()->with('flash', __('flash.test_phone_required'))->with('flash_type', 'error');
             }
-            $result = $client->send($phone, 'Test from Al Boukhari system — ' . now()->format('H:i:s'), 'TEST');
-            return back()->with('flash', '✓ ' . $result['status'])->with('flash_type', 'success');
+            $body = __('flash.test_message_prefix') . ' ' . now()->format('H:i:s');
+            $result = $client->send($phone, $body, 'TEST');
+            return back()->with('flash', __('flash.test_sent', ['phone' => $phone]) . ' (' . $result['status'] . ')')->with('flash_type', 'success');
         } catch (\Throwable $e) {
-            return back()->with('flash', '✗ ' . $e->getMessage())->with('flash_type', 'error');
+            return back()->with('flash', __('flash.send_error') . ' ' . $e->getMessage())->with('flash_type', 'error');
+        }
+    }
+
+    public function testWhatsApp(Request $request)
+    {
+        try {
+            $client = app(\App\Services\WhatsAppClient::class);
+            $phone = $request->input('test_phone');
+            if (!$phone) {
+                return back()->with('flash', __('flash.test_phone_required'))->with('flash_type', 'error');
+            }
+            $body = __('flash.test_message_prefix') . ' WhatsApp — ' . now()->format('H:i:s');
+            $result = $client->send($phone, $body, 'TEST');
+            $ok = ($result['status'] ?? 'failed') === 'sent';
+            $msg = $ok
+                ? __('flash.test_sent', ['phone' => $phone])
+                : (__('flash.send_error') . ' ' . ($result['status'] ?? 'unknown') . ($result['error'] ?? '' ? ' — '.$result['error'] : ''));
+            return back()->with('flash', $msg)->with('flash_type', $ok ? 'success' : 'error');
+        } catch (\Throwable $e) {
+            return back()->with('flash', __('flash.send_error') . ' ' . $e->getMessage())->with('flash_type', 'error');
         }
     }
 }
