@@ -6,11 +6,13 @@ use App\Models\Payment;
 use App\Models\Student;
 use App\Services\FeeResolver;
 use App\Services\MonthNames;
+use App\Support\AuthorizesLivewireWrite;
 use Livewire\Attributes\On;
 use Livewire\Component;
 
 class PaymentModal extends Component
 {
+    use AuthorizesLivewireWrite;
     public bool $isOpen = false;
     public ?int $studentId = null;
     public ?int $year = null;
@@ -96,6 +98,8 @@ class PaymentModal extends Component
 
     public function deletePayment(int $paymentId): void
     {
+        $this->assertCanWrite();
+
         try {
             $p = Payment::findOrFail($paymentId);
             $p->delete();
@@ -118,6 +122,8 @@ class PaymentModal extends Component
 
     public function save(bool $next = false): void
     {
+        $this->assertCanWrite();
+
         $this->validate([
             'amount' => 'required|numeric|min:0',
             'method' => 'required|in:cash,bank',

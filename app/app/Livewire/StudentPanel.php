@@ -9,10 +9,12 @@ use App\Models\StudentSuspension;
 use App\Services\FeeResolver;
 use App\Services\MonthNames;
 use App\Services\MonthStatusResolver;
+use App\Support\AuthorizesLivewireWrite;
 use Livewire\Component;
 
 class StudentPanel extends Component
 {
+    use AuthorizesLivewireWrite;
     public ?int $studentId = null;
     public string $tab = 'payments'; // payments | settings | notes | siblings
 
@@ -98,6 +100,8 @@ class StudentPanel extends Component
 
     public function saveBasic()
     {
+        $this->assertCanWrite();
+
         // Normalize empty-string date inputs to null BEFORE validating —
         // Laravel treats "" as an invalid date and breaks after_or_equal comparisons.
         $this->enrolled_at = $this->enrolled_at ?: null;
@@ -125,6 +129,8 @@ class StudentPanel extends Component
 
     public function toggleFlag(string $flag)
     {
+        $this->assertCanWrite();
+
         $allowed = ['is_hidden', 'is_blocked_messages', 'is_in_person', 'excluded_from_send_all', 'included_in_send_all', 'allow_sms', 'allow_whatsapp'];
         if (!in_array($flag, $allowed, true)) return;
         $student = Student::findOrFail($this->studentId);
@@ -135,6 +141,8 @@ class StudentPanel extends Component
 
     public function addSuspension()
     {
+        $this->assertCanWrite();
+
         $this->validate([
             'suspend_starts_at' => 'required|date',
             'suspend_ends_at' => 'nullable|date|after_or_equal:suspend_starts_at',
@@ -156,12 +164,16 @@ class StudentPanel extends Component
 
     public function removeSuspension(int $id)
     {
+        $this->assertCanWrite();
+
         StudentSuspension::where('id', $id)->where('student_id', $this->studentId)->delete();
         $this->dispatch('flash', message: __('flash.deleted'));
     }
 
     public function addOverride()
     {
+        $this->assertCanWrite();
+
         $this->validate([
             'override_month' => 'required|integer|min:1|max:12',
             'override_amount' => 'required|numeric|min:0',
@@ -188,12 +200,16 @@ class StudentPanel extends Component
 
     public function removeOverride(int $id)
     {
+        $this->assertCanWrite();
+
         StudentMonthlyFeeOverride::where('id', $id)->where('student_id', $this->studentId)->delete();
         $this->dispatch('flash', message: __('flash.deleted'));
     }
 
     public function addSurcharge()
     {
+        $this->assertCanWrite();
+
         $this->validate([
             'surcharge_month' => 'required|integer|min:1|max:12',
             'surcharge_amount' => 'required|numeric|min:0',
@@ -216,6 +232,8 @@ class StudentPanel extends Component
 
     public function removeSurcharge(int $id)
     {
+        $this->assertCanWrite();
+
         StudentSurcharge::where('id', $id)->where('student_id', $this->studentId)->delete();
         $this->dispatch('flash', message: __('flash.deleted'));
     }

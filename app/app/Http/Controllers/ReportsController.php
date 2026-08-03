@@ -70,21 +70,33 @@ class ReportsController extends Controller
         $topDebtors = array_slice($topDebtors, 0, 30);
         unset($allStudents);
 
-        // التحصيل الشهري للسنة
-        $monthlyTotals = [];
-        for ($m = 1; $m <= 12; $m++) {
-            $cash = (float) Payment::where('period_year', $year)->where('period_month', $m)->where('method', 'cash')->sum('amount');
-            $bank = (float) Payment::where('period_year', $year)->where('period_month', $m)->where('method', 'bank')->sum('amount');
-            $monthlyTotals[$m] = ['cash' => $cash, 'bank' => $bank, 'total' => $cash + $bank];
+        // Monthly payment totals — one GROUP BY query instead of 24 individual sums.
+        $monthlyTotals = array_fill(1, 12, ['cash' => 0.0, 'bank' => 0.0, 'total' => 0.0]);
+        $rows = Payment::query()
+            ->where('period_year', $year)
+            ->whereIn('method', ['cash', 'bank'])
+            ->selectRaw('period_month, method, SUM(amount) as total')
+            ->groupBy('period_month', 'method')
+            ->get();
+        foreach ($rows as $row) {
+            $m = (int) $row->period_month;
+            if ($m < 1 || $m > 12) continue;
+            $monthlyTotals[$m][$row->method] = (float) $row->total;
+            $monthlyTotals[$m]['total'] += (float) $row->total;
         }
 
-        // تكلفة الرسائل بالشهر
-        $messagesCostByMonth = [];
-        for ($m = 1; $m <= 12; $m++) {
-            $messagesCostByMonth[$m] = (float) MessageLog::whereYear('created_at', $year)
-                ->whereMonth('created_at', $m)
-                ->sum('cost');
-        }
+        // Message cost per month — one query, bucketed in PHP for DB-portability.
+        $messagesCostByMonth = array_fill(1, 12, 0.0);
+        MessageLog::query()
+            ->whereYear('created_at', $year)
+            ->select(['created_at', 'cost'])
+            ->orderBy('id')
+            ->chunk(2000, function ($chunk) use (&$messagesCostByMonth) {
+                foreach ($chunk as $row) {
+                    $m = (int) $row->created_at->format('n');
+                    $messagesCostByMonth[$m] += (float) $row->cost;
+                }
+            });
 
         $months = MonthNames::full();
 

@@ -6,11 +6,13 @@ use App\Models\Student;
 use App\Services\FeeResolver;
 use App\Services\MonthNames;
 use App\Services\MonthStatusResolver;
+use App\Support\AuthorizesLivewireWrite;
 use Livewire\Component;
 use Livewire\WithPagination;
 
 class StudentsGrid extends Component
 {
+    use AuthorizesLivewireWrite;
     use WithPagination;
 
     public function paginationView(): string { return 'pagination::custom'; }
@@ -71,6 +73,8 @@ class StudentsGrid extends Component
 
     public function toggleFlag(int $studentId, string $flag)
     {
+        $this->assertCanWrite();
+
         $allowed = ['is_hidden', 'is_blocked_messages', 'is_in_person', 'excluded_from_send_all', 'included_in_send_all', 'allow_sms'];
         if (!in_array($flag, $allowed, true)) return;
 
@@ -83,6 +87,8 @@ class StudentsGrid extends Component
 
     public function bulkAction(array $ids, string $flag, bool $value)
     {
+        $this->assertCanWrite();
+
         $allowed = ['is_hidden', 'is_blocked_messages', 'is_in_person', 'excluded_from_send_all'];
         if (!in_array($flag, $allowed, true)) return;
         Student::whereIn('id', $ids)->update([$flag => $value]);

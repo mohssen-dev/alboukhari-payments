@@ -7,12 +7,14 @@ use App\Models\Student;
 use App\Models\Template;
 use App\Services\CampaignSender;
 use App\Services\TemplateRenderer;
+use App\Support\AuthorizesLivewireWrite;
 use App\Support\SmsCounter;
 use Livewire\Attributes\On;
 use Livewire\Component;
 
 class SendSingleMessage extends Component
 {
+    use AuthorizesLivewireWrite;
     public bool $isOpen = false;
     public ?int $studentId = null;
     public string $studentName = '';
@@ -69,6 +71,8 @@ class SendSingleMessage extends Component
 
     public function send(): void
     {
+        $this->assertCanWrite();
+
         $this->validate([
             'body' => 'required|string|min:3',
         ]);

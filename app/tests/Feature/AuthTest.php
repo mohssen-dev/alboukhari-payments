@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\User;
+use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
@@ -10,6 +11,14 @@ use Tests\TestCase;
 class AuthTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        // Skip CSRF check for POST-based auth tests — CSRF is exercised in
+        // browser integration, not here where we test controller behaviour.
+        $this->withoutMiddleware(PreventRequestForgery::class);
+    }
 
     public function test_login_page_renders_for_guests(): void
     {
