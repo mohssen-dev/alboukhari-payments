@@ -23,19 +23,25 @@ class HaltService
     }
 
     /**
-     * Quota counter ساعي بسيط في الـ cache (يتلاشى تلقائياً بعد ساعتين).
+     * Hourly quota counter — atomic via Cache::increment (rolls back if over max).
+     * The read-modify-write pattern that used to be here allowed two concurrent
+     * senders to each read `used=100`, both pass the check, both write `101` —
+     * silently over-shooting the hourly cap.
      */
     public static function tryTakeQuota(int $count = 1): bool
     {
         $hourKey = 'bg:hour:' . date('YmdH');
-        $used = (int) Cache::get($hourKey, 0);
         $max = (int) Setting::get('bulkgate_max_per_hour', 2500);
 
-        if ($used + $count > $max) {
+        // Ensure the key exists so increment() works on all cache drivers.
+        Cache::add($hourKey, 0, now()->addHours(2));
+        $newTotal = Cache::increment($hourKey, $count);
+
+        if ($newTotal > $max) {
+            // Roll back the increment; caller will halt/pause the batch.
+            Cache::decrement($hourKey, $count);
             return false;
         }
-
-        Cache::put($hourKey, $used + $count, now()->addHours(2));
         return true;
     }
 
