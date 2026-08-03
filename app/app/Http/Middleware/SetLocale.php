@@ -13,7 +13,10 @@ class SetLocale
 
     public function handle(Request $request, Closure $next)
     {
-        $locale = session('locale', self::DEFAULT);
+        // Priority: session > app config default > hard-coded English.
+        $locale = session('locale')
+            ?? config('app.locale', self::DEFAULT);
+
         if (!in_array($locale, self::SUPPORTED, true)) {
             $locale = self::DEFAULT;
         }
