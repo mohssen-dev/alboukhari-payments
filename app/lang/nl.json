@@ -563,5 +563,10 @@
     "send.scheduled_ok": "⏰ Campagne ingepland voor :time (~:count ontvangers). Wordt automatisch verzonden.",
     "campaign.cancel_scheduled": "Annuleren",
     "campaign.canceled_ok": "Ingeplande campagne geannuleerd ✓",
-    "campaign.cancel_not_allowed": "Alleen ingeplande (nog niet verzonden) campagnes kunnen worden geannuleerd."
+    "campaign.cancel_not_allowed": "Alleen ingeplande (nog niet verzonden) campagnes kunnen worden geannuleerd.",
+    "settings.credit_balance": "BulkGate-tegoed",
+    "settings.credit_refresh": "Vernieuwen",
+    "settings.credit_checked_at": "Laatst gecontroleerd: :time (ververst elke 5 min)",
+    "settings.credit_unavailable": "Kon tegoed niet ophalen — controleer de gegevens of vernieuw.",
+    "settings.credit_low": "Laag tegoed — vul binnenkort aan."
 }

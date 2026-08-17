@@ -563,5 +563,10 @@
     "send.scheduled_ok": "⏰ Campaign scheduled for :time (~:count recipients). It fires automatically.",
     "campaign.cancel_scheduled": "Cancel",
     "campaign.canceled_ok": "Scheduled campaign canceled ✓",
-    "campaign.cancel_not_allowed": "Only scheduled (not yet fired) campaigns can be canceled."
+    "campaign.cancel_not_allowed": "Only scheduled (not yet fired) campaigns can be canceled.",
+    "settings.credit_balance": "BulkGate credit balance",
+    "settings.credit_refresh": "Refresh",
+    "settings.credit_checked_at": "Last checked: :time (auto-refreshes every 5 min)",
+    "settings.credit_unavailable": "Could not fetch balance — check credentials or try refresh.",
+    "settings.credit_low": "Low credit — top up soon."
 }

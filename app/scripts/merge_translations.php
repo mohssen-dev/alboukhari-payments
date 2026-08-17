@@ -380,6 +380,13 @@ $translations = [
     'campaign.cancel_scheduled'   => ['en' => 'Cancel', 'nl' => 'Annuleren', 'ar' => 'إلغاء'],
     'campaign.canceled_ok'        => ['en' => 'Scheduled campaign canceled ✓', 'nl' => 'Ingeplande campagne geannuleerd ✓', 'ar' => 'أُلغيت الحملة المجدولة ✓'],
     'campaign.cancel_not_allowed' => ['en' => 'Only scheduled (not yet fired) campaigns can be canceled.', 'nl' => 'Alleen ingeplande (nog niet verzonden) campagnes kunnen worden geannuleerd.', 'ar' => 'لا يمكن إلغاء إلا الحملات المجدولة التي لم تُطلق بعد.'],
+
+    // ---------- BulkGate credit balance widget ----------
+    'settings.credit_balance'     => ['en' => 'BulkGate credit balance', 'nl' => 'BulkGate-tegoed', 'ar' => 'رصيد BulkGate المتبقي'],
+    'settings.credit_refresh'     => ['en' => 'Refresh', 'nl' => 'Vernieuwen', 'ar' => 'تحديث'],
+    'settings.credit_checked_at'  => ['en' => 'Last checked: :time (auto-refreshes every 5 min)', 'nl' => 'Laatst gecontroleerd: :time (ververst elke 5 min)', 'ar' => 'آخر فحص: :time (يتحدث تلقائياً كل 5 دقائق)'],
+    'settings.credit_unavailable' => ['en' => 'Could not fetch balance — check credentials or try refresh.', 'nl' => 'Kon tegoed niet ophalen — controleer de gegevens of vernieuw.', 'ar' => 'تعذّر جلب الرصيد — تحقق من البيانات أو اضغط تحديث.'],
+    'settings.credit_low'         => ['en' => 'Low credit — top up soon.', 'nl' => 'Laag tegoed — vul binnenkort aan.', 'ar' => 'الرصيد منخفض — اشحن قريباً.'],
 ];
 
 $locales = ['en', 'nl', 'ar'];

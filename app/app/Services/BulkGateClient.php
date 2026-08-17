@@ -14,6 +14,39 @@ use Illuminate\Support\Facades\Log;
 class BulkGateClient
 {
     private const URL = 'https://portal.bulkgate.com/api/2.0/advanced/transactional';
+    private const INFO_URL = 'https://portal.bulkgate.com/api/2.0/advanced/info';
+
+    /**
+     * Account info (credit balance) — no SMS is sent.
+     * Returns ['credit' => float, 'currency' => string, 'checked_at' => string].
+     * Throws on missing credentials or API failure — callers decide how to degrade.
+     */
+    public function info(): array
+    {
+        $appId = Setting::get('bulkgate_app_id') ?: env('BULKGATE_APP_ID');
+        $appToken = Setting::get('bulkgate_app_token') ?: env('BULKGATE_APP_TOKEN');
+
+        if (empty($appId) || empty($appToken)) {
+            throw new \RuntimeException(__('error.bulkgate_not_configured'));
+        }
+
+        $response = Http::timeout(8)->post(self::INFO_URL, [
+            'application_id' => $appId,
+            'application_token' => $appToken,
+        ]);
+
+        $data = $response->json();
+        if (!$response->successful() || !isset($data['data']['credit'])) {
+            $err = $data['error'] ?? ('HTTP ' . $response->status());
+            throw new \RuntimeException('BulkGate info failed: ' . $err);
+        }
+
+        return [
+            'credit' => (float) $data['data']['credit'],
+            'currency' => (string) ($data['data']['currency'] ?? 'credits'),
+            'checked_at' => now()->format('Y-m-d H:i'),
+        ];
+    }
 
     public function send(string|array $phones, string $text, ?string $tag = null): array
     {

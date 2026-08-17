@@ -49,7 +49,27 @@ class SettingsController extends Controller
             $settings[$key . '_masked'] = !empty(Setting::get($key)) ? '••••••••••' : '';
         }
 
-        return view('settings', compact('settings', 'tab'));
+        // BulkGate credit balance — cached 5 min so the tab stays fast and we
+        // don't hammer the API. Failures are NOT cached (next visit retries)
+        // and degrade to null → the blade shows a retry state, never a 500.
+        $bgCredit = \Illuminate\Support\Facades\Cache::get('bulkgate:credit');
+        if ($bgCredit === null) {
+            try {
+                $bgCredit = app(\App\Services\BulkGateClient::class)->info();
+                \Illuminate\Support\Facades\Cache::put('bulkgate:credit', $bgCredit, now()->addMinutes(5));
+            } catch (\Throwable $e) {
+                $bgCredit = null; // not configured or API down — blade handles it
+            }
+        }
+
+        return view('settings', compact('settings', 'tab', 'bgCredit'));
+    }
+
+    /** Force-refresh the cached BulkGate credit (button in the BulkGate tab). */
+    public function refreshCredit()
+    {
+        \Illuminate\Support\Facades\Cache::forget('bulkgate:credit');
+        return redirect()->route('settings', ['tab' => 'bulkgate']);
     }
 
     public function update(Request $request)

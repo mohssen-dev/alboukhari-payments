@@ -168,6 +168,31 @@
                     </div>
                 </form>
 
+                {{-- Credit balance --}}
+                <div class="page-card" style="margin-bottom:14px">
+                    <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+                        <div>
+                            <h3 style="margin:0 0 4px">💳 {{ __('settings.credit_balance') }}</h3>
+                            @if ($bgCredit)
+                                <div style="font-size:28px;font-weight:800;color:{{ $bgCredit['credit'] < 100 ? 'var(--color-danger)' : 'var(--color-success)' }}">
+                                    {{ number_format($bgCredit['credit'], 1) }}
+                                    <span style="font-size:13px;font-weight:600;color:var(--color-text-muted)">{{ $bgCredit['currency'] }}</span>
+                                </div>
+                                <div class="field-help">{{ __('settings.credit_checked_at', ['time' => $bgCredit['checked_at']]) }}</div>
+                                @if ($bgCredit['credit'] < 100)
+                                    <div class="pill pill-danger" style="margin-top:6px">⚠️ {{ __('settings.credit_low') }}</div>
+                                @endif
+                            @else
+                                <div class="text-muted">{{ __('settings.credit_unavailable') }}</div>
+                            @endif
+                        </div>
+                        <form method="POST" action="{{ route('settings.refresh_credit') }}">
+                            @csrf
+                            <button type="submit" class="btn btn-sm">🔄 {{ __('settings.credit_refresh') }}</button>
+                        </form>
+                    </div>
+                </div>
+
                 {{-- Test SMS — separate form --}}
                 <div class="page-card">
                     <h3 style="margin-top:0">🧪 {{ __('Test connection') }}</h3>
