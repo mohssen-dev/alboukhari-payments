@@ -90,12 +90,35 @@
             </div>
         </div>
 
+        {{-- Schedule for later --}}
+        <div class="form-group" style="background:var(--color-surface-alt);padding:12px;border-radius:var(--radius)">
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:600;margin-bottom:0">
+                <input type="checkbox" wire:model.live="scheduleEnabled">
+                ⏰ {{ __('send.schedule_toggle') }}
+            </label>
+            @if ($scheduleEnabled)
+                <div style="margin-top:10px">
+                    <label>{{ __('send.schedule_time') }}</label>
+                    <input type="datetime-local" class="form-input" wire:model="scheduledAt" min="{{ now()->addMinutes(2)->format('Y-m-d\TH:i') }}" style="max-width:260px">
+                    @error('scheduledAt') <div class="field-error">{{ $message }}</div> @enderror
+                    <div class="field-help">{{ __('send.schedule_hint') }}</div>
+                </div>
+            @endif
+        </div>
+
         <div style="display:flex;gap:8px;margin-top:16px">
-            <button class="btn btn-soft-primary" wire:click="preview" wire:loading.attr="disabled" wire:target="preview,launch" style="flex:1">👁️ {{ __('send.preview') }}</button>
-            <button class="btn btn-success" wire:click="launch" wire:confirm="{{ __('common.confirm') }}" wire:loading.attr="disabled" wire:target="preview,launch,sendTest" style="flex:1">
-                <span wire:loading.remove wire:target="launch">🚀 {{ __('send.launch') }}</span>
-                <span wire:loading wire:target="launch">⏳ {{ __('send.launching') }}</span>
-            </button>
+            <button class="btn btn-soft-primary" wire:click="preview" wire:loading.attr="disabled" wire:target="preview,launch,schedule" style="flex:1">👁️ {{ __('send.preview') }}</button>
+            @if ($scheduleEnabled)
+                <button class="btn btn-primary" wire:click="schedule" wire:confirm="{{ __('common.confirm') }}" wire:loading.attr="disabled" wire:target="preview,launch,schedule,sendTest" style="flex:1">
+                    <span wire:loading.remove wire:target="schedule">⏰ {{ __('send.schedule_btn') }}</span>
+                    <span wire:loading wire:target="schedule">⏳ …</span>
+                </button>
+            @else
+                <button class="btn btn-success" wire:click="launch" wire:confirm="{{ __('common.confirm') }}" wire:loading.attr="disabled" wire:target="preview,launch,schedule,sendTest" style="flex:1">
+                    <span wire:loading.remove wire:target="launch">🚀 {{ __('send.launch') }}</span>
+                    <span wire:loading wire:target="launch">⏳ {{ __('send.launching') }}</span>
+                </button>
+            @endif
         </div>
 
         @if ($resultMessage)

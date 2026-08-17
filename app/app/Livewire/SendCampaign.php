@@ -36,6 +36,10 @@ class SendCampaign extends Component
     public ?int $campaignId = null;
     public string $resultMessage = '';
 
+    // Scheduling: prepare the campaign now, fire it later via the scheduler.
+    public bool $scheduleEnabled = false;
+    public string $scheduledAt = '';
+
     // Labels are i18n keys — rendered with __() in the blade so every locale
     // sees its own language (they were hardcoded Arabic before).
     private const TYPES = [
@@ -154,6 +158,54 @@ class SendCampaign extends Component
         } catch (\Throwable $e) {
             $this->dispatch('flash', message: __('flash.send_error') . ' ' . $e->getMessage());
         }
+    }
+
+    /**
+     * Save the campaign with a future fire time instead of sending now.
+     * Recipients are NOT built here — campaigns:dispatch-scheduled builds
+     * them at fire time so the list reflects payments made in between.
+     */
+    public function schedule()
+    {
+        $this->assertCanWrite();
+
+        if ($this->campaignId) {
+            $this->dispatch('flash', message: __('send.already_launched'));
+            return;
+        }
+
+        $this->validate([
+            'scheduledAt' => 'required|date|after:now',
+        ], [], ['scheduledAt' => __('send.schedule_time')]);
+
+        // Preview to catch empty target lists early (final list is rebuilt at fire time).
+        $this->preview();
+        if (!$this->previewStats || $this->previewStats['total_recipients'] === 0) {
+            $this->dispatch('flash', message: __('flash.no_recipients'));
+            return;
+        }
+
+        $campaign = Campaign::create([
+            'type' => $this->type,
+            'status' => 'queued',
+            'scheduled_at' => $this->scheduledAt,
+            'period_year' => $this->year,
+            'period_month' => $this->month,
+            'threshold_amount' => $this->thresholdAmount,
+            'template_id' => $this->templateId,
+            'body_template' => $this->body,
+            'group_by_family' => $this->groupByFamily,
+            'tag' => $this->tag ?: $this->type,
+            'total_recipients' => $this->previewStats['total_recipients'],
+            'estimated_cost' => $this->previewStats['estimated_cost'] ?? 0,
+        ]);
+
+        $this->campaignId = $campaign->id;
+        $this->resultMessage = __('send.scheduled_ok', [
+            'time' => $campaign->scheduled_at->format('Y-m-d H:i'),
+            'count' => $this->previewStats['total_recipients'],
+        ]);
+        $this->dispatch('flash', message: $this->resultMessage);
     }
 
     public function launch()

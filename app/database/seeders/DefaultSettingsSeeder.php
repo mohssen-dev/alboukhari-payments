@@ -19,7 +19,9 @@ class DefaultSettingsSeeder extends Seeder
             // ====== BulkGate (متطابقة مع السكربت الأصلي) ======
             'bulkgate_app_id' => '',
             'bulkgate_app_token' => '',
-            'bulkgate_sender_id' => 'text',                  // من السكربت
+            // BulkGate v2 sender types are gSystem/gShort/gText/gMobile/gOwn —
+            // the working Apps Script used 'gText' ('text' is not valid).
+            'bulkgate_sender_id' => 'gText',
             'bulkgate_sender_id_value' => 'Al Boukhari',     // من السكربت
             'bulkgate_default_country' => 'NL',              // من السكربت
             'bulkgate_max_per_hour' => '2500',               // BG_MAX_PER_HOUR

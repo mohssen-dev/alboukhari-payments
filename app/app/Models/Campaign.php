@@ -22,7 +22,7 @@ class Campaign extends Model
     }
 
     protected $fillable = [
-        'type', 'status', 'period_year', 'period_month', 'threshold_amount',
+        'type', 'status', 'scheduled_at', 'period_year', 'period_month', 'threshold_amount',
         'template_id', 'body_template', 'tag', 'group_by_family',
         'total_recipients', 'sent_count', 'failed_count', 'skipped_count',
         'estimated_cost', 'actual_cost',
@@ -31,12 +31,19 @@ class Campaign extends Model
 
     protected $casts = [
         'group_by_family' => 'boolean',
+        'scheduled_at' => 'datetime',
         'started_at' => 'datetime',
         'finished_at' => 'datetime',
         'threshold_amount' => 'decimal:2',
         'estimated_cost' => 'decimal:4',
         'actual_cost' => 'decimal:4',
     ];
+
+    /** A queued campaign with a future/past scheduled_at not yet fired. */
+    public function isScheduled(): bool
+    {
+        return $this->status === 'queued' && $this->scheduled_at !== null;
+    }
 
     public function recipients(): HasMany
     {

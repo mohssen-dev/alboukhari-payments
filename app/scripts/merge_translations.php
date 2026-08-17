@@ -370,6 +370,16 @@ $translations = [
     'errors.419_message' => ['en' => 'Your session expired. Go back and try again.', 'nl' => 'Uw sessie is verlopen. Ga terug en probeer opnieuw.', 'ar' => 'انتهت جلستك. ارجع وحاول مرة أخرى.'],
     'errors.500_title'   => ['en' => 'Server error', 'nl' => 'Serverfout', 'ar' => 'خطأ في الخادم'],
     'errors.500_message' => ['en' => 'Something went wrong on our side. Please try again shortly.', 'nl' => 'Er ging iets mis aan onze kant. Probeer het zo weer.', 'ar' => 'حدث خطأ من جهتنا. حاول مرة أخرى بعد قليل.'],
+
+    // ---------- Scheduled campaigns (2026-08-18) ----------
+    'send.schedule_toggle' => ['en' => 'Schedule for later', 'nl' => 'Inplannen voor later', 'ar' => 'جدولة الإرسال لوقت لاحق'],
+    'send.schedule_time'   => ['en' => 'Send at', 'nl' => 'Verzenden om', 'ar' => 'وقت الإرسال'],
+    'send.schedule_btn'    => ['en' => 'Schedule campaign', 'nl' => 'Campagne inplannen', 'ar' => 'جدولة الحملة'],
+    'send.schedule_hint'   => ['en' => 'The recipient list is rebuilt at send time — students who pay in between are dropped automatically.', 'nl' => 'De ontvangerslijst wordt opnieuw opgebouwd op verzendtijd — wie intussen betaalt valt automatisch af.', 'ar' => 'تُبنى قائمة المستلمين عند وقت الإرسال — من يدفع قبل الموعد يُستبعد تلقائياً.'],
+    'send.scheduled_ok'    => ['en' => '⏰ Campaign scheduled for :time (~:count recipients). It fires automatically.', 'nl' => '⏰ Campagne ingepland voor :time (~:count ontvangers). Wordt automatisch verzonden.', 'ar' => '⏰ جُدولت الحملة في :time (~:count مستلماً). ستُطلق تلقائياً.'],
+    'campaign.cancel_scheduled'   => ['en' => 'Cancel', 'nl' => 'Annuleren', 'ar' => 'إلغاء'],
+    'campaign.canceled_ok'        => ['en' => 'Scheduled campaign canceled ✓', 'nl' => 'Ingeplande campagne geannuleerd ✓', 'ar' => 'أُلغيت الحملة المجدولة ✓'],
+    'campaign.cancel_not_allowed' => ['en' => 'Only scheduled (not yet fired) campaigns can be canceled.', 'nl' => 'Alleen ingeplande (nog niet verzonden) campagnes kunnen worden geannuleerd.', 'ar' => 'لا يمكن إلغاء إلا الحملات المجدولة التي لم تُطلق بعد.'],
 ];
 
 $locales = ['en', 'nl', 'ar'];

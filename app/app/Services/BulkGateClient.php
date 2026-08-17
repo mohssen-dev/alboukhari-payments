@@ -19,7 +19,7 @@ class BulkGateClient
     {
         $appId = Setting::get('bulkgate_app_id') ?: env('BULKGATE_APP_ID');
         $appToken = Setting::get('bulkgate_app_token') ?: env('BULKGATE_APP_TOKEN');
-        $senderId = Setting::get('bulkgate_sender_id', 'text');
+        $senderId = Setting::get('bulkgate_sender_id', 'gText');
         $senderValue = Setting::get('bulkgate_sender_id_value', 'Al Boukhari');
         $country = Setting::get('bulkgate_default_country', 'NL');
         $forceAscii = Setting::get('force_ascii', '1') === '1';

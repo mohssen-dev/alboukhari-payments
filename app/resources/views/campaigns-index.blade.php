@@ -69,10 +69,19 @@
                                 $statusCls = $statusPills[$c->status] ?? 'pill-muted';
                             @endphp
                             <span class="pill {{ $statusCls }}">{{ $statusLabel }}</span>
+                            @if ($c->isScheduled())
+                                <div class="fs-xs text-muted" style="margin-top:3px;white-space:nowrap">⏰ {{ $c->scheduled_at->format('Y-m-d H:i') }}</div>
+                            @endif
                         </td>
                         <td class="text-muted fs-xs">{{ $c->created_at->format('Y-m-d H:i') }}</td>
-                        <td>
+                        <td style="white-space:nowrap">
                             <a href="{{ route('campaigns.show', $c) }}" class="btn btn-sm btn-soft-primary">👁️ {{ __('common.open') }}</a>
+                            @if ($c->isScheduled() && auth()->user()?->canWrite())
+                                <form method="POST" action="{{ route('campaigns.cancel', $c) }}" style="display:inline" onsubmit="return confirm('{{ __('common.confirm') }}')">
+                                    @csrf
+                                    <button type="submit" class="btn btn-sm btn-soft-danger" title="{{ __('campaign.cancel_scheduled') }}">✕ {{ __('campaign.cancel_scheduled') }}</button>
+                                </form>
+                            @endif
                         </td>
                     </tr>
                 @empty

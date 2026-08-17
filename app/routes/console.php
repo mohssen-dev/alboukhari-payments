@@ -24,6 +24,18 @@ Schedule::command('reminders:dispatch')
     ->timezone(config('app.timezone'))
     ->onOneServer();
 
+// الحملات المجدولة — كل دقيقة، تُطلق ما حان وقته
+Schedule::command('campaigns:dispatch-scheduled')
+    ->everyMinute()
+    ->withoutOverlapping(10)
+    ->onOneServer();
+
+// Heartbeat: يكتب آخر مرة اشتغل فيها الـ scheduler — يُستخدم للتحقق من أن
+// كرون hPanel مضبوط فعلاً (Cache::get('scheduler_last_run')).
+Schedule::call(function () {
+    \Illuminate\Support\Facades\Cache::put('scheduler_last_run', now()->toDateTimeString(), now()->addDay());
+})->everyMinute()->name('scheduler-heartbeat');
+
 // Daily database backup at 03:00 — keeps last 14 backups
 Schedule::command('db:backup --keep=14')
     ->dailyAt('03:00')

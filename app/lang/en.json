@@ -555,5 +555,13 @@
     "errors.419_title": "Session expired",
     "errors.419_message": "Your session expired. Go back and try again.",
     "errors.500_title": "Server error",
-    "errors.500_message": "Something went wrong on our side. Please try again shortly."
+    "errors.500_message": "Something went wrong on our side. Please try again shortly.",
+    "send.schedule_toggle": "Schedule for later",
+    "send.schedule_time": "Send at",
+    "send.schedule_btn": "Schedule campaign",
+    "send.schedule_hint": "The recipient list is rebuilt at send time — students who pay in between are dropped automatically.",
+    "send.scheduled_ok": "⏰ Campaign scheduled for :time (~:count recipients). It fires automatically.",
+    "campaign.cancel_scheduled": "Cancel",
+    "campaign.canceled_ok": "Scheduled campaign canceled ✓",
+    "campaign.cancel_not_allowed": "Only scheduled (not yet fired) campaigns can be canceled."
 }

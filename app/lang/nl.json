@@ -555,5 +555,13 @@
     "errors.419_title": "Sessie verlopen",
     "errors.419_message": "Uw sessie is verlopen. Ga terug en probeer opnieuw.",
     "errors.500_title": "Serverfout",
-    "errors.500_message": "Er ging iets mis aan onze kant. Probeer het zo weer."
+    "errors.500_message": "Er ging iets mis aan onze kant. Probeer het zo weer.",
+    "send.schedule_toggle": "Inplannen voor later",
+    "send.schedule_time": "Verzenden om",
+    "send.schedule_btn": "Campagne inplannen",
+    "send.schedule_hint": "De ontvangerslijst wordt opnieuw opgebouwd op verzendtijd — wie intussen betaalt valt automatisch af.",
+    "send.scheduled_ok": "⏰ Campagne ingepland voor :time (~:count ontvangers). Wordt automatisch verzonden.",
+    "campaign.cancel_scheduled": "Annuleren",
+    "campaign.canceled_ok": "Ingeplande campagne geannuleerd ✓",
+    "campaign.cancel_not_allowed": "Alleen ingeplande (nog niet verzonden) campagnes kunnen worden geannuleerd."
 }

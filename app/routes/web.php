@@ -53,6 +53,8 @@ Route::middleware('auth')->group(function () {
     Route::middleware('role:admin,staff')->group(function () {
         Route::get('/quick-entry', [QuickEntryController::class, 'index'])->name('quick-entry');
 
+        Route::post('/campaigns/{campaign}/cancel', [CampaignsController::class, 'cancel'])->name('campaigns.cancel');
+
         Route::get('/send', [SendController::class, 'form'])->name('send.form');
         Route::post('/halt', [SendController::class, 'halt'])->name('halt');
 
