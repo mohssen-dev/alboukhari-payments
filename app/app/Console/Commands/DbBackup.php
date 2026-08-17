@@ -43,6 +43,11 @@ class DbBackup extends Command
             $host = config("database.connections.{$connection}.host");
             $port = config("database.connections.{$connection}.port", 3306);
             $dest = "{$dir}/db-{$stamp}.sql";
+            // 'localhost' works for PDO (unix socket) but mysqldump resolves
+            // it to ::1 and MySQL grants only cover 127.0.0.1 → 1045 denied.
+            if ($host === 'localhost' || $host === '') {
+                $host = '127.0.0.1';
+            }
             // --no-tablespaces: shared-hosting MySQL users lack the PROCESS
             // privilege, so without it mysqldump exits 2 and the nightly
             // backup silently produces an empty file (verified on Hostinger).
