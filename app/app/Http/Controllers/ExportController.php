@@ -25,7 +25,8 @@ class ExportController extends Controller
     public function statement(Student $student, Request $request)
     {
         $year = (int) ($request->input('year') ?: date('Y'));
-        $student->load(['payments', 'feeOverrides', 'surcharges', 'family', 'suspensions']);
+        // markers included — without it legacy_late months print as 'unpaid'.
+        $student->load(['payments', 'markers', 'feeOverrides', 'surcharges', 'family', 'suspensions']);
 
         $rows = [];
         for ($m = 1; $m <= 12; $m++) {

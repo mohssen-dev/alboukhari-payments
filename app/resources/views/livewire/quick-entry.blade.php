@@ -125,9 +125,14 @@
                 x-data
                 x-init="$nextTick(() => document.getElementById('quick-amount').focus())"
                 @keydown.window.escape="$wire.set('selectedStudentId', null)"
-                @keydown.window.n.prevent="$wire.setMethod('cash')"
-                @keydown.window.b.prevent="$wire.setMethod('bank')"
-                @keydown.window.ctrl.enter.prevent="$wire.save()"
+                {{-- n/b hotkeys must not fire while typing in an input/textarea
+                     (they were swallowing those letters in the Note field). --}}
+                @keydown.window="
+                    if (['INPUT','TEXTAREA','SELECT'].includes($event.target.tagName)) return;
+                    if ($event.key === 'n') { $event.preventDefault(); $wire.setMethod('cash'); }
+                    if ($event.key === 'b') { $event.preventDefault(); $wire.setMethod('bank'); }
+                "
+                @keydown.window.ctrl.enter.prevent="if (!window.__qeSaving) { window.__qeSaving = true; $wire.save().finally(() => window.__qeSaving = false); }"
             >
                 <div style="background:var(--color-warning-soft);padding:14px;border-radius:var(--radius);margin-bottom:14px;display:flex;justify-content:space-between;align-items:center">
                     <div>

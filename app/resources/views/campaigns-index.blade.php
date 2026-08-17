@@ -63,7 +63,7 @@
                         <td class="fw-700">{{ number_format($c->actual_cost, 2) }}€</td>
                         <td>
                             @php
-                                $statusKey = 'campaign.status.' . $c->status;
+                                $statusKey = 'campaigns.status.' . $c->status;
                                 $statusLabel = __($statusKey);
                                 if ($statusLabel === $statusKey) { $statusLabel = $c->status; }
                                 $statusCls = $statusPills[$c->status] ?? 'pill-muted';

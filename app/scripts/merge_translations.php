@@ -314,6 +314,62 @@ $translations = [
     'sms_meter.hint_room'              => ['en' => ':remaining characters left in this segment.', 'nl' => 'Nog :remaining tekens in dit segment.', 'ar' => 'متبقٍّ :remaining حرفاً في هذا الجزء.'],
     'sms_meter.hint_close'             => ['en' => 'Almost at the next segment (:remaining chars left).', 'nl' => 'Bijna aan het volgende segment (:remaining tekens over).', 'ar' => 'قريب من الجزء التالي (:remaining حرفاً متبقّياً).'],
     'sms_meter.hint_overflow'          => ['en' => 'Message will send as :segments parts. Remove :chars chars to save :reduce.', 'nl' => 'Bericht wordt verstuurd als :segments delen. Verwijder :chars tekens om :reduce te besparen.', 'ar' => 'ستُرسل الرسالة كـ :segments أجزاء. احذف :chars حرفاً لتوفير :reduce.'],
+
+    // ---------- Batch: deep-audit fixes (2026-08-17) ----------
+
+    // Single-message send results (were missing → raw keys shown as toasts)
+    'send.single_sent' => ['en' => '✓ Message sent — status: :status, cost: €:cost', 'nl' => '✓ Bericht verzonden — status: :status, kosten: €:cost', 'ar' => '✓ أُرسلت الرسالة — الحالة: :status، التكلفة: €:cost'],
+    'send.send_failed' => ['en' => '✗ Send failed: :error', 'nl' => '✗ Verzenden mislukt: :error', 'ar' => '✗ فشل الإرسال: :error'],
+
+    // Campaign-type dropdown (was hardcoded Arabic for every locale)
+    'send.type_send_all'        => ['en' => '📨 Send to all', 'nl' => '📨 Naar iedereen', 'ar' => '📨 إرسال جماعي'],
+    'send.type_unpaid_by_month' => ['en' => '❓ Unpaid for a month', 'nl' => '❓ Niet betaald voor een maand', 'ar' => '❓ لمن لم يدفع شهراً'],
+    'send.type_late_mid_month'  => ['en' => '⏰ Officially late', 'nl' => '⏰ Officieel te laat', 'ar' => '⏰ للمتأخرين رسمياً'],
+    'send.type_paid_less_than'  => ['en' => '💰 Paid less than…', 'nl' => '💰 Minder betaald dan…', 'ar' => '💰 لمن دفع أقل من مبلغ'],
+    'send.type_balance_above'   => ['en' => '📊 Balance above…', 'nl' => '📊 Saldo boven…', 'ar' => '📊 لمن عليه أكثر من مبلغ'],
+    'send.already_launched'     => ['en' => 'This campaign was already launched — refresh the page to send a new one.', 'nl' => 'Deze campagne is al gelanceerd — ververs de pagina om een nieuwe te sturen.', 'ar' => 'أُطلقت هذه الحملة بالفعل — حدّث الصفحة لإرسال حملة جديدة.'],
+    'send.launching'            => ['en' => 'Sending…', 'nl' => 'Bezig met verzenden…', 'ar' => 'جارٍ الإرسال…'],
+
+    // Campaign type + status labels (log pages showed raw DB slugs)
+    'campaigns.type.send_all'          => ['en' => 'Send to all', 'nl' => 'Naar iedereen', 'ar' => 'إرسال جماعي'],
+    'campaigns.type.unpaid_by_month'   => ['en' => 'Unpaid (month)', 'nl' => 'Niet betaald (maand)', 'ar' => 'لم يدفعوا (شهر)'],
+    'campaigns.type.late_mid_month'    => ['en' => 'Late payers', 'nl' => 'Te late betalers', 'ar' => 'المتأخرون'],
+    'campaigns.type.paid_less_than'    => ['en' => 'Paid less than', 'nl' => 'Minder betaald dan', 'ar' => 'دفعوا أقل من'],
+    'campaigns.type.balance_above'     => ['en' => 'Balance above', 'nl' => 'Saldo boven', 'ar' => 'رصيدهم فوق'],
+    'campaigns.type.specific_students' => ['en' => 'Specific students', 'nl' => 'Specifieke studenten', 'ar' => 'طلاب محددون'],
+    'campaigns.type.first_friday'      => ['en' => 'First-Friday reminder', 'nl' => 'Eerste-vrijdag herinnering', 'ar' => 'تذكير الجمعة الأولى'],
+    'campaigns.type.mid_month_auto'    => ['en' => 'Mid-month notice', 'nl' => 'Half-maand melding', 'ar' => 'إشعار منتصف الشهر'],
+    'campaigns.type.manual'            => ['en' => 'Manual message', 'nl' => 'Handmatig bericht', 'ar' => 'رسالة يدوية'],
+    'campaigns.type.test'              => ['en' => 'Test', 'nl' => 'Test', 'ar' => 'اختبار'],
+    'campaigns.status.draft'     => ['en' => 'Draft', 'nl' => 'Concept', 'ar' => 'مسودة'],
+    'campaigns.status.queued'    => ['en' => 'Queued', 'nl' => 'In wachtrij', 'ar' => 'في الانتظار'],
+    'campaigns.status.running'   => ['en' => 'Running', 'nl' => 'Bezig', 'ar' => 'قيد الإرسال'],
+    'campaigns.status.paused'    => ['en' => 'Paused', 'nl' => 'Gepauzeerd', 'ar' => 'متوقفة مؤقتاً'],
+    'campaigns.status.completed' => ['en' => 'Completed', 'nl' => 'Voltooid', 'ar' => 'مكتملة'],
+    'campaigns.status.failed'    => ['en' => 'Failed', 'nl' => 'Mislukt', 'ar' => 'فشلت'],
+    'campaigns.status.canceled'  => ['en' => 'Canceled', 'nl' => 'Geannuleerd', 'ar' => 'ملغاة'],
+
+    // Student panel hardcoded strings
+    'columns.phone_secondary' => ['en' => 'Secondary', 'nl' => 'Tweede nummer', 'ar' => 'الهاتف الثاني'],
+    'panel.no_messages'       => ['en' => 'No messages yet.', 'nl' => 'Nog geen berichten.', 'ar' => 'لا توجد رسائل بعد.'],
+
+    // Export buttons (routes existed, UI links were missing)
+    'exports.statement'     => ['en' => 'Statement', 'nl' => 'Overzicht', 'ar' => 'كشف حساب'],
+    'exports.receipt'       => ['en' => 'Receipt', 'nl' => 'Kwitantie', 'ar' => 'إيصال'],
+    'exports.students_xlsx' => ['en' => 'Students (Excel)', 'nl' => 'Studenten (Excel)', 'ar' => 'الطلاب (Excel)'],
+    'exports.payments_xlsx' => ['en' => 'Payments (Excel)', 'nl' => 'Betalingen (Excel)', 'ar' => 'الدفعات (Excel)'],
+    'exports.monthly_xlsx'  => ['en' => 'Monthly totals (Excel)', 'nl' => 'Maandtotalen (Excel)', 'ar' => 'الإجماليات الشهرية (Excel)'],
+
+    // Custom error pages
+    'errors.back_home'   => ['en' => 'Back to home', 'nl' => 'Terug naar home', 'ar' => 'العودة للرئيسية'],
+    'errors.403_title'   => ['en' => 'Access denied', 'nl' => 'Toegang geweigerd', 'ar' => 'الوصول مرفوض'],
+    'errors.403_message' => ['en' => 'You do not have permission to view this page.', 'nl' => 'U heeft geen toestemming om deze pagina te bekijken.', 'ar' => 'ليست لديك صلاحية لعرض هذه الصفحة.'],
+    'errors.404_title'   => ['en' => 'Page not found', 'nl' => 'Pagina niet gevonden', 'ar' => 'الصفحة غير موجودة'],
+    'errors.404_message' => ['en' => 'The page you are looking for does not exist or was moved.', 'nl' => 'De pagina die u zoekt bestaat niet of is verplaatst.', 'ar' => 'الصفحة التي تبحث عنها غير موجودة أو نُقلت.'],
+    'errors.419_title'   => ['en' => 'Session expired', 'nl' => 'Sessie verlopen', 'ar' => 'انتهت الجلسة'],
+    'errors.419_message' => ['en' => 'Your session expired. Go back and try again.', 'nl' => 'Uw sessie is verlopen. Ga terug en probeer opnieuw.', 'ar' => 'انتهت جلستك. ارجع وحاول مرة أخرى.'],
+    'errors.500_title'   => ['en' => 'Server error', 'nl' => 'Serverfout', 'ar' => 'خطأ في الخادم'],
+    'errors.500_message' => ['en' => 'Something went wrong on our side. Please try again shortly.', 'nl' => 'Er ging iets mis aan onze kant. Probeer het zo weer.', 'ar' => 'حدث خطأ من جهتنا. حاول مرة أخرى بعد قليل.'],
 ];
 
 $locales = ['en', 'nl', 'ar'];

@@ -32,12 +32,20 @@ class HomeController extends Controller
             ->whereIn('method', ['cash', 'bank'])
             ->sum('amount');
 
-        $messagesToday = MessageLog::whereDate('created_at', today())->count();
+        // whereBetween is index-sargable; whereDate(created_at) wraps the
+        // column in DATE() and forces a full scan on MySQL.
+        $messagesToday = MessageLog::whereBetween('created_at', [today(), today()->addDay()])->count();
 
         $overdueTotal = 0.0;
         $students = Student::query()
             ->where('is_hidden', false)
-            ->with(['payments', 'markers', 'feeOverrides', 'surcharges', 'suspensions'])
+            ->with([
+                'payments' => fn ($q) => $q->where('period_year', $year),
+                'markers' => fn ($q) => $q->where('period_year', $year),
+                'feeOverrides' => fn ($q) => $q->where('period_year', $year),
+                'surcharges' => fn ($q) => $q->where('period_year', $year),
+                'suspensions',
+            ])
             ->get();
         foreach ($students as $st) {
             $statuses = MonthStatusResolver::resolveAll($st, $year);
@@ -53,12 +61,17 @@ class HomeController extends Controller
         }
         unset($students);
 
-        $monthlyTotals = [];
-        for ($m = 1; $m <= 12; $m++) {
-            $monthlyTotals[$m] = (float) Payment::where('period_year', $year)
-                ->where('period_month', $m)
-                ->whereIn('method', ['cash', 'bank'])
-                ->sum('amount');
+        // One GROUP BY instead of 12 separate SUM queries.
+        $monthlyTotals = array_fill(1, 12, 0.0);
+        $rows = Payment::query()
+            ->where('period_year', $year)
+            ->whereIn('method', ['cash', 'bank'])
+            ->selectRaw('period_month, SUM(amount) AS total')
+            ->groupBy('period_month')
+            ->get();
+        foreach ($rows as $row) {
+            $m = (int) $row->period_month;
+            if ($m >= 1 && $m <= 12) $monthlyTotals[$m] = (float) $row->total;
         }
         $maxMonthly = max($monthlyTotals) ?: 1;
 

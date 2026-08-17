@@ -125,6 +125,7 @@ class StudentPanel extends Component
         $student->save();
 
         $this->dispatch('flash', message: __('flash.saved'));
+        $this->dispatch('student-updated');
     }
 
     public function toggleFlag(string $flag)
@@ -137,6 +138,7 @@ class StudentPanel extends Component
         $student->{$flag} = !$student->{$flag};
         $student->save();
         $this->dispatch('flash', message: __('flash.updated'));
+        $this->dispatch('student-updated');
     }
 
     public function addSuspension()
@@ -160,6 +162,7 @@ class StudentPanel extends Component
         $this->suspend_ends_at = '';
         $this->suspend_reason = '';
         $this->dispatch('flash', message: __('flash.suspension_created'));
+        $this->dispatch('student-updated');
     }
 
     public function removeSuspension(int $id)
@@ -168,6 +171,7 @@ class StudentPanel extends Component
 
         StudentSuspension::where('id', $id)->where('student_id', $this->studentId)->delete();
         $this->dispatch('flash', message: __('flash.deleted'));
+        $this->dispatch('student-updated');
     }
 
     public function addOverride()
@@ -196,6 +200,7 @@ class StudentPanel extends Component
         $this->override_amount = null;
         $this->override_reason = '';
         $this->dispatch('flash', message: __('flash.override_added'));
+        $this->dispatch('student-updated');
     }
 
     public function removeOverride(int $id)
@@ -204,6 +209,7 @@ class StudentPanel extends Component
 
         StudentMonthlyFeeOverride::where('id', $id)->where('student_id', $this->studentId)->delete();
         $this->dispatch('flash', message: __('flash.deleted'));
+        $this->dispatch('student-updated');
     }
 
     public function addSurcharge()
@@ -228,6 +234,7 @@ class StudentPanel extends Component
         $this->surcharge_amount = null;
         $this->surcharge_reason = '';
         $this->dispatch('flash', message: __('flash.surcharge_added'));
+        $this->dispatch('student-updated');
     }
 
     public function removeSurcharge(int $id)
@@ -236,6 +243,7 @@ class StudentPanel extends Component
 
         StudentSurcharge::where('id', $id)->where('student_id', $this->studentId)->delete();
         $this->dispatch('flash', message: __('flash.deleted'));
+        $this->dispatch('student-updated');
     }
 
     public function openPayment(int $month)
@@ -268,15 +276,24 @@ class StudentPanel extends Component
         $year = (int) date('Y');
         $months = MonthNames::full();
 
+        // Batch resolvers: resolve() recomputes all 12 months internally, so
+        // the old per-month loop did 12x the work (and 3 lazy paths besides).
+        $statuses = MonthStatusResolver::resolveAll($student, $year);
+        $dueAll   = FeeResolver::dueAllMonths($student, $year);
+        $paidAll  = FeeResolver::paidAllMonths($student, $year);
+        $nowMonth = (int) date('n');
+
         $monthsData = [];
         $totalBalance = 0;
         foreach (range(1, 12) as $m) {
-            $status = MonthStatusResolver::resolve($student, $year, $m);
-            $due = FeeResolver::dueAmount($student, $year, $m);
-            $paid = FeeResolver::paidAmount($student, $year, $m);
+            $status = $statuses[$m];
+            $due = $dueAll[$m];
+            $paid = $paidAll[$m];
             $payments = $student->payments->where('period_year', $year)->where('period_month', $m);
-            if (in_array($status, ['unpaid', 'late', 'partial'])) {
-                $totalBalance += ($due - $paid);
+            // Only months due so far count toward the displayed debt —
+            // partial advance payments must not inflate it.
+            if ($m <= $nowMonth && in_array($status, ['unpaid', 'late', 'partial'])) {
+                $totalBalance += max(0, $due - $paid);
             }
             $monthsData[$m] = compact('status', 'due', 'paid', 'payments');
         }

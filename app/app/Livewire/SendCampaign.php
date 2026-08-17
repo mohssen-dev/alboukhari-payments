@@ -10,11 +10,14 @@ use App\Models\Template;
 use App\Services\CampaignSender;
 use App\Services\MonthNames;
 use App\Services\RecipientListBuilder;
+use App\Support\AuthorizesLivewireWrite;
 use App\Support\SmsCounter;
 use Livewire\Component;
 
 class SendCampaign extends Component
 {
+    use AuthorizesLivewireWrite;
+
     public string $type = 'send_all';
     public int $year;
     public int $month;
@@ -33,18 +36,29 @@ class SendCampaign extends Component
     public ?int $campaignId = null;
     public string $resultMessage = '';
 
+    // Labels are i18n keys — rendered with __() in the blade so every locale
+    // sees its own language (they were hardcoded Arabic before).
     private const TYPES = [
-        'send_all' => '📨 إرسال جماعي',
-        'unpaid_by_month' => '❓ لمن لم يدفع شهر',
-        'late_mid_month' => '⏰ للمتأخرين (متأخرون رسمياً)',
-        'paid_less_than' => '💰 لمن دفع أقل من مبلغ',
-        'balance_above' => '📊 لمن متبقي عليه أكثر من',
+        'send_all' => 'send.type_send_all',
+        'unpaid_by_month' => 'send.type_unpaid_by_month',
+        'late_mid_month' => 'send.type_late_mid_month',
+        'paid_less_than' => 'send.type_paid_less_than',
+        'balance_above' => 'send.type_balance_above',
     ];
 
     public function mount()
     {
         $this->year = (int) date('Y');
         $this->month = (int) date('n');
+
+        // Honor the grid's targeted-send links (/send?type=late_mid_month …).
+        // Ignoring this param silently opened every link as "send to ALL".
+        $requestedType = request()->query('type');
+        if (is_string($requestedType) && array_key_exists($requestedType, self::TYPES)) {
+            $this->type = $requestedType;
+            $this->updatedType();
+        }
+
         $this->loadDefaultTemplate();
     }
 
@@ -110,6 +124,8 @@ class SendCampaign extends Component
 
     public function sendTest()
     {
+        $this->assertCanWrite();
+
         if (empty($this->testPhone)) {
             $this->dispatch('flash', message: __('flash.enter_test_phone'));
             return;
@@ -142,6 +158,16 @@ class SendCampaign extends Component
 
     public function launch()
     {
+        $this->assertCanWrite();
+
+        // Re-entry guard: a second click (or queued Livewire request) after a
+        // successful launch would create and send a SECOND campaign —
+        // double-billing every SMS. Force an explicit page refresh to send again.
+        if ($this->campaignId) {
+            $this->dispatch('flash', message: __('send.already_launched'));
+            return;
+        }
+
         $this->preview();
         if (!$this->previewStats || $this->previewStats['total_recipients'] === 0) {
             $this->dispatch('flash', message: __('flash.no_recipients'));

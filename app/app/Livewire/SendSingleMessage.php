@@ -40,12 +40,13 @@ class SendSingleMessage extends Component
         $this->templateId = null;
         $this->body = '';
         $this->resultMessage = '';
+        $this->resultOk = false;
         $this->isOpen = true;
     }
 
     public function close(): void
     {
-        $this->reset(['isOpen', 'studentId', 'studentName', 'studentPhone', 'templateId', 'body', 'resultMessage']);
+        $this->reset(['isOpen', 'studentId', 'studentName', 'studentPhone', 'templateId', 'body', 'resultMessage', 'resultOk']);
         $this->dispatch('close-modal');
     }
 
@@ -69,6 +70,8 @@ class SendSingleMessage extends Component
         return SmsCounter::count($this->body, Setting::get('force_ascii', '1') === '1');
     }
 
+    public bool $resultOk = false;
+
     public function send(): void
     {
         $this->assertCanWrite();
@@ -80,12 +83,14 @@ class SendSingleMessage extends Component
         try {
             $sender = app(CampaignSender::class);
             $result = $sender->sendSingle($this->studentId, $this->body, 'manual');
+            $this->resultOk = true;
             $this->resultMessage = __('send.single_sent', [
                 'status' => (string) ($result['provider_status'] ?? ''),
                 'cost' => number_format((float) ($result['cost'] ?? 0), 4),
             ]);
             $this->dispatch('flash', message: $this->resultMessage);
         } catch (\Throwable $e) {
+            $this->resultOk = false;
             $this->resultMessage = __('send.send_failed', ['error' => $e->getMessage()]);
             $this->dispatch('flash', message: $this->resultMessage);
         }

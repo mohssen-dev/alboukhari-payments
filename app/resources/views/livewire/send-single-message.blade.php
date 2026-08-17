@@ -39,7 +39,7 @@
                         <label>
                             {{ __('send.body') }}
                             @if ($counter)
-                                <span style="float:right;font-size:11px;color:{{ $counter['segments'] > 1 ? 'var(--color-danger)' : 'var(--color-success)' }};font-weight:700">
+                                <span style="float:inline-end;font-size:11px;color:{{ $counter['segments'] > 1 ? 'var(--color-danger)' : 'var(--color-success)' }};font-weight:700">
                                     📊 {{ $counter['length'] }}/{{ $counter['max_per_segment'] }} — <strong>{{ $counter['segments'] }} SMS</strong>
                                 </span>
                             @endif
@@ -48,7 +48,7 @@
                     </div>
 
                     @if ($resultMessage)
-                        <div class="pill {{ str_starts_with($resultMessage,'✓') ? 'pill-success' : 'pill-danger' }}" style="display:block;padding:10px;margin-bottom:8px">
+                        <div class="pill {{ $resultOk ? 'pill-success' : 'pill-danger' }}" style="display:block;padding:10px;margin-bottom:8px">
                             {{ $resultMessage }}
                         </div>
                     @endif

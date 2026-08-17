@@ -41,7 +41,7 @@
                     <div class="value" style="font-family:ui-monospace,monospace;font-size:13px">{{ $student->phone_primary_e164 ?: '—' }}</div>
                 </div>
                 <div class="summary-item">
-                    <div class="label">📞₂ Secondary</div>
+                    <div class="label">📞₂ {{ __('columns.phone_secondary') }}</div>
                     <div class="value" style="font-family:ui-monospace,monospace;font-size:13px">{{ $student->phone_secondary_e164 ?: '—' }}</div>
                 </div>
                 <div class="summary-item">
@@ -64,6 +64,7 @@
             <div style="display:flex;gap:6px;margin-bottom:18px">
                 <button class="btn btn-primary btn-sm" style="flex:1" wire:click="openSendMessage">📲 {{ __('actions.send_message') }}</button>
                 <button class="btn btn-soft-success btn-sm" style="flex:1" wire:click="openPayment({{ (int) date('n') }})">💶 {{ __('actions.add_payment') }}</button>
+                <a class="btn btn-sm" style="flex:1;text-align:center" href="{{ route('exports.statement', $student) }}?year={{ $year }}" target="_blank" rel="noopener">🧾 {{ __('exports.statement') }}</a>
             </div>
 
             {{-- Tabs --}}
@@ -288,7 +289,7 @@
                         </div>
                     </div>
                 @empty
-                    <p class="text-soft" style="text-align:center;padding:30px">No messages yet.</p>
+                    <p class="text-soft" style="text-align:center;padding:30px">{{ __('panel.no_messages') }}</p>
                 @endforelse
             @endif
         </div>

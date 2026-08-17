@@ -5,8 +5,8 @@
         <div class="form-group">
             <label>{{ __('send.type') }}</label>
             <select class="form-select" wire:model.live="type">
-                @foreach ($types as $val => $label)
-                    <option value="{{ $val }}">{{ $label }}</option>
+                @foreach ($types as $val => $labelKey)
+                    <option value="{{ $val }}">{{ __($labelKey) }}</option>
                 @endforeach
             </select>
         </div>
@@ -86,13 +86,16 @@
             <label>🧪 {{ __('send.test_phone') }}</label>
             <div style="display:flex;gap:6px">
                 <input type="text" class="form-input" wire:model="testPhone" placeholder="+316xxxxxxxx" style="flex:1">
-                <button class="btn btn-warning" wire:click="sendTest">{{ __('send.test_send') }}</button>
+                <button class="btn btn-warning" wire:click="sendTest" wire:loading.attr="disabled" wire:target="sendTest">{{ __('send.test_send') }}</button>
             </div>
         </div>
 
         <div style="display:flex;gap:8px;margin-top:16px">
-            <button class="btn btn-soft-primary" wire:click="preview" style="flex:1">👁️ {{ __('send.preview') }}</button>
-            <button class="btn btn-success" wire:click="launch" wire:confirm="{{ __('common.confirm') }}" style="flex:1">🚀 {{ __('send.launch') }}</button>
+            <button class="btn btn-soft-primary" wire:click="preview" wire:loading.attr="disabled" wire:target="preview,launch" style="flex:1">👁️ {{ __('send.preview') }}</button>
+            <button class="btn btn-success" wire:click="launch" wire:confirm="{{ __('common.confirm') }}" wire:loading.attr="disabled" wire:target="preview,launch,sendTest" style="flex:1">
+                <span wire:loading.remove wire:target="launch">🚀 {{ __('send.launch') }}</span>
+                <span wire:loading wire:target="launch">⏳ {{ __('send.launching') }}</span>
+            </button>
         </div>
 
         @if ($resultMessage)

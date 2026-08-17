@@ -22,7 +22,14 @@ class RecipientListBuilder
         $year = $campaign->period_year ?? (int) date('Y');
         $month = $campaign->period_month ?? (int) date('n');
 
-        $query = Student::query()->with(['family.students', 'payments', 'markers', 'suspensions']);
+        // feeOverrides + surcharges MUST be eager-loaded: dueAllMonths() only
+        // sees them via relationLoaded(), so omitting them makes campaign
+        // targeting compute dues without overrides/surcharges (wrong lists)
+        // AND triggers 2 lazy queries per student x month in balance_above.
+        $query = Student::query()->with([
+            'family.students', 'payments', 'markers', 'suspensions',
+            'feeOverrides', 'surcharges',
+        ]);
 
         if ($specificStudentIds !== null) {
             $query->whereIn('id', $specificStudentIds);
@@ -143,12 +150,16 @@ class RecipientListBuilder
                 return $paid < $threshold;
 
             case 'balance_above':
-                // الرصيد المتراكم على كل أشهر السنة
+                // Accumulated balance across the year — batch resolvers run
+                // once per student instead of resolve()x12 (which recomputes
+                // all 12 months on every call).
+                $statuses = MonthStatusResolver::resolveAll($student, $year);
+                $dueAll   = FeeResolver::dueAllMonths($student, $year);
+                $paidAll  = FeeResolver::paidAllMonths($student, $year);
                 $totalBalance = 0;
                 for ($m = 1; $m <= 12; $m++) {
-                    $status = MonthStatusResolver::resolve($student, $year, $m);
-                    if (in_array($status, ['unpaid', 'late', 'partial'], true)) {
-                        $totalBalance += FeeResolver::balance($student, $year, $m);
+                    if (in_array($statuses[$m], ['unpaid', 'late', 'partial'], true)) {
+                        $totalBalance += ($dueAll[$m] - $paidAll[$m]);
                     }
                 }
                 $threshold = (float) ($campaign->threshold_amount ?? 0);

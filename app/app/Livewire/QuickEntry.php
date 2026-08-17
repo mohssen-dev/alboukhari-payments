@@ -34,7 +34,8 @@ class QuickEntry extends Component
         $student = Student::findOrFail($id);
         $this->selectedStudentId = $id;
         $remaining = FeeResolver::balance($student, $this->year, $this->month);
-        $this->amount = $remaining > 0 ? $remaining : FeeResolver::dueAmount($student, $this->year, $this->month);
+        // Fully-paid month → suggest 0, not the full fee again (double-charge trap).
+        $this->amount = $remaining > 0.005 ? round($remaining, 2) : 0.0;
         $this->method = 'cash';
         $this->note = '';
     }
@@ -53,6 +54,13 @@ class QuickEntry extends Component
             'amount' => 'required|numeric|min:0',
             'method' => 'required|in:cash,bank',
         ]);
+
+        // Same enrollment-window guard as PaymentModal::save.
+        $student = Student::find($this->selectedStudentId);
+        if ($student && FeeResolver::isOutsideEnrollment($student, $this->year, $this->month)) {
+            $this->dispatch('flash', message: __('status.not_enrolled') . ' — ' . $student->name);
+            return;
+        }
 
         $payment = Payment::create([
             'student_id' => $this->selectedStudentId,

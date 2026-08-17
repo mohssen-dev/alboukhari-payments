@@ -88,7 +88,14 @@ class PaymentModal extends Component
 
     public function editExisting(int $paymentId): void
     {
-        $p = Payment::findOrFail($paymentId);
+        // The list shown may be stale (payment deleted from another tab/user);
+        // findOrFail would 404-crash the whole Livewire request.
+        $p = Payment::find($paymentId);
+        if (!$p) {
+            $this->dispatch('toast', message: __('flash.deleted'), type: 'error');
+            $this->open($this->studentId, $this->year, $this->month); // refresh list
+            return;
+        }
         $this->editingPaymentId = $paymentId;
         $this->amount = (float) $p->amount;
         $this->method = $p->method === 'legacy_zero' ? 'bank' : $p->method;
@@ -143,9 +150,15 @@ class PaymentModal extends Component
         try {
             if ($this->editingPaymentId) {
                 $p = Payment::findOrFail($this->editingPaymentId);
+                // Editing a legacy_zero row with amount still 0 must keep its
+                // method — converting it to a 0.00 'bank' payment would flip
+                // the month from settled (legacy_zero) to unpaid/late.
+                $method = ($p->method === 'legacy_zero' && (float) $this->amount == 0.0)
+                    ? 'legacy_zero'
+                    : $this->method;
                 $p->update([
                     'amount' => $this->amount,
-                    'method' => $this->method,
+                    'method' => $method,
                     'note' => $this->note ?: null,
                     'paid_at' => $this->paid_at,
                 ]);

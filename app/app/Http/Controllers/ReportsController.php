@@ -19,10 +19,16 @@ class ReportsController extends Controller
         $year = (int) ($request->input('year') ?: date('Y'));
         $month = (int) ($request->input('month') ?: date('n'));
 
-        // ملخص اليوم
-        $todayMessages = MessageLog::whereDate('created_at', today())->count();
-        $todayMessagesCost = (float) MessageLog::whereDate('created_at', today())->sum('cost');
-        $todayPayments = (float) Payment::whereDate('created_at', today())->whereIn('method', ['cash', 'bank'])->sum('amount');
+        // Today summary — whereBetween is sargable (whereDate forces DATE()
+        // around the column = full scan); count+sum merged into one query.
+        $todayRange = [today(), today()->addDay()];
+        $msgAgg = MessageLog::whereBetween('created_at', $todayRange)
+            ->selectRaw('COUNT(*) AS c, COALESCE(SUM(cost), 0) AS s')
+            ->first();
+        $todayMessages = (int) $msgAgg->c;
+        $todayMessagesCost = (float) $msgAgg->s;
+        $todayPayments = (float) Payment::whereBetween('created_at', $todayRange)
+            ->whereIn('method', ['cash', 'bank'])->sum('amount');
 
         // إجمالي الشهر
         $monthPaidCash = (float) Payment::where('period_year', $year)->where('period_month', $month)->where('method', 'cash')->sum('amount');

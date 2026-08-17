@@ -97,14 +97,18 @@ class StudentsGrid extends Component
 
     public function render()
     {
+        // Year-scoped relations: the grid only renders $this->year, so loading
+        // other years' rows just inflates hydration cost every render.
+        // (suspensions stay unscoped — activeSuspension() needs current state.)
+        $yr = $this->year;
         $query = Student::query()
             ->with([
                 'family:id,guardian_name,is_blocked_messages',
                 'family.students:id,family_id,name',
-                'payments',
-                'markers',
-                'surcharges',
-                'feeOverrides',
+                'payments' => fn ($q) => $q->where('period_year', $yr),
+                'markers' => fn ($q) => $q->where('period_year', $yr),
+                'surcharges' => fn ($q) => $q->where('period_year', $yr),
+                'feeOverrides' => fn ($q) => $q->where('period_year', $yr),
                 'suspensions',
             ]);
 
@@ -125,6 +129,10 @@ class StudentsGrid extends Component
         $students = $query->orderBy('id')->paginate($this->perPage);
 
         $months = MonthNames::full();
+
+        // Balance should mean "owed to date": a partial ADVANCE payment for a
+        // future month must not increase the debt figure.
+        $nowYm = ((int) date('Y') * 12) + (int) date('n');
 
         $monthData = [];
         $rowsJson = [];
@@ -161,8 +169,9 @@ class StudentsGrid extends Component
                     $methodIcon = '🏦';
                 }
                 $monthData[$student->id][$m] = compact('status', 'paid', 'due', 'methodIcon');
-                if ($status === 'unpaid' || $status === 'late' || $status === 'partial') {
-                    $totalBalance += ($due - $paid);
+                $isFutureMonth = (($this->year * 12) + $m) > $nowYm;
+                if (!$isFutureMonth && ($status === 'unpaid' || $status === 'late' || $status === 'partial')) {
+                    $totalBalance += max(0, $due - $paid);
                 }
             }
 

@@ -18,6 +18,13 @@ use Carbon\Carbon;
  */
 class MonthStatusResolver
 {
+    /**
+     * Half-cent tolerance for float comparisons. Payment amounts accumulate
+     * as floats (25.10 + 4.90 = 30.000000000000004), so a strict >= can leave
+     * a fully-paid month stuck at 'partial'.
+     */
+    private const EPS = 0.005;
+
     /** Cached per PHP request. Reset if tests span midnight. */
     private static ?int $todayYm = null;   // year * 12 + month
     private static ?int $todayDay = null;
@@ -93,7 +100,7 @@ class MonthStatusResolver
 
             if ($isFuture) {
                 if ($paid > 0) {
-                    $out[$m] = ($due > 0 && $paid < $due) ? 'partial' : 'paid_advance';
+                    $out[$m] = ($due > 0 && $paid < $due - self::EPS) ? 'partial' : 'paid_advance';
                     continue;
                 }
                 $out[$m] = $legacyZero ? 'legacy_zero' : 'not_due';
@@ -101,8 +108,13 @@ class MonthStatusResolver
             }
 
             if ($legacyZero && $paid == 0) { $out[$m] = 'legacy_zero'; continue; }
-            if ($due > 0 && $paid >= $due)  { $out[$m] = 'paid'; continue; }
-            if ($paid > 0 && $paid < $due)  { $out[$m] = 'partial'; continue; }
+
+            // Zero due for an enrolled month = explicit exemption (fee override 0).
+            // Without this it would fall through to unpaid → late → dunning SMS.
+            if ($due <= self::EPS) { $out[$m] = 'paid'; continue; }
+
+            if ($paid >= $due - self::EPS) { $out[$m] = 'paid'; continue; }
+            if ($paid > 0)                 { $out[$m] = 'partial'; continue; }
 
             // Not paid — is it late? (past mid of next month, or legacy_late marker)
             // Late is defined as: today is on/after the 15th of the following month.

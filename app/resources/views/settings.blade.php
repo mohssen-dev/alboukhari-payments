@@ -42,9 +42,6 @@
                 <span class="icon">🔧</span> {{ __('Advanced') }}
             </button>
 
-            <hr style="border:none;border-top:1px solid var(--color-border);margin:8px 0">
-
-            <a href="{{ route('settings.test_bulkgate') }}" style="display:block;padding:10px 14px;text-decoration:none;color:var(--color-primary);font-size:12px;font-weight:600" x-show="false">{{ __('Test connection') }}</a>
         </div>
 
         {{-- ===== Tab Panels ===== --}}
@@ -246,11 +243,19 @@
                         <div class="field-help">{{ __('Configure the same token in Meta webhook settings.') }}</div>
                     </div>
 
+                    {{-- NOTE: incoming-webhook receiver is not implemented yet —
+                         advertising url('/webhooks/whatsapp') here pointed admins
+                         at a 404. Re-add once the route exists. --}}
+
                     @if ($waConfigured)
-                        <div style="background:var(--color-surface-alt);padding:10px 14px;border-radius:var(--radius);font-size:12px;font-family:ui-monospace,monospace">
-                            <div><strong>{{ __('settings.webhook_url') }}:</strong> <code>{{ url('/webhooks/whatsapp') }}</code></div>
-                            <div class="mt-2"><strong>{{ __('settings.verify_endpoint') }}:</strong> <code>GET {{ url('/webhooks/whatsapp') }}</code></div>
-                        </div>
+                        <form method="POST" action="{{ route('settings.test_whatsapp') }}" style="margin-top:14px">
+                            @csrf
+                            <label>🧪 {{ __('send.test_phone') }}</label>
+                            <div style="display:flex;gap:6px">
+                                <input type="text" name="test_phone" class="form-input" placeholder="+316xxxxxxxx" style="flex:1">
+                                <button type="submit" class="btn btn-warning">{{ __('send.test_send') }}</button>
+                            </div>
+                        </form>
                     @endif
                 </div>
 

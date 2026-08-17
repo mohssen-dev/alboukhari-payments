@@ -3,10 +3,18 @@
         <div
             x-data="{
                 closing: false,
+                saving: false,
                 close() {
                     if (this.closing) return;
                     this.closing = true;
                     setTimeout(() => $wire.close(), 160);
+                },
+                saveOnce(next) {
+                    // Repeated Ctrl+Enter queued a second save() that landed on
+                    // the NEXT student's freshly-opened modal — guard in-flight.
+                    if (this.saving) return;
+                    this.saving = true;
+                    $wire.save(next).finally(() => this.saving = false);
                 }
             }"
             x-init="$nextTick(() => document.getElementById('payment-amount-input')?.focus())"
@@ -14,7 +22,7 @@
             :class="{ 'modal-closing': closing }"
             @click.self="close()"
             @keydown.window.escape="close()"
-            @keydown.window.ctrl.enter.prevent="$wire.save(true)"
+            @keydown.window.ctrl.enter.prevent="saveOnce(true)"
         >
             <div class="modal-box" @click.stop>
                 <div class="modal-header">
@@ -52,6 +60,7 @@
                                         <td style="padding:4px">{{ $p['method_icon'] }} {{ $p['method_label'] }}</td>
                                         <td style="padding:4px;text-align:end;font-weight:700">{{ number_format($p['amount'], 2) }} €</td>
                                         <td style="padding:4px">
+                                            <a class="btn btn-sm" href="{{ route('exports.receipt', $p['id']) }}" target="_blank" rel="noopener" title="{{ __('exports.receipt') }}">🧾</a>
                                             <button type="button" class="btn btn-sm" wire:click="editExisting({{ $p['id'] }})" wire:loading.attr="disabled" wire:target="editExisting({{ $p['id'] }})">
                                                 <span wire:loading.remove wire:target="editExisting({{ $p['id'] }})">✏️</span>
                                                 <span wire:loading wire:target="editExisting({{ $p['id'] }})" class="spinner-sm"></span>

@@ -20,6 +20,13 @@
         </form>
     </div>
 
+    {{-- Excel exports — these routes existed but nothing linked to them --}}
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">
+        <a href="{{ route('exports.students') }}" class="btn btn-sm">📥 {{ __('exports.students_xlsx') }}</a>
+        <a href="{{ route('exports.payments') }}?year={{ $year }}" class="btn btn-sm">📥 {{ __('exports.payments_xlsx') }}</a>
+        <a href="{{ route('exports.monthly') }}?year={{ $year }}" class="btn btn-sm">📥 {{ __('exports.monthly_xlsx') }}</a>
+    </div>
+
     <div class="kpi-grid">
         <div class="kpi info">
             <div class="label">📲 {{ __('reports.todays_messages') }}</div>

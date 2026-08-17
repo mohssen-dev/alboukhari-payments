@@ -4,6 +4,7 @@ namespace App\Livewire;
 
 use App\Models\Student;
 use App\Services\FeeResolver;
+use App\Services\MonthStatusResolver;
 use Livewire\Attributes\On;
 use Livewire\Component;
 
@@ -57,16 +58,20 @@ class FamilyModal extends Component
         $currentMonth = (int) date('n');
 
         $this->members = $members->map(function (Student $s) use ($year, $currentMonth) {
+            // Status-driven so settled-but-unpaid months (legacy_zero, exempt
+            // override 0, not-enrolled) don't inflate the family balance.
+            $statuses = MonthStatusResolver::resolveAll($s, $year);
+            $dueAll   = FeeResolver::dueAllMonths($s, $year);
+            $paidAll  = FeeResolver::paidAllMonths($s, $year);
+
             $balance = 0.0;
             $monthsPaid = 0;
             foreach (range(1, $currentMonth) as $m) {
-                $due = FeeResolver::dueAmount($s, $year, $m);
-                $paid = FeeResolver::paidAmount($s, $year, $m);
-                if ($paid >= $due && $due > 0) {
+                $st = $statuses[$m];
+                if ($st === 'paid' || $st === 'paid_advance' || $st === 'legacy_zero') {
                     $monthsPaid++;
-                }
-                if ($due > $paid) {
-                    $balance += ($due - $paid);
+                } elseif (in_array($st, ['unpaid', 'late', 'partial'], true)) {
+                    $balance += max(0, $dueAll[$m] - $paidAll[$m]);
                 }
             }
             return [
