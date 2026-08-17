@@ -43,8 +43,12 @@ class DbBackup extends Command
             $host = config("database.connections.{$connection}.host");
             $port = config("database.connections.{$connection}.port", 3306);
             $dest = "{$dir}/db-{$stamp}.sql";
+            // --no-tablespaces: shared-hosting MySQL users lack the PROCESS
+            // privilege, so without it mysqldump exits 2 and the nightly
+            // backup silently produces an empty file (verified on Hostinger).
+            // --single-transaction: consistent snapshot without table locks.
             $cmd  = sprintf(
-                'mysqldump --host=%s --port=%s --user=%s %s %s > %s 2>&1',
+                'mysqldump --host=%s --port=%s --user=%s %s --no-tablespaces --single-transaction %s > %s 2>&1',
                 escapeshellarg($host),
                 escapeshellarg((string) $port),
                 escapeshellarg($user),
