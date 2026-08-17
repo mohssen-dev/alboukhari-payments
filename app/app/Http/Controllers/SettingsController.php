@@ -72,6 +72,25 @@ class SettingsController extends Controller
         return redirect()->route('settings', ['tab' => 'bulkgate']);
     }
 
+    /**
+     * Reveal one encrypted secret to the admin (👁 button next to the field).
+     * Admin-only via route middleware; every reveal is written to the
+     * activity log so there's an audit trail of who looked when.
+     */
+    public function revealSecret(Request $request)
+    {
+        $key = (string) $request->input('key');
+        if (! in_array($key, self::ENCRYPTED_KEYS, true)) {
+            abort(422);
+        }
+
+        activity('settings')
+            ->causedBy($request->user())
+            ->log("revealed secret: {$key}");
+
+        return response()->json(['value' => (string) Setting::get($key, '')]);
+    }
+
     public function update(Request $request)
     {
         $tab = $request->input('tab', 'general');

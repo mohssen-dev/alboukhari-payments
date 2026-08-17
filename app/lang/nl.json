@@ -568,5 +568,9 @@
     "settings.credit_refresh": "Vernieuwen",
     "settings.credit_checked_at": "Laatst gecontroleerd: :time (ververst elke 5 min)",
     "settings.credit_unavailable": "Kon tegoed niet ophalen — controleer de gegevens of vernieuw.",
-    "settings.credit_low": "Laag tegoed — vul binnenkort aan."
+    "settings.credit_low": "Laag tegoed — vul binnenkort aan.",
+    "settings.reveal_secret_btn": "Toon geheim",
+    "settings.hide_secret": "Verbergen",
+    "settings.copy_secret": "Kopiëren",
+    "settings.reveal_failed": "Kon het geheim niet tonen — ververs de pagina."
 }

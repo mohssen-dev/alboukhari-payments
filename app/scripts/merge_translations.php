@@ -387,6 +387,12 @@ $translations = [
     'settings.credit_checked_at'  => ['en' => 'Last checked: :time (auto-refreshes every 5 min)', 'nl' => 'Laatst gecontroleerd: :time (ververst elke 5 min)', 'ar' => 'آخر فحص: :time (يتحدث تلقائياً كل 5 دقائق)'],
     'settings.credit_unavailable' => ['en' => 'Could not fetch balance — check credentials or try refresh.', 'nl' => 'Kon tegoed niet ophalen — controleer de gegevens of vernieuw.', 'ar' => 'تعذّر جلب الرصيد — تحقق من البيانات أو اضغط تحديث.'],
     'settings.credit_low'         => ['en' => 'Low credit — top up soon.', 'nl' => 'Laag tegoed — vul binnenkort aan.', 'ar' => 'الرصيد منخفض — اشحن قريباً.'],
+
+    // ---------- Secret reveal/copy buttons ----------
+    'settings.reveal_secret_btn' => ['en' => 'Show secret', 'nl' => 'Toon geheim', 'ar' => 'إظهار السر'],
+    'settings.hide_secret'       => ['en' => 'Hide', 'nl' => 'Verbergen', 'ar' => 'إخفاء'],
+    'settings.copy_secret'       => ['en' => 'Copy', 'nl' => 'Kopiëren', 'ar' => 'نسخ'],
+    'settings.reveal_failed'     => ['en' => 'Could not reveal the secret — try refreshing the page.', 'nl' => 'Kon het geheim niet tonen — ververs de pagina.', 'ar' => 'تعذّر إظهار السر — حدّث الصفحة وحاول مجدداً.'],
 ];
 
 $locales = ['en', 'nl', 'ar'];

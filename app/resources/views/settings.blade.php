@@ -110,7 +110,7 @@
                                 {{ __('settings.field.application_token') }}
                                 <span class="field-script-default">{{ __('settings.encrypted_hint') }}</span>
                             </label>
-                            <input type="password" name="bulkgate_app_token" class="form-input" value="{{ $settings['bulkgate_app_token_masked'] }}" placeholder="{{ $settings['bulkgate_app_token_masked'] ? __('settings.token_already_set') : __('settings.paste_your_token') }}">
+                            <x-secret-input name="bulkgate_app_token" :masked="$settings['bulkgate_app_token_masked']" :placeholder="$settings['bulkgate_app_token_masked'] ? __('settings.token_already_set') : __('settings.paste_your_token')" />
                             <div class="field-help">{{ __('Leave blank to keep current value.') }}</div>
                         </div>
                     </div>
@@ -250,7 +250,7 @@
                             {{ __('settings.field.access_token') }}
                             <span class="field-script-default">{{ __('settings.encrypted_hint') }}</span>
                         </label>
-                        <input type="password" name="whatsapp_access_token" class="form-input" value="{{ $settings['whatsapp_access_token_masked'] }}" placeholder="{{ $settings['whatsapp_access_token_masked'] ? __('settings.token_already_set') : 'EAAxxxxxxxxxxxxxxx...' }}">
+                        <x-secret-input name="whatsapp_access_token" :masked="$settings['whatsapp_access_token_masked']" :placeholder="$settings['whatsapp_access_token_masked'] ? __('settings.token_already_set') : 'EAAxxxxxxxxxxxxxxx...'" />
                         <div class="field-help">{{ __('Generate a permanent token (not the temporary 24h one).') }}</div>
                     </div>
 
@@ -259,7 +259,7 @@
                             {{ __('settings.field.app_secret') }}
                             <span class="field-script-default">{{ __('settings.encrypted_hint') }}</span>
                         </label>
-                        <input type="password" name="whatsapp_app_secret" class="form-input" value="{{ $settings['whatsapp_app_secret_masked'] }}" placeholder="{{ $settings['whatsapp_app_secret_masked'] ? __('settings.token_already_set') : '' }}">
+                        <x-secret-input name="whatsapp_app_secret" :masked="$settings['whatsapp_app_secret_masked']" :placeholder="$settings['whatsapp_app_secret_masked'] ? __('settings.token_already_set') : ''" />
                     </div>
 
                     <div class="form-group">

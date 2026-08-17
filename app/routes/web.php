@@ -68,6 +68,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/reminders/trigger', [SettingsController::class, 'triggerReminders'])->name('reminders.trigger');
         Route::post('/settings/test-bulkgate', [SettingsController::class, 'testBulkGate'])->name('settings.test_bulkgate');
         Route::post('/settings/refresh-credit', [SettingsController::class, 'refreshCredit'])->name('settings.refresh_credit');
+        Route::post('/settings/reveal-secret', [SettingsController::class, 'revealSecret'])->name('settings.reveal_secret');
         Route::post('/settings/test-whatsapp', [SettingsController::class, 'testWhatsApp'])->name('settings.test_whatsapp');
 
         Route::get('/import', [ImportController::class, 'form'])->name('import.form');

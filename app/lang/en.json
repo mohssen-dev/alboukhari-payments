@@ -568,5 +568,9 @@
     "settings.credit_refresh": "Refresh",
     "settings.credit_checked_at": "Last checked: :time (auto-refreshes every 5 min)",
     "settings.credit_unavailable": "Could not fetch balance — check credentials or try refresh.",
-    "settings.credit_low": "Low credit — top up soon."
+    "settings.credit_low": "Low credit — top up soon.",
+    "settings.reveal_secret_btn": "Show secret",
+    "settings.hide_secret": "Hide",
+    "settings.copy_secret": "Copy",
+    "settings.reveal_failed": "Could not reveal the secret — try refreshing the page."
 }

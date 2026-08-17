@@ -568,5 +568,9 @@
     "settings.credit_refresh": "تحديث",
     "settings.credit_checked_at": "آخر فحص: :time (يتحدث تلقائياً كل 5 دقائق)",
     "settings.credit_unavailable": "تعذّر جلب الرصيد — تحقق من البيانات أو اضغط تحديث.",
-    "settings.credit_low": "الرصيد منخفض — اشحن قريباً."
+    "settings.credit_low": "الرصيد منخفض — اشحن قريباً.",
+    "settings.reveal_secret_btn": "إظهار السر",
+    "settings.hide_secret": "إخفاء",
+    "settings.copy_secret": "نسخ",
+    "settings.reveal_failed": "تعذّر إظهار السر — حدّث الصفحة وحاول مجدداً."
 }
