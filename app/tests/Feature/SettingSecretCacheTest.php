@@ -68,6 +68,28 @@ class SettingSecretCacheTest extends TestCase
         $this->assertSame('USD', Setting::get('currency'), 'put() must forget the cached value');
     }
 
+    public function test_a_legacy_string_cache_entry_does_not_break_the_page(): void
+    {
+        // An older release cached the resolved STRING under this key. After
+        // deploying the new shape those stale entries were still live and
+        // every page 500'd with "Cannot access offset of type string on
+        // string" until the cache was flushed. A stale entry must now simply
+        // be discarded and re-read.
+        Setting::put('currency', 'EUR');
+        Cache::put('setting:currency', 'STALE-PLAIN-STRING', 60);
+
+        $this->assertSame('EUR', Setting::get('currency'),
+            'A cache entry from an older release must be discarded, not dereferenced.');
+    }
+
+    public function test_a_legacy_string_cache_entry_for_a_secret_is_also_survived(): void
+    {
+        Setting::put('bulkgate_app_token', 'real-token', true);
+        Cache::put('setting:bulkgate_app_token', 'old-plaintext-token', 60);
+
+        $this->assertSame('real-token', Setting::get('bulkgate_app_token'));
+    }
+
     public function test_unreadable_ciphertext_falls_back_instead_of_crashing(): void
     {
         // Simulates an APP_KEY rotation leaving old ciphertext undecryptable.

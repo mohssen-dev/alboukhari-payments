@@ -33,6 +33,23 @@ class Setting extends Model
             return $default;
         }
 
+        // Tolerate an entry left by an older release.
+        //
+        // A previous version cached the resolved STRING here. After deploying
+        // this version those stale entries were still in the cache store, and
+        // reading $cached['e'] on a string threw "Cannot access offset of type
+        // string on string" — every page 500'd until the cache was flushed.
+        // Anything not in the current shape is discarded and re-read, so a
+        // deploy can never poison the cache this way again.
+        if (! is_array($cached) || ! array_key_exists('v', $cached) || ! array_key_exists('e', $cached)) {
+            Cache::forget("setting:$key");
+            $row = static::find($key);
+            if (! $row) {
+                return $default;
+            }
+            $cached = ['v' => $row->value, 'e' => (bool) $row->is_encrypted];
+        }
+
         if (! $cached['e']) {
             return $cached['v'] ?? $default;
         }
