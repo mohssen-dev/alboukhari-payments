@@ -35,7 +35,11 @@ class DefaultTemplatesSeeder extends Seeder
                 'code' => 'nl_family',
                 'name' => 'NL — رسالة عائلية (للإخوة)',
                 'language' => 'nl',
-                'body' => 'Beste ouder, herinnering voor {{أسماء_غير_المدفوعين}}. Totaal {{المبلغ_العائلي}}€ voor {{month}}. Bedankt.',
+                // Uses المتبقي_العائلي (still OUTSTANDING) rather than
+                // المبلغ_العائلي (the family's GROSS monthly fee): a dunning
+                // message must quote what is still owed, otherwise a parent who
+                // has already paid part or all of the month is billed again.
+                'body' => 'Beste ouder, herinnering voor {{أسماء_غير_المدفوعين}}. Nog te voldoen: {{المتبقي_العائلي}}€ voor {{month}}. Bedankt.',
                 'default_for' => 'none',
             ],
             [

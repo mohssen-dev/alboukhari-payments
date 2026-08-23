@@ -572,5 +572,20 @@
     "settings.reveal_secret_btn": "إظهار السر",
     "settings.hide_secret": "إخفاء",
     "settings.copy_secret": "نسخ",
-    "settings.reveal_failed": "تعذّر إظهار السر — حدّث الصفحة وحاول مجدداً."
+    "settings.reveal_failed": "تعذّر إظهار السر — حدّث الصفحة وحاول مجدداً.",
+    "skip.hidden": "مخفي",
+    "skip.blocked": "محظور",
+    "skip.in_person": "يدرس مكانياً",
+    "skip.family_blocked": "العائلة محظورة",
+    "skip.suspended": "معلَّق",
+    "skip.suspended_until": "معلَّق حتى :date",
+    "skip.sms_disabled": "SMS معطّل",
+    "skip.no_phone": "بدون رقم",
+    "skip.excluded_send_all": "مستثنى من الإرسال الجماعي",
+    "skip.no_match": "لا يطابق شرط الحملة",
+    "send.unique_phones": "أرقام فريدة",
+    "send.duplicate_warn": ":count من هذه الرسائل تذهب إلى رقم مكرّر في نفس الحملة — سيستقبل هؤلاء الأولياء الرسالة أكثر من مرة وستدفع ثمن كل نسخة. فعّل \"رسالة واحدة لكل عائلة\" للإرسال مرة واحدة لكل بيت.",
+    "settings.script_defaults_note": "كل هذه القيم مأخوذة من السكربت الأصلي — اترك الافتراضيات ما لم تكن متأكداً.",
+    "settings.script_templates_note": "هذه هي القوالب نفسها من السكربت الأصلي — يمكنك تعديلها هنا.",
+    "settings.sender_id_hint": "عادةً \"gText\" — مطابق لإعداد السكربت الأصلي."
 }

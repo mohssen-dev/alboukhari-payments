@@ -28,6 +28,7 @@ class Payment extends Model
         'paid_at',
         'method',
         'note',
+        'source',
     ];
 
     protected $casts = [

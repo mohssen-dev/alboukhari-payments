@@ -75,6 +75,23 @@ class SendCampaign extends Component
         }
     }
 
+    /**
+     * Any change to the targeting criteria invalidates a shown preview.
+     *
+     * The preview panel (recipient count, segment count, estimated cost) used
+     * to survive a change of type/month/year/threshold/grouping, so an admin
+     * could preview "20 late payers", switch the type to "send to all", and
+     * launch while the screen still showed 20 — sending to 299 parents.
+     */
+    public function updated($property): void
+    {
+        if (in_array($property, ['type', 'year', 'month', 'thresholdAmount', 'groupByFamily'], true)) {
+            $this->previewStats = null;
+            $this->previewRecipients = null;
+            $this->previewSkipped = null;
+        }
+    }
+
     public function updatedType()
     {
         $this->thresholdAmount = in_array($this->type, ['paid_less_than', 'balance_above']) ? 30 : null;

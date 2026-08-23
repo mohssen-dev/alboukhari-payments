@@ -15,6 +15,9 @@ class DispatchScheduledCampaigns extends Command
     protected $signature = 'campaigns:dispatch-scheduled';
     protected $description = 'يطلق الحملات المجدولة التي حان وقتها (يُشغَّل كل دقيقة عبر الـ scheduler).';
 
+    /** A 'running' campaign untouched for this long is treated as interrupted. */
+    private const STALE_RUNNING_MINUTES = 15;
+
     public function handle(): int
     {
         if (HaltService::isHalted()) {
@@ -22,6 +25,18 @@ class DispatchScheduledCampaigns extends Command
             $this->line('Sending is halted; scheduled campaigns deferred.');
             return self::SUCCESS;
         }
+
+        // Resume campaigns that stopped part-way BEFORE starting new ones —
+        // half-messaged parents come first.
+        //
+        // A campaign is set to 'paused' when the hourly quota runs out or the
+        // provider rate-limits, and to 'running' while a batch is in flight.
+        // Nothing ever moved either state forward again: a quota-paused
+        // campaign was dead permanently, so some parents got the message and
+        // the rest never did. Resuming here is safe because sendCampaign()
+        // only picks up recipients still 'pending' and requeues ones stranded
+        // at 'sending', and the hourly quota still gates every send.
+        $this->resumeInterrupted();
 
         $due = Campaign::query()
             ->where('status', 'queued')
@@ -83,5 +98,41 @@ class DispatchScheduledCampaigns extends Command
         }
 
         return self::SUCCESS;
+    }
+
+    /**
+     * Pick campaigns back up after a quota pause or an interrupted batch.
+     *
+     * 'paused'  — the hourly quota or a provider rate-limit stopped the batch.
+     *             Retrying costs nothing when the quota is still exhausted:
+     *             sendCampaign() takes the quota per message and pauses again.
+     * 'running' — a batch that has not been touched for STALE_RUNNING_MINUTES
+     *             means the process died (cron timeout, deploy, fatal). Its
+     *             stranded recipients are requeued inside sendCampaign().
+     */
+    private function resumeInterrupted(): void
+    {
+        $interrupted = Campaign::query()
+            ->where(function ($q) {
+                $q->where('status', 'paused')
+                  ->orWhere(function ($w) {
+                      $w->where('status', 'running')
+                        ->where('updated_at', '<', now()->subMinutes(self::STALE_RUNNING_MINUTES));
+                  });
+            })
+            ->whereHas('recipients', fn ($q) => $q->whereIn('status', ['pending', 'sending']))
+            ->orderBy('id')
+            ->get();
+
+        foreach ($interrupted as $campaign) {
+            $this->info("Resuming interrupted campaign #{$campaign->id} (was {$campaign->status})…");
+            try {
+                $result = app(CampaignSender::class)->sendCampaign($campaign);
+                $this->info("  → " . json_encode($result));
+            } catch (\Throwable $e) {
+                report($e);
+                $this->error("  → resume failed: {$e->getMessage()}");
+            }
+        }
     }
 }

@@ -132,6 +132,152 @@ class LivewireAuthorizationTest extends TestCase
         $this->assertDatabaseCount('student_monthly_fee_overrides', 0);
     }
 
+    /**
+     * A blocked call aborts with 403, which leaves Livewire's test harness
+     * without a usable snapshot — so the interaction is wrapped and we assert
+     * on the database afterwards. Swallowing the throw is deliberate: it is
+     * the guard firing, and the DB assertion is what proves the security
+     * property either way.
+     */
+    private function attempt(callable $interaction): void
+    {
+        try {
+            $interaction();
+        } catch (\Throwable) {
+            // guard fired — expected for the forbidden cases
+        }
+    }
+
+    public function test_viewer_cannot_create_a_user(): void
+    {
+        // UsersManager only checked isAdmin() in mount(). Livewire update
+        // requests never call mount(), so a viewer could hydrate the component
+        // and mint themselves an admin account.
+        $this->actingAs($this->user(User::ROLE_VIEWER));
+        $before = User::count();
+
+        $this->attempt(fn () => Livewire::test(\App\Livewire\UsersManager::class)
+            ->set('name', 'Intruder')
+            ->set('email', 'intruder@authz.test')
+            ->set('role', User::ROLE_ADMIN)
+            ->set('password', 'password123')
+            ->set('password_confirmation', 'password123')
+            ->call('save'));
+
+        $this->assertSame($before, User::count(),
+            'SECURITY: a viewer created a user through UsersManager::save');
+        $this->assertDatabaseMissing('users', ['email' => 'intruder@authz.test']);
+    }
+
+    public function test_staff_cannot_create_a_user_either(): void
+    {
+        // User management is admin-only, not staff.
+        $this->actingAs($this->user(User::ROLE_STAFF));
+        $before = User::count();
+
+        $this->attempt(fn () => Livewire::test(\App\Livewire\UsersManager::class)
+            ->set('name', 'ByStaff')
+            ->set('email', 'bystaff@authz.test')
+            ->set('role', User::ROLE_ADMIN)
+            ->set('password', 'password123')
+            ->set('password_confirmation', 'password123')
+            ->call('save'));
+
+        $this->assertSame($before, User::count());
+        $this->assertDatabaseMissing('users', ['email' => 'bystaff@authz.test']);
+    }
+
+    public function test_viewer_cannot_delete_a_user(): void
+    {
+        $victim = $this->user(User::ROLE_STAFF);
+        $this->actingAs($this->user(User::ROLE_VIEWER));
+
+        $this->attempt(fn () => Livewire::test(\App\Livewire\UsersManager::class)
+            ->call('delete', $victim->id));
+
+        $this->assertDatabaseHas('users', ['id' => $victim->id]);
+    }
+
+    public function test_viewer_cannot_edit_message_templates(): void
+    {
+        // Templates are the bodies the cron broadcasts to every parent.
+        $template = \App\Models\Template::create([
+            'code' => 'authz_tpl',
+            'name' => 'Original',
+            'language' => 'nl',
+            'body' => 'Original body',
+            'default_for' => 'none',
+        ]);
+        $this->actingAs($this->user(User::ROLE_VIEWER));
+
+        $this->attempt(fn () => Livewire::test(\App\Livewire\TemplatesList::class)
+            ->call('edit', $template->id)
+            ->set('body', 'HACKED BODY')
+            ->call('save'));
+
+        $this->assertSame('Original body', $template->fresh()->body,
+            'SECURITY: a viewer rewrote an SMS template');
+    }
+
+    public function test_viewer_cannot_delete_a_template(): void
+    {
+        $template = \App\Models\Template::create([
+            'code' => 'authz_tpl_del',
+            'name' => 'Keep me',
+            'language' => 'nl',
+            'body' => 'body',
+            'default_for' => 'none',
+        ]);
+        $this->actingAs($this->user(User::ROLE_VIEWER));
+
+        Livewire::test(\App\Livewire\TemplatesList::class)->call('delete', $template->id);
+
+        $this->assertNotNull(\App\Models\Template::find($template->id),
+            'SECURITY: a viewer deleted an SMS template');
+    }
+
+    public function test_viewer_cannot_record_a_quick_entry_payment(): void
+    {
+        $student = $this->student();
+        $this->actingAs($this->user(User::ROLE_VIEWER));
+
+        Livewire::test(\App\Livewire\QuickEntry::class)
+            ->call('selectStudent', $student->id)
+            ->set('amount', 30)
+            ->call('save');
+
+        $this->assertSame(0, Payment::count(),
+            'SECURITY: a viewer recorded a payment through QuickEntry::save');
+    }
+
+    public function test_staff_can_still_use_quick_entry(): void
+    {
+        $student = $this->student();
+        $this->actingAs($this->user(User::ROLE_STAFF));
+
+        Livewire::test(\App\Livewire\QuickEntry::class)
+            ->call('selectStudent', $student->id)
+            ->set('amount', 30)
+            ->call('save');
+
+        $this->assertSame(1, Payment::count(), 'Staff must still be able to use quick entry');
+    }
+
+    public function test_admin_can_still_manage_users(): void
+    {
+        $this->actingAs($this->user(User::ROLE_ADMIN));
+
+        Livewire::test(\App\Livewire\UsersManager::class)
+            ->set('name', 'New Staff')
+            ->set('email', 'newstaff@authz.test')
+            ->set('role', User::ROLE_STAFF)
+            ->set('password', 'password123')
+            ->set('password_confirmation', 'password123')
+            ->call('save');
+
+        $this->assertDatabaseHas('users', ['email' => 'newstaff@authz.test']);
+    }
+
     public function test_staff_can_still_save_a_payment(): void
     {
         $student = $this->student();

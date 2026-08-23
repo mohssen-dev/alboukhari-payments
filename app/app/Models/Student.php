@@ -141,18 +141,26 @@ class Student extends Model
         return $this->allow_sms && !empty($this->phone_primary_e164);
     }
 
+    /**
+     * Why this student is excluded from messaging, in the viewer's language.
+     * These strings surface in the grid, the student panel and the campaign
+     * preview, so they must be translated — they used to be hardcoded Arabic
+     * and were shown verbatim to Dutch and English users.
+     */
     public function skipReason(): ?string
     {
-        if ($this->is_hidden) return 'مخفي';
-        if ($this->is_blocked_messages) return 'محظور';
-        if ($this->is_in_person) return 'يدرس مكانياً';
-        if ($this->family && $this->family->is_blocked_messages) return 'العائلة محظورة';
+        if ($this->is_hidden) return __('skip.hidden');
+        if ($this->is_blocked_messages) return __('skip.blocked');
+        if ($this->is_in_person) return __('skip.in_person');
+        if ($this->family && $this->family->is_blocked_messages) return __('skip.family_blocked');
         if ($this->isCurrentlySuspended()) {
-            $end = $this->activeSuspension()->ends_at;
-            return 'معلَّق' . ($end ? ' حتى ' . $end->format('Y-m-d') : '');
+            $end = $this->activeSuspension()?->ends_at;
+            return $end
+                ? __('skip.suspended_until', ['date' => $end->format('Y-m-d')])
+                : __('skip.suspended');
         }
-        if (!$this->allow_sms) return 'SMS معطّل';
-        if (empty($this->phone_primary_e164)) return 'بدون رقم';
+        if (!$this->allow_sms) return __('skip.sms_disabled');
+        if (empty($this->phone_primary_e164)) return __('skip.no_phone');
         return null;
     }
 

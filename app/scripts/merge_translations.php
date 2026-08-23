@@ -393,6 +393,27 @@ $translations = [
     'settings.hide_secret'       => ['en' => 'Hide', 'nl' => 'Verbergen', 'ar' => 'إخفاء'],
     'settings.copy_secret'       => ['en' => 'Copy', 'nl' => 'Kopiëren', 'ar' => 'نسخ'],
     'settings.reveal_failed'     => ['en' => 'Could not reveal the secret — try refreshing the page.', 'nl' => 'Kon het geheim niet tonen — ververs de pagina.', 'ar' => 'تعذّر إظهار السر — حدّث الصفحة وحاول مجدداً.'],
+
+    // ---------- Skip reasons (were hardcoded Arabic, shown to nl/en users) ----------
+    'skip.hidden'            => ['en' => 'Hidden', 'nl' => 'Verborgen', 'ar' => 'مخفي'],
+    'skip.blocked'           => ['en' => 'Blocked', 'nl' => 'Geblokkeerd', 'ar' => 'محظور'],
+    'skip.in_person'         => ['en' => 'Studies in person', 'nl' => 'Studeert op locatie', 'ar' => 'يدرس مكانياً'],
+    'skip.family_blocked'    => ['en' => 'Family blocked', 'nl' => 'Familie geblokkeerd', 'ar' => 'العائلة محظورة'],
+    'skip.suspended'         => ['en' => 'Suspended', 'nl' => 'Opgeschort', 'ar' => 'معلَّق'],
+    'skip.suspended_until'   => ['en' => 'Suspended until :date', 'nl' => 'Opgeschort tot :date', 'ar' => 'معلَّق حتى :date'],
+    'skip.sms_disabled'      => ['en' => 'SMS disabled', 'nl' => 'SMS uitgeschakeld', 'ar' => 'SMS معطّل'],
+    'skip.no_phone'          => ['en' => 'No phone number', 'nl' => 'Geen telefoonnummer', 'ar' => 'بدون رقم'],
+    'skip.excluded_send_all' => ['en' => 'Excluded from bulk send', 'nl' => 'Uitgesloten van groepsverzending', 'ar' => 'مستثنى من الإرسال الجماعي'],
+    'skip.no_match'          => ['en' => 'Does not match campaign criteria', 'nl' => 'Voldoet niet aan de campagnevoorwaarden', 'ar' => 'لا يطابق شرط الحملة'],
+
+    // ---------- Duplicate-phone warning in the campaign preview ----------
+    'send.unique_phones'   => ['en' => 'Unique phones', 'nl' => 'Unieke nummers', 'ar' => 'أرقام فريدة'],
+    // Settings banners that were plain English sentences used as keys.
+    'settings.script_defaults_note' => ['en' => 'All these values come from the original Apps Script — keep the defaults unless you know what you are doing.', 'nl' => 'Al deze waarden komen uit het oorspronkelijke Apps Script — laat de standaardwaarden staan tenzij u weet wat u doet.', 'ar' => 'كل هذه القيم مأخوذة من السكربت الأصلي — اترك الافتراضيات ما لم تكن متأكداً.'],
+    'settings.script_templates_note' => ['en' => 'These are the exact templates from the original Apps Script — you can edit them here.', 'nl' => 'Dit zijn exact de sjablonen uit het oorspronkelijke Apps Script — u kunt ze hier aanpassen.', 'ar' => 'هذه هي القوالب نفسها من السكربت الأصلي — يمكنك تعديلها هنا.'],
+    'settings.sender_id_hint' => ['en' => 'Usually "gText" — matches the original Apps Script setting.', 'nl' => 'Meestal "gText" — komt overeen met het oorspronkelijke Apps Script.', 'ar' => 'عادةً "gText" — مطابق لإعداد السكربت الأصلي.'],
+
+    'send.duplicate_warn'  => ['en' => ':count of these messages go to a phone that already appears in this campaign — those parents receive the message more than once, and you pay for each copy. Enable "one message per family" to send once per household.', 'nl' => ':count van deze berichten gaan naar een nummer dat al in deze campagne voorkomt — die ouders ontvangen het bericht meerdere keren en u betaalt voor elke kopie. Zet "één bericht per gezin" aan om per huishouden één keer te sturen.', 'ar' => ':count من هذه الرسائل تذهب إلى رقم مكرّر في نفس الحملة — سيستقبل هؤلاء الأولياء الرسالة أكثر من مرة وستدفع ثمن كل نسخة. فعّل "رسالة واحدة لكل عائلة" للإرسال مرة واحدة لكل بيت.'],
 ];
 
 $locales = ['en', 'nl', 'ar'];

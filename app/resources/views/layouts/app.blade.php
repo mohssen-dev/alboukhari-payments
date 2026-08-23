@@ -174,9 +174,12 @@
         toasts.push({ id, msg: $event.detail.message || $event.detail, type: $event.detail.type || 'success' });
         setTimeout(() => { toasts = toasts.filter(t => t.id !== id); }, 3500);
     "
+    {{-- Honour the dispatched type. This used to hard-code 'success', so every
+         error sent through the `flash` event (e.g. "you cannot delete your own
+         account", "sending is halted") rendered as a green success toast. --}}
     @flash.window="
         const id = Date.now() + Math.random();
-        toasts.push({ id, msg: $event.detail.message, type: 'success' });
+        toasts.push({ id, msg: $event.detail.message || $event.detail, type: $event.detail.type || 'success' });
         setTimeout(() => { toasts = toasts.filter(t => t.id !== id); }, 3500);
     "
 >

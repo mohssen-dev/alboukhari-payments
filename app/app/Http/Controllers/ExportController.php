@@ -28,13 +28,29 @@ class ExportController extends Controller
         // markers included — without it legacy_late months print as 'unpaid'.
         $student->load(['payments', 'markers', 'feeOverrides', 'surcharges', 'family', 'suspensions']);
 
+        // The statement is what a PARENT receives, so its balance must equal
+        // the balance the office sees in the app. Raw balance() counted every
+        // month of the year, which billed months that are not due yet (a row
+        // could read status "not_due" and balance 30.00 side by side) and
+        // inflated the total — a student the app showed at €60 printed €240.
+        // Mirror the UI: only months that are actually owed to date count.
+        $statuses = MonthStatusResolver::resolveAll($student, $year);
+        $dueAll   = FeeResolver::dueAllMonths($student, $year);
+        $paidAll  = FeeResolver::paidAllMonths($student, $year);
+        $nowYm    = ((int) date('Y') * 12) + (int) date('n');
+
         $rows = [];
         for ($m = 1; $m <= 12; $m++) {
+            $isFuture = (($year * 12) + $m) > $nowYm;
+            $owed = (!$isFuture && in_array($statuses[$m], ['unpaid', 'late', 'partial'], true))
+                ? max(0.0, $dueAll[$m] - $paidAll[$m])
+                : 0.0;
+
             $rows[$m] = [
-                'due'     => FeeResolver::dueAmount($student, $year, $m),
-                'paid'    => FeeResolver::paidAmount($student, $year, $m),
-                'balance' => FeeResolver::balance($student, $year, $m),
-                'status'  => MonthStatusResolver::resolve($student, $year, $m),
+                'due'     => $dueAll[$m],
+                'paid'    => $paidAll[$m],
+                'balance' => $owed,
+                'status'  => $statuses[$m],
             ];
         }
 
@@ -141,18 +157,29 @@ class ExportController extends Controller
         $sheet->fromArray(['Student', ...array_values($months), 'Total balance'], null, 'A1');
         $sheet->getStyle('A1:N1')->getFont()->setBold(true);
 
-        $students = Student::with(['payments', 'feeOverrides', 'surcharges', 'suspensions'])
+        // 'markers' is needed for legacy_late to resolve correctly.
+        $students = Student::with(['payments', 'markers', 'feeOverrides', 'surcharges', 'suspensions'])
             ->orderBy('name')
             ->get();
 
+        // Same rule as the app UI and the statement: only months owed to date.
+        $nowYm = ((int) date('Y') * 12) + (int) date('n');
+
         $row = 2;
         foreach ($students as $st) {
+            $statuses = MonthStatusResolver::resolveAll($st, $year);
+            $dueAll   = FeeResolver::dueAllMonths($st, $year);
+            $paidAll  = FeeResolver::paidAllMonths($st, $year);
+
             $line = [$st->name];
             $totalBal = 0.0;
             for ($m = 1; $m <= 12; $m++) {
-                $bal = FeeResolver::balance($st, $year, $m);
+                $isFuture = (($year * 12) + $m) > $nowYm;
+                $bal = (!$isFuture && in_array($statuses[$m], ['unpaid', 'late', 'partial'], true))
+                    ? max(0.0, $dueAll[$m] - $paidAll[$m])
+                    : 0.0;
                 $line[] = $bal;
-                if ($bal > 0) $totalBal += $bal;
+                $totalBal += $bal;
             }
             $line[] = $totalBal;
             $sheet->fromArray($line, null, "A{$row}");

@@ -10,6 +10,9 @@ use Illuminate\Support\Facades\Log;
 
 class CampaignSender
 {
+    /** A recipient is abandoned after this many failed attempts. */
+    public const MAX_ATTEMPTS = 3;
+
     public function __construct(
         private BulkGateClient $client,
     ) {}
@@ -27,6 +30,25 @@ class CampaignSender
         $campaign->update(['status' => 'running', 'started_at' => $campaign->started_at ?? now()]);
         $sent = 0;
         $failed = 0;
+
+        // Reclaim recipients stranded mid-flight by a previous run.
+        //
+        // A recipient is flipped to 'sending' right before the API call, so if
+        // the process is killed there (cron timeout, PHP fatal, deploy) it
+        // stays 'sending' forever: never retried, and never counted as
+        // remaining — which also let the campaign be stamped 'completed' while
+        // those parents were never contacted. Anything left 'sending' from an
+        // earlier run is put back in the queue, bounded by attempts so a number
+        // that reliably kills the worker cannot loop.
+        CampaignRecipient::where('campaign_id', $campaign->id)
+            ->where('status', 'sending')
+            ->where('attempts', '<', self::MAX_ATTEMPTS)
+            ->update(['status' => 'pending']);
+
+        CampaignRecipient::where('campaign_id', $campaign->id)
+            ->where('status', 'sending')
+            ->where('attempts', '>=', self::MAX_ATTEMPTS)
+            ->update(['status' => 'failed', 'last_error' => 'abandoned after ' . self::MAX_ATTEMPTS . ' attempts']);
 
         $pending = CampaignRecipient::where('campaign_id', $campaign->id)
             ->where('status', 'pending')
@@ -108,16 +130,27 @@ class CampaignSender
             }
         }
 
-        // تحديث الحالة النهائية
+        // Final state. 'sending' counts as unfinished too: counting only
+        // 'pending' meant a campaign whose last recipients died mid-call was
+        // stamped 'completed' even though nobody had been reached.
         $remaining = CampaignRecipient::where('campaign_id', $campaign->id)
-            ->where('status', 'pending')
+            ->whereIn('status', ['pending', 'sending'])
             ->count();
 
         if ($remaining === 0) {
-            $campaign->update(['status' => 'completed', 'finished_at' => now()]);
+            $totalFailed = CampaignRecipient::where('campaign_id', $campaign->id)
+                ->where('status', 'failed')->count();
+            $totalSent = CampaignRecipient::where('campaign_id', $campaign->id)
+                ->where('status', 'sent')->count();
+
+            // Every single message failing is not a completed campaign.
+            $campaign->update([
+                'status' => ($totalSent === 0 && $totalFailed > 0) ? 'failed' : 'completed',
+                'finished_at' => now(),
+            ]);
         }
 
-        return ['status' => 'done', 'sent' => $sent, 'failed' => $failed];
+        return ['status' => 'done', 'sent' => $sent, 'failed' => $failed, 'remaining' => $remaining];
     }
 
     /**

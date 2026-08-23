@@ -572,5 +572,20 @@
     "settings.reveal_secret_btn": "Toon geheim",
     "settings.hide_secret": "Verbergen",
     "settings.copy_secret": "Kopiëren",
-    "settings.reveal_failed": "Kon het geheim niet tonen — ververs de pagina."
+    "settings.reveal_failed": "Kon het geheim niet tonen — ververs de pagina.",
+    "skip.hidden": "Verborgen",
+    "skip.blocked": "Geblokkeerd",
+    "skip.in_person": "Studeert op locatie",
+    "skip.family_blocked": "Familie geblokkeerd",
+    "skip.suspended": "Opgeschort",
+    "skip.suspended_until": "Opgeschort tot :date",
+    "skip.sms_disabled": "SMS uitgeschakeld",
+    "skip.no_phone": "Geen telefoonnummer",
+    "skip.excluded_send_all": "Uitgesloten van groepsverzending",
+    "skip.no_match": "Voldoet niet aan de campagnevoorwaarden",
+    "send.unique_phones": "Unieke nummers",
+    "send.duplicate_warn": ":count van deze berichten gaan naar een nummer dat al in deze campagne voorkomt — die ouders ontvangen het bericht meerdere keren en u betaalt voor elke kopie. Zet \"één bericht per gezin\" aan om per huishouden één keer te sturen.",
+    "settings.script_defaults_note": "Al deze waarden komen uit het oorspronkelijke Apps Script — laat de standaardwaarden staan tenzij u weet wat u doet.",
+    "settings.script_templates_note": "Dit zijn exact de sjablonen uit het oorspronkelijke Apps Script — u kunt ze hier aanpassen.",
+    "settings.sender_id_hint": "Meestal \"gText\" — komt overeen met het oorspronkelijke Apps Script."
 }

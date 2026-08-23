@@ -97,12 +97,22 @@ class SettingsController extends Controller
         $data = $request->all();
 
         foreach (self::KEYS as $key) {
-            if (!array_key_exists($key, $data) && !in_array($key, self::BOOLEAN_KEYS, true)) {
+            // Only touch keys the submitted form actually carried.
+            //
+            // Booleans used to be special-cased as "absent means 0", but the
+            // settings page is FIVE separate forms (one per tab) that all post
+            // here, so every save wrote 0 to the checkboxes living on the other
+            // tabs: saving the General tab silently turned off force_ascii —
+            // doubling SMS cost by dropping every message to 70-char Unicode —
+            // and disabled both reminder triggers. Each checkbox now ships a
+            // paired hidden 0 in the blade, so "unchecked" arrives as a real
+            // value and "not in this form" is correctly left alone.
+            if (!array_key_exists($key, $data)) {
                 continue;
             }
 
             if (in_array($key, self::BOOLEAN_KEYS, true)) {
-                Setting::put($key, $request->has($key) ? '1' : '0');
+                Setting::put($key, $request->boolean($key) ? '1' : '0');
                 continue;
             }
 

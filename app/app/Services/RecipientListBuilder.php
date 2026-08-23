@@ -59,7 +59,7 @@ class RecipientListBuilder
                     $skipped[] = [
                         'student_id' => $student->id,
                         'name' => $student->name,
-                        'reason' => 'مستثنى من الإرسال الجماعي',
+                        'reason' => __('skip.excluded_send_all'),
                     ];
                     continue;
                 }
@@ -70,7 +70,7 @@ class RecipientListBuilder
                 $skipped[] = [
                     'student_id' => $student->id,
                     'name' => $student->name,
-                    'reason' => 'لا يطابق شرط الحملة',
+                    'reason' => __('skip.no_match'),
                 ];
                 continue;
             }
@@ -119,6 +119,14 @@ class RecipientListBuilder
             }
         }
 
+        // Siblings share their parent's phone, so a per-student campaign sends
+        // the same household several messages — 126 of 299 on the real roster.
+        // The parent is annoyed and the school pays for every copy, so surface
+        // it in the preview instead of letting it pass silently.
+        $phones = array_filter(array_column($recipients, 'phone'));
+        $uniquePhones = count(array_unique($phones));
+        $duplicatePhones = count($phones) - $uniquePhones;
+
         return [
             'recipients' => $recipients,
             'skipped' => $skipped,
@@ -126,6 +134,8 @@ class RecipientListBuilder
                 'total_recipients' => count($recipients),
                 'total_segments' => collect($recipients)->sum('segments'),
                 'total_skipped' => count($skipped),
+                'unique_phones' => $uniquePhones,
+                'duplicate_phones' => $duplicatePhones,
             ],
         ];
     }
@@ -145,6 +155,17 @@ class RecipientListBuilder
                 return $status === 'late';
 
             case 'paid_less_than':
+                // Every other type gates on the resolved month status; this one
+                // compared a bare paid amount, so it dunned students who owe
+                // nothing at all: withdrawn or not-yet-enrolled children (paid
+                // 0 for a month outside their window), months settled at import
+                // (legacy_zero), months exempted with a 0 fee override, and —
+                // because a future month is also unpaid — EVERY student the
+                // moment the campaign named a month that has not arrived yet.
+                $status = MonthStatusResolver::resolve($student, $year, $month);
+                if (! in_array($status, ['unpaid', 'late', 'partial'], true)) {
+                    return false;
+                }
                 $paid = FeeResolver::paidAmount($student, $year, $month);
                 $threshold = (float) ($campaign->threshold_amount ?? 0);
                 return $paid < $threshold;
@@ -156,10 +177,16 @@ class RecipientListBuilder
                 $statuses = MonthStatusResolver::resolveAll($student, $year);
                 $dueAll   = FeeResolver::dueAllMonths($student, $year);
                 $paidAll  = FeeResolver::paidAllMonths($student, $year);
+                // Stop at the current month, exactly like the grid, the panel
+                // and the statement. Summing all 12 counted months that are not
+                // owed yet, so the "balance above X" list was inflated and
+                // dunned parents for debt that does not exist.
+                $nowYm = ((int) date('Y') * 12) + (int) date('n');
                 $totalBalance = 0;
                 for ($m = 1; $m <= 12; $m++) {
+                    if ((($year * 12) + $m) > $nowYm) break;
                     if (in_array($statuses[$m], ['unpaid', 'late', 'partial'], true)) {
-                        $totalBalance += ($dueAll[$m] - $paidAll[$m]);
+                        $totalBalance += max(0.0, $dueAll[$m] - $paidAll[$m]);
                     }
                 }
                 $threshold = (float) ($campaign->threshold_amount ?? 0);

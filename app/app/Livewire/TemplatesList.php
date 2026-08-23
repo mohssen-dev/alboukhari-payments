@@ -4,11 +4,21 @@ namespace App\Livewire;
 
 use App\Models\Setting;
 use App\Models\Template;
+use App\Support\AuthorizesLivewireWrite;
 use App\Support\SmsCounter;
 use Livewire\Component;
 
+/**
+ * Templates are the message bodies the cron sends to every parent, so write
+ * access here is effectively write access to what the school broadcasts.
+ * The component had no authorization at all — it is mounted on /templates,
+ * but Livewire endpoints are reachable regardless of the page the caller is
+ * on, so every mutating method now checks.
+ */
 class TemplatesList extends Component
 {
+    use AuthorizesLivewireWrite;
+
     public bool $editing = false;
     public ?int $editId = null;
     public string $code = '';
@@ -19,6 +29,8 @@ class TemplatesList extends Component
 
     public function newTemplate()
     {
+        $this->assertCanWrite();
+
         $this->reset(['editId', 'code', 'name', 'body']);
         $this->language = 'nl';
         $this->default_for = 'none';
@@ -27,6 +39,8 @@ class TemplatesList extends Component
 
     public function edit(int $id)
     {
+        $this->assertCanWrite();
+
         $t = Template::findOrFail($id);
         $this->editId = $id;
         $this->code = $t->code;
@@ -39,6 +53,8 @@ class TemplatesList extends Component
 
     public function save()
     {
+        $this->assertCanWrite();
+
         $this->validate([
             'code' => 'required|string|max:50|regex:/^[a-z0-9_]+$/',
             'name' => 'required|string|max:120',
@@ -72,12 +88,16 @@ class TemplatesList extends Component
 
     public function delete(int $id)
     {
+        $this->assertCanWrite();
+
         Template::findOrFail($id)->delete();
         $this->dispatch('flash', message: __('flash.deleted'));
     }
 
     public function duplicate(int $id)
     {
+        $this->assertCanWrite();
+
         $orig = Template::findOrFail($id);
         Template::create([
             'code' => $orig->code . '_copy_' . time(),

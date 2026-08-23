@@ -16,12 +16,36 @@ class Setting extends Model
 
     public static function get(string $key, mixed $default = null): mixed
     {
-        return Cache::remember("setting:$key", 60, function () use ($key, $default) {
+        // Cache the STORED value (still encrypted), never the plaintext.
+        //
+        // CACHE_STORE is the `database` driver, so whatever is cached here is
+        // written to the `cache` table in MySQL — and therefore ends up in
+        // every nightly db:backup dump. Caching the decrypted token defeated
+        // the entire point of encrypting it at rest: the BulkGate API token
+        // was sitting in production's cache table in clear text. Decrypt after
+        // reading instead, so only ciphertext is ever cached.
+        $cached = Cache::remember("setting:$key", 60, function () use ($key) {
             $row = static::find($key);
-            if (!$row) return $default;
-            $value = $row->is_encrypted ? Crypt::decryptString($row->value) : $row->value;
-            return $value === null ? $default : $value;
+            return $row ? ['v' => $row->value, 'e' => (bool) $row->is_encrypted] : null;
         });
+
+        if ($cached === null) {
+            return $default;
+        }
+
+        if (! $cached['e']) {
+            return $cached['v'] ?? $default;
+        }
+
+        try {
+            $value = Crypt::decryptString($cached['v']);
+        } catch (\Throwable) {
+            // Unreadable ciphertext (e.g. APP_KEY rotated) must not take a page
+            // down — fall back to the caller's default.
+            return $default;
+        }
+
+        return $value === null ? $default : $value;
     }
 
     public static function put(string $key, mixed $value, bool $encrypt = false): void

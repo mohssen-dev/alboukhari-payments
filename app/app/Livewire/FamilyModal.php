@@ -28,7 +28,15 @@ class FamilyModal extends Component
     public function open(int $studentId): void
     {
         try {
+            // The student's OWN relations must be loaded too, not just the
+            // family's. A student without a family falls into the branch below
+            // that builds the member list from $student alone — with the own
+            // relations unloaded, dueAllMonths() sees no feeOverrides and no
+            // surcharges (it only reads them behind relationLoaded guards) and
+            // silently reports the plain default fee, inventing debt for an
+            // exempted child and hiding a surcharge on another.
             $student = Student::with([
+                'payments', 'feeOverrides', 'surcharges', 'markers', 'suspensions',
                 'family.students.payments',
                 'family.students.feeOverrides',
                 'family.students.surcharges',

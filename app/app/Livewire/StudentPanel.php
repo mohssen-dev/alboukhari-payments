@@ -90,12 +90,16 @@ class StudentPanel extends Component
     }
 
     /**
-     * الإغلاق يتم عبر الأب (StudentsGrid::closeStudent) — هذه دالة قديمة بقيت لتوافق رجعي.
-     * لا تصفّر studentId محلياً لأن ذلك يجعل render() ينفجر مع findOrFail(null).
+     * Kept for backward compatibility with anything still calling close().
+     *
+     * It used to dispatch 'close-student', an event NOTHING listens for (the
+     * registered listener is 'close-student-panel'), so calling it did nothing
+     * at all. It now performs the close directly — same behaviour as the
+     * blade's own close button.
      */
     public function close()
     {
-        $this->dispatch('close-student');
+        $this->closeSelf();
     }
 
     public function saveBasic()

@@ -572,5 +572,20 @@
     "settings.reveal_secret_btn": "Show secret",
     "settings.hide_secret": "Hide",
     "settings.copy_secret": "Copy",
-    "settings.reveal_failed": "Could not reveal the secret — try refreshing the page."
+    "settings.reveal_failed": "Could not reveal the secret — try refreshing the page.",
+    "skip.hidden": "Hidden",
+    "skip.blocked": "Blocked",
+    "skip.in_person": "Studies in person",
+    "skip.family_blocked": "Family blocked",
+    "skip.suspended": "Suspended",
+    "skip.suspended_until": "Suspended until :date",
+    "skip.sms_disabled": "SMS disabled",
+    "skip.no_phone": "No phone number",
+    "skip.excluded_send_all": "Excluded from bulk send",
+    "skip.no_match": "Does not match campaign criteria",
+    "send.unique_phones": "Unique phones",
+    "send.duplicate_warn": ":count of these messages go to a phone that already appears in this campaign — those parents receive the message more than once, and you pay for each copy. Enable \"one message per family\" to send once per household.",
+    "settings.script_defaults_note": "All these values come from the original Apps Script — keep the defaults unless you know what you are doing.",
+    "settings.script_templates_note": "These are the exact templates from the original Apps Script — you can edit them here.",
+    "settings.sender_id_hint": "Usually \"gText\" — matches the original Apps Script setting."
 }

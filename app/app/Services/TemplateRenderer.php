@@ -32,7 +32,9 @@ class TemplateRenderer
     {
         $due = FeeResolver::dueAmount($student, $year, $month);
         $paid = FeeResolver::paidAmount($student, $year, $month);
-        $balance = $due - $paid;
+        // Clamped: a parent who paid in advance must never receive an SMS
+        // quoting a negative amount owed.
+        $balance = max(0.0, $due - $paid);
 
         $vars = [
             'Naam' => $student->name,
@@ -60,7 +62,18 @@ class TemplateRenderer
      */
     public static function renderForFamily(string $template, Family $family, int $year, int $month, bool $onlyUnpaid = false): string
     {
-        $students = $family->students;
+        // Only siblings this school actually messages about. Previously EVERY
+        // child on the family record was named in the SMS and had their fee
+        // added to the family total — including ones deliberately excluded
+        // (hidden, blocked, studying in person, suspended), so a parent was
+        // billed for a child the office had already taken out of messaging.
+        $students = $family->students->filter(fn (Student $s) => $s->skipReason() === null)->values();
+        if ($students->isEmpty()) {
+            // Nothing messageable left — fall back to the full list rather than
+            // rendering an empty message.
+            $students = $family->students;
+        }
+
         $names = $students->pluck('name')->all();
         $unpaidNames = [];
         $totalDue = 0;
@@ -80,6 +93,9 @@ class TemplateRenderer
             $detailsLines[] = sprintf('%s: %s€', $student->name, number_format($due, 0));
         }
 
+        // An overpaying family must never see a negative figure in an SMS.
+        $familyOutstanding = max(0.0, $totalDue - $totalPaid);
+
         $vars = [
             'Naam' => implode(' و ', $names),
             'name' => implode(' و ', $names),
@@ -91,9 +107,9 @@ class TemplateRenderer
             'عدد_الأبناء' => count($students),
             'family_total' => number_format($totalDue, 2),
             'family_paid' => number_format($totalPaid, 2),
-            'family_balance' => number_format($totalDue - $totalPaid, 2),
+            'family_balance' => number_format($familyOutstanding, 2),
             'المبلغ_العائلي' => number_format($totalDue, 2),
-            'المتبقي_العائلي' => number_format($totalDue - $totalPaid, 2),
+            'المتبقي_العائلي' => number_format($familyOutstanding, 2),
             'تفاصيل_الأبناء' => implode("\n", $detailsLines),
             'month' => self::MONTHS_EN[$month] ?? '',
             'month_nl' => self::MONTHS_NL[$month] ?? '',

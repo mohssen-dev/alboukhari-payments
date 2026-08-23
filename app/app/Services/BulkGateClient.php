@@ -100,22 +100,31 @@ class BulkGateClient
         }
 
         $statusNote = 'ERR ' . $code;
+        $accepted = false;
         $data = json_decode($body, true);
+
         if ($code >= 200 && $code < 300 && isset($data['data'])) {
             $responses = $data['data']['response'] ?? [];
             if (is_array($responses) && count($responses) > 0) {
                 $st = strtolower((string) ($responses[0]['status'] ?? ''));
-                $statusNote = in_array($st, ['accepted', 'sent', 'scheduled'], true)
-                    ? strtoupper($st)
-                    : 'API ' . ($st ?: 'OK');
+                $accepted = in_array($st, ['accepted', 'sent', 'scheduled'], true);
+                $statusNote = $accepted ? strtoupper($st) : 'API ' . ($st ?: 'unknown');
             } else {
+                // 2xx with no per-recipient detail — the original Apps Script
+                // treated this as success; keep that behaviour.
+                $accepted = true;
                 $statusNote = 'OK';
             }
         } elseif (isset($data['error']) || isset($data['type'])) {
             $statusNote = 'ERR ' . ($data['type'] ?? '') . ' ' . ($data['error'] ?? '');
         }
 
-        if ($code < 200 || $code >= 300) {
+        // A 2xx whose per-recipient status is NOT an accepted one means the
+        // provider rejected this number (invalid, blocked, out of credit…).
+        // That used to return normally, so CampaignSender marked the recipient
+        // 'sent', charged the school for it, and never retried — a message the
+        // parent never received, recorded as delivered.
+        if ($code < 200 || $code >= 300 || ! $accepted) {
             throw new \RuntimeException(trim($statusNote));
         }
 

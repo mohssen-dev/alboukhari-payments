@@ -6,10 +6,13 @@ use App\Models\Payment;
 use App\Models\Student;
 use App\Services\FeeResolver;
 use App\Services\MonthNames;
+use App\Support\AuthorizesLivewireWrite;
 use Livewire\Component;
 
 class QuickEntry extends Component
 {
+    use AuthorizesLivewireWrite;
+
     public string $search = '';
     public ?int $selectedStudentId = null;
     public int $year;
@@ -49,6 +52,8 @@ class QuickEntry extends Component
 
     public function save(): void
     {
+        $this->assertCanWrite();
+
         $this->validate([
             'selectedStudentId' => 'required|exists:students,id',
             'amount' => 'required|numeric|min:0',

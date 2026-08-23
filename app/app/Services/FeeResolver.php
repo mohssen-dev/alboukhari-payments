@@ -7,7 +7,61 @@ use App\Models\Student;
 
 class FeeResolver
 {
+    /** Half-cent tolerance — mirrors MonthStatusResolver::EPS. */
+    private const EPS = 0.005;
+
     private static ?float $defaultMonthlyFeeCached = null;
+
+    /**
+     * Months of $year that carry a `legacy_zero` payment row.
+     *
+     * `legacy_zero` is what the Excel importer writes for a month the sheet
+     * recorded as 0 — it means "settled on import, nothing is owed", which is
+     * exactly how MonthStatusResolver reads it. FeeResolver used to know
+     * nothing about it, so dueAmount() kept billing the full fee for those
+     * months while the grid painted them settled: 81 students and €8,970 of
+     * phantom debt on the real dataset, and printed statements showing a
+     * parent 4x what the app shows.
+     *
+     * @return array<int, bool> keyed 1..12
+     */
+    private static function legacyZeroMonths(Student $student, int $year): array
+    {
+        $out = array_fill(1, 12, false);
+
+        if ($student->relationLoaded('payments')) {
+            foreach ($student->payments as $p) {
+                if ((int) $p->period_year !== $year || $p->method !== 'legacy_zero') continue;
+                $m = (int) $p->period_month;
+                if ($m >= 1 && $m <= 12) $out[$m] = true;
+            }
+            return $out;
+        }
+
+        $months = $student->payments()
+            ->where('period_year', $year)
+            ->where('method', 'legacy_zero')
+            ->pluck('period_month');
+        foreach ($months as $m) {
+            $m = (int) $m;
+            if ($m >= 1 && $m <= 12) $out[$m] = true;
+        }
+        return $out;
+    }
+
+    /**
+     * True when this month was settled by the legacy import and no real
+     * cash/bank payment has been recorded against it since. Scoped to
+     * "nothing really paid" so a month holding BOTH a legacy_zero row and a
+     * genuine payment keeps its normal due and can still read partial/paid —
+     * this is the same condition MonthStatusResolver uses to emit
+     * the 'legacy_zero' status, so the two halves of the engine now agree.
+     */
+    public static function isLegacySettled(Student $student, int $year, int $month): bool
+    {
+        return self::legacyZeroMonths($student, $year)[$month]
+            && self::paidAmount($student, $year, $month) <= self::EPS;
+    }
 
     public static function defaultMonthlyFee(): float
     {
@@ -82,6 +136,10 @@ class FeeResolver
         if (self::isOutsideEnrollment($student, $year, $month)) {
             return 0.0;
         }
+        // Settled on import — see isLegacySettled().
+        if (self::isLegacySettled($student, $year, $month)) {
+            return 0.0;
+        }
         return self::resolve($student, $year, $month) + self::surchargesFor($student, $year, $month);
     }
 
@@ -149,11 +207,16 @@ class FeeResolver
             ? ($student->withdrawn_at->year * 12) + $student->withdrawn_at->month
             : null;
 
+        // Months the importer settled at 0 owe nothing — see isLegacySettled().
+        $legacyZero = self::legacyZeroMonths($student, $year);
+        $paidAll = self::paidAllMonths($student, $year);
+
         $out = [];
         for ($m = 1; $m <= 12; $m++) {
             $cellYm = ($year * 12) + $m;
             if ($enrollmentYm !== null && $cellYm < $enrollmentYm) { $out[$m] = 0.0; continue; }
             if ($withdrawalYm !== null && $cellYm >= $withdrawalYm) { $out[$m] = 0.0; continue; }
+            if ($legacyZero[$m] && $paidAll[$m] <= self::EPS) { $out[$m] = 0.0; continue; }
             $fee = $overrides[$m] ?? $baseFee;
             $out[$m] = $fee + $surcharges[$m];
         }

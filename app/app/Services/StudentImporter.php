@@ -20,6 +20,9 @@ use PhpOffice\PhpSpreadsheet\IOFactory;
  */
 class StudentImporter
 {
+    /** Marks payment rows this importer owns, so re-import never deletes manual entries. */
+    public const SOURCE = 'excel_import';
+
     private const MONTHS = [
         'January' => 1, 'February' => 2, 'March' => 3, 'April' => 4,
         'May' => 5, 'June' => 6, 'July' => 7, 'August' => 8,
@@ -35,6 +38,7 @@ class StudentImporter
         'phones_invalid' => 0,
         'skipped_rows' => 0,
         'enrolled_at_set' => 0,
+        'payments_replaced' => 0,
     ];
 
     public function import(string $filePath, ?int $yearForMonths = null): array
@@ -188,12 +192,21 @@ class StudentImporter
             if (is_numeric($strVal)) {
                 $amount = (float) $strVal;
                 $method = $amount == 0 ? 'legacy_zero' : 'bank';
-                // نتجنّب التكرار: نحذف ونعيد لكل (طالب، شهر، سنة، method=legacy)
-                Payment::where('student_id', $student->id)
+
+                // Re-import replaces ONLY rows this importer created.
+                //
+                // This used to delete every legacy_zero/bank payment for the
+                // month, which matched bank payments an office worker had
+                // entered in the app — so re-importing the sheet silently
+                // destroyed real recorded money. Scoping the delete to
+                // source='excel_import' keeps the import idempotent while
+                // leaving manual entries untouched.
+                $removed = Payment::where('student_id', $student->id)
                     ->where('period_year', $year)
                     ->where('period_month', $monthNum)
-                    ->whereIn('method', ['legacy_zero', 'bank'])
+                    ->where('source', self::SOURCE)
                     ->delete();
+                $this->stats['payments_replaced'] += $removed;
 
                 Payment::create([
                     'student_id' => $student->id,
@@ -203,6 +216,7 @@ class StudentImporter
                     'paid_at' => sprintf('%04d-%02d-01', $year, $monthNum),
                     'method' => $method,
                     'note' => 'مستورد من Excel',
+                    'source' => self::SOURCE,
                 ]);
                 $this->stats['payments_created']++;
                 $firstActivity = $firstActivity ?? $monthNum;

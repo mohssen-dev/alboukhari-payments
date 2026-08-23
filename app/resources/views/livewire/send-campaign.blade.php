@@ -149,6 +149,18 @@
                 </div>
             </div>
 
+            {{-- Siblings share a parent's phone: without family grouping the
+                 same household is messaged (and billed) several times. --}}
+            @if (($previewStats['duplicate_phones'] ?? 0) > 0)
+                <div class="pill pill-warning" style="display:block;padding:10px 14px;margin-top:10px;line-height:1.6">
+                    ⚠️ {{ __('send.duplicate_warn', ['count' => $previewStats['duplicate_phones']]) }}
+                    <div class="fs-xs mt-2">
+                        {{ __('send.unique_phones') }}: <strong>{{ $previewStats['unique_phones'] }}</strong>
+                        / {{ $previewStats['total_recipients'] }}
+                    </div>
+                </div>
+            @endif
+
             <h4 style="margin-top:14px">{{ __('Top 20 recipients') }}</h4>
             <div style="max-height:280px;overflow:auto;border:1px solid var(--color-border);border-radius:var(--radius)">
                 <table style="width:100%;border-collapse:collapse;font-size:12px">

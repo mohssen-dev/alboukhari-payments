@@ -125,7 +125,7 @@
                                     <span class="field-script-default">SCRIPT: text</span>
                                 </label>
                                 <input type="text" name="bulkgate_sender_id" class="form-input" value="{{ $settings['bulkgate_sender_id'] }}">
-                                <div class="field-help">{{ __('Usually "text" — matches the original Apps Script setting.') }}</div>
+                                <div class="field-help">{{ __('settings.sender_id_hint') }}</div>
                             </div>
                             <div class="form-group">
                                 <label>
@@ -155,6 +155,7 @@
 
                         <div class="form-group">
                             <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:500">
+                                <input type="hidden" name="force_ascii" value="0">
                                 <input type="checkbox" name="force_ascii" {{ $settings['force_ascii'] === '1' ? 'checked' : '' }}>
                                 {{ __('Force ASCII (reduces SMS length)') }}
                                 <span class="field-script-default">SCRIPT: on</span>
@@ -224,6 +225,7 @@
 
                     <div class="form-group">
                         <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:600">
+                            <input type="hidden" name="whatsapp_enabled" value="0">
                             <input type="checkbox" name="whatsapp_enabled" {{ $settings['whatsapp_enabled'] === '1' ? 'checked' : '' }}>
                             {{ __('Enable WhatsApp channel') }}
                         </label>
@@ -289,6 +291,7 @@
 
                     <div class="form-group">
                         <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:500">
+                            <input type="hidden" name="whatsapp_fallback_to_sms" value="0">
                             <input type="checkbox" name="whatsapp_fallback_to_sms" {{ $settings['whatsapp_fallback_to_sms'] === '1' ? 'checked' : '' }}>
                             {{ __('Auto-fallback to SMS if WhatsApp fails') }}
                         </label>
@@ -333,6 +336,7 @@
 
                     <div class="form-group">
                         <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-weight:600;padding:10px 14px;background:var(--color-success-soft);border-radius:var(--radius)">
+                            <input type="hidden" name="trigger_first_friday_enabled" value="0">
                             <input type="checkbox" name="trigger_first_friday_enabled" {{ $settings['trigger_first_friday_enabled'] === '1' ? 'checked' : '' }}>
                             🟢 {{ __('Enable: First Friday reminder') }}
                             <span class="field-help" style="margin-inline-start:auto">{{ __('Sent to anyone unpaid on the first Friday of each month.') }}</span>
@@ -341,6 +345,7 @@
 
                     <div class="form-group">
                         <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-weight:600;padding:10px 14px;background:var(--color-danger-soft);border-radius:var(--radius)">
+                            <input type="hidden" name="trigger_mid_month_enabled" value="0">
                             <input type="checkbox" name="trigger_mid_month_enabled" {{ $settings['trigger_mid_month_enabled'] === '1' ? 'checked' : '' }}>
                             🔴 {{ __('Enable: Mid-month late notice') }}
                             <span class="field-help" style="margin-inline-start:auto">{{ __('Sent to anyone late on day 15 of each month.') }}</span>
@@ -374,7 +379,7 @@
                 <div class="page-card">
                     <h3 style="margin-top:0">📝 {{ __('Reminder Templates (NL)') }}</h3>
                     <div class="script-banner">
-                        ✅ {{ __('These are the exact templates from the original Apps Script — you can edit them here.') }}
+                        ✅ {{ __('settings.script_templates_note') }}
                     </div>
 
                     <div class="form-group">
@@ -401,7 +406,7 @@
                 <div class="page-card">
                     <h3 style="margin-top:0">🔧 {{ __('Rate Limiting & Batching') }}</h3>
                     <div class="script-banner">
-                        ✅ {{ __('All these values are imported from the original Apps Script — keep defaults unless you know what you\'re doing.') }}
+                        ✅ {{ __('settings.script_defaults_note') }}
                     </div>
 
                     <div class="form-row cols-2">

@@ -3,6 +3,7 @@
 namespace App\Livewire;
 
 use App\Models\User;
+use App\Support\AuthorizesLivewireWrite;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
 use Livewire\Attributes\Computed;
@@ -11,6 +12,7 @@ use Livewire\WithPagination;
 
 class UsersManager extends Component
 {
+    use AuthorizesLivewireWrite;
     use WithPagination;
 
     public ?int $editingId = null;
@@ -37,21 +39,30 @@ class UsersManager extends Component
         ];
     }
 
+    /**
+     * mount() runs ONLY on the first render. Every later interaction arrives
+     * as a POST to /livewire/update which re-hydrates the component WITHOUT
+     * calling mount() — so a check placed only here protected nothing: a
+     * viewer could hydrate this component and call save() to mint themselves
+     * an admin account. Every mutating method below re-checks.
+     */
     public function mount(): void
     {
-        if (! auth()->user()?->isAdmin()) {
-            abort(403);
-        }
+        $this->assertAdmin();
     }
 
     public function openCreate(): void
     {
+        $this->assertAdmin();
+
         $this->resetForm();
         $this->showForm = true;
     }
 
     public function openEdit(int $id): void
     {
+        $this->assertAdmin();
+
         $user = User::findOrFail($id);
         $this->editingId = $user->id;
         $this->name = $user->name;
@@ -65,6 +76,8 @@ class UsersManager extends Component
 
     public function save(): void
     {
+        $this->assertAdmin();
+
         $data = $this->validate();
 
         if ($this->editingId) {
@@ -105,6 +118,8 @@ class UsersManager extends Component
 
     public function toggleActive(int $id): void
     {
+        $this->assertAdmin();
+
         $user = User::findOrFail($id);
         if ($user->id === auth()->id()) {
             $this->dispatch('flash', message: __('users.cannot_disable_self'), type: 'error');
@@ -117,6 +132,8 @@ class UsersManager extends Component
 
     public function delete(int $id): void
     {
+        $this->assertAdmin();
+
         $user = User::findOrFail($id);
         if ($user->id === auth()->id()) {
             $this->dispatch('flash', message: __('users.cannot_delete_self'), type: 'error');
