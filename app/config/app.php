@@ -60,12 +60,22 @@ return [
     |--------------------------------------------------------------------------
     |
     | Here you may specify the default timezone for your application, which
-    | will be used by the PHP date and date-time functions. The timezone
-    | is set to "UTC" by default as it is suitable for most use cases.
+    | will be used by the PHP date and date-time functions.
+    |
+    | This school runs in the Netherlands, so the whole app must think in
+    | Europe/Amsterdam: the daily reminder hour, the mid-month day-15 and
+    | first-Friday checks, "today" on the dashboard/reports, the default
+    | paid_at on a new payment, and the moment a scheduled campaign fires
+    | (the admin picks that time in browser-local time). Leaving this at
+    | UTC silently shifted every one of those by 1-2 hours.
+    |
+    | It is read from APP_TIMEZONE — .env.production.example already
+    | documents that key; the value here used to be hard-coded, so the
+    | env var was being ignored.
     |
     */
 
-    'timezone' => 'UTC',
+    'timezone' => env('APP_TIMEZONE', 'Europe/Amsterdam'),
 
     /*
     |--------------------------------------------------------------------------
