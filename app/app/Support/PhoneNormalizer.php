@@ -68,4 +68,34 @@ class PhoneNormalizer
         if (!$e164) return false;
         return (bool) preg_match('/^\+\d{8,15}$/', $e164);
     }
+    /**
+     * True only when the number can actually receive an SMS.
+     *
+     * A Dutch landline like +31703603984 (070 = The Hague) passes every
+     * "looks like a phone number" check, so a mistyped or partially-entered
+     * number can silently become a campaign recipient the provider bills for
+     * and no parent ever receives. Every number currently on file is a mobile,
+     * so this only ever excludes a genuinely wrong entry.
+     *
+     * Anything the library cannot classify is allowed through: we only exclude
+     * numbers positively identified as fixed lines.
+     */
+    public static function isSmsCapable(?string $e164): bool
+    {
+        if (! self::isValid($e164)) return false;
+
+        try {
+            $util = \libphonenumber\PhoneNumberUtil::getInstance();
+            $parsed = $util->parse($e164, "NL");
+            if (! $util->isValidNumber($parsed)) return false;
+
+            $type = $util->getNumberType($parsed);
+            $name = is_object($type) ? $type->name : (string) $type;
+
+            return $name !== "FIXED_LINE";
+        } catch (\Throwable) {
+            // Unparseable by the library but structurally fine — do not block.
+            return true;
+        }
+    }
 }

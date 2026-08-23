@@ -402,6 +402,7 @@ $translations = [
     'skip.suspended'         => ['en' => 'Suspended', 'nl' => 'Opgeschort', 'ar' => 'معلَّق'],
     'skip.suspended_until'   => ['en' => 'Suspended until :date', 'nl' => 'Opgeschort tot :date', 'ar' => 'معلَّق حتى :date'],
     'skip.sms_disabled'      => ['en' => 'SMS disabled', 'nl' => 'SMS uitgeschakeld', 'ar' => 'SMS معطّل'],
+    'skip.not_mobile'        => ['en' => 'Landline — cannot receive SMS', 'nl' => 'Vaste lijn — kan geen SMS ontvangen', 'ar' => 'رقم أرضي — لا يستقبل الرسائل'],
     'skip.no_phone'          => ['en' => 'No phone number', 'nl' => 'Geen telefoonnummer', 'ar' => 'بدون رقم'],
     'skip.excluded_send_all' => ['en' => 'Excluded from bulk send', 'nl' => 'Uitgesloten van groepsverzending', 'ar' => 'مستثنى من الإرسال الجماعي'],
     'skip.no_match'          => ['en' => 'Does not match campaign criteria', 'nl' => 'Voldoet niet aan de campagnevoorwaarden', 'ar' => 'لا يطابق شرط الحملة'],

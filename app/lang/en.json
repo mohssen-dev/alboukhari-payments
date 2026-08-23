@@ -587,5 +587,6 @@
     "send.duplicate_warn": ":count of these messages go to a phone that already appears in this campaign — those parents receive the message more than once, and you pay for each copy. Enable \"one message per family\" to send once per household.",
     "settings.script_defaults_note": "All these values come from the original Apps Script — keep the defaults unless you know what you are doing.",
     "settings.script_templates_note": "These are the exact templates from the original Apps Script — you can edit them here.",
-    "settings.sender_id_hint": "Usually \"gText\" — matches the original Apps Script setting."
+    "settings.sender_id_hint": "Usually \"gText\" — matches the original Apps Script setting.",
+    "skip.not_mobile": "Landline — cannot receive SMS"
 }

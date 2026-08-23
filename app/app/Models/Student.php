@@ -138,7 +138,10 @@ class Student extends Model
         if ($this->isCurrentlySuspended()) {
             return false;
         }
-        return $this->allow_sms && !empty($this->phone_primary_e164);
+        // Landlines are excluded here too — see skipReason().
+        return $this->allow_sms
+            && !empty($this->phone_primary_e164)
+            && \App\Support\PhoneNormalizer::isSmsCapable($this->phone_primary_e164);
     }
 
     /**
@@ -161,6 +164,10 @@ class Student extends Model
         }
         if (!$this->allow_sms) return __('skip.sms_disabled');
         if (empty($this->phone_primary_e164)) return __('skip.no_phone');
+        // A landline passes every "valid number" check but can never
+        // receive an SMS — the provider would bill for a message that
+        // cannot arrive, with nothing on screen explaining the silence.
+        if (! \App\Support\PhoneNormalizer::isSmsCapable($this->phone_primary_e164)) return __('skip.not_mobile');
         return null;
     }
 
