@@ -149,4 +149,76 @@ class ImportNonDestructiveTest extends TestCase
         $this->assertCount(1, $rows, 'the corrected value must replace, not stack');
         $this->assertSame(25.00, (float) $rows->first()->amount);
     }
+    public function test_clearing_a_cell_in_the_sheet_removes_its_import_row(): void
+    {
+        $year = 2026;
+
+        // Sheet says January = 30.
+        (new StudentImporter())->import($this->makeSheet(6, 'Kid Six', [1 => 30]), $year);
+        $this->assertSame(1, Payment::where('source', StudentImporter::SOURCE)->count());
+
+        // The office clears that cell in the spreadsheet and re-imports.
+        (new StudentImporter())->import($this->makeSheet(6, 'Kid Six', []), $year);
+
+        $this->assertSame(0, Payment::where('source', StudentImporter::SOURCE)->count(),
+            'A cleared cell must drop its import row so the app mirrors the sheet.');
+    }
+
+    public function test_clearing_a_cell_does_not_touch_a_manual_payment(): void
+    {
+        $year = 2026;
+        (new StudentImporter())->import($this->makeSheet(7, 'Kid Seven', [1 => 30]), $year);
+        $student = Student::where('external_id', 7)->firstOrFail();
+
+        $manual = Payment::create([
+            'student_id' => $student->id,
+            'period_year' => $year,
+            'period_month' => 1,
+            'amount' => 20,
+            'method' => 'cash',
+            'paid_at' => "$year-01-09",
+        ]);
+
+        // Same month, now blank in the sheet.
+        (new StudentImporter())->import($this->makeSheet(7, 'Kid Seven', []), $year);
+
+        $this->assertNotNull(Payment::find($manual->id),
+            'Clearing a sheet cell must never delete money recorded in the app.');
+        $this->assertSame(0, Payment::where('source', StudentImporter::SOURCE)->count());
+    }
+
+    public function test_clearing_an_x_marker_removes_it(): void
+    {
+        $year = 2026;
+        (new StudentImporter())->import($this->makeSheet(8, 'Kid Eight', [3 => 'x']), $year);
+        $this->assertDatabaseCount('student_monthly_markers', 1);
+
+        (new StudentImporter())->import($this->makeSheet(8, 'Kid Eight', []), $year);
+
+        $this->assertDatabaseCount('student_monthly_markers', 0);
+    }
+
+    public function test_a_month_with_no_column_in_the_sheet_is_left_alone(): void
+    {
+        // Guards the blast radius: only months present as columns can be
+        // cleared, so another school year is never touched.
+        $year = 2026;
+        (new StudentImporter())->import($this->makeSheet(9, 'Kid Nine', [1 => 30]), $year);
+        $student = Student::where('external_id', 9)->firstOrFail();
+
+        $otherYear = Payment::create([
+            'student_id' => $student->id,
+            'period_year' => $year - 1,
+            'period_month' => 1,
+            'amount' => 30,
+            'method' => 'bank',
+            'source' => StudentImporter::SOURCE,
+            'paid_at' => ($year - 1) . '-01-01',
+        ]);
+
+        (new StudentImporter())->import($this->makeSheet(9, 'Kid Nine', []), $year);
+
+        $this->assertNotNull(Payment::find($otherYear->id),
+            'Another school year must not be affected by clearing cells in this one.');
+    }
 }

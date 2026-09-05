@@ -39,6 +39,8 @@ class StudentImporter
         'skipped_rows' => 0,
         'enrolled_at_set' => 0,
         'payments_replaced' => 0,
+        'payments_cleared' => 0,
+        'markers_cleared' => 0,
     ];
 
     public function import(string $filePath, ?int $yearForMonths = null): array
@@ -165,9 +167,16 @@ class StudentImporter
         $firstActivity = null;
         ksort($monthCols);
 
+        // Months this row leaves blank. The sheet is the source of truth for
+        // rows the importer owns, so a cell that was filled and is now empty
+        // must drop its import row — otherwise a correction made in the
+        // spreadsheet (clearing a value entered by mistake) never reaches
+        // the app and the two drift apart silently.
+        $clearedMonths = [];
+
         foreach ($monthCols as $monthNum => $colIdx) {
             $raw = $this->cell($row, $colIdx);
-            if ($raw === null || $raw === '') continue;
+            if ($raw === null || $raw === '') { $clearedMonths[] = $monthNum; continue; }
 
             $strVal = trim((string) $raw);
             $lower = strtolower($strVal);
@@ -221,6 +230,25 @@ class StudentImporter
                 $this->stats['payments_created']++;
                 $firstActivity = $firstActivity ?? $monthNum;
             }
+        }
+
+        // Drop import rows for months the sheet no longer fills. Scoped to
+        // source=excel_import and to months that actually exist as columns,
+        // so manual entries and untouched periods are never affected.
+        if ($clearedMonths) {
+            $dropped = Payment::where('student_id', $student->id)
+                ->where('period_year', $year)
+                ->whereIn('period_month', $clearedMonths)
+                ->where('source', self::SOURCE)
+                ->delete();
+            $this->stats['payments_cleared'] += $dropped;
+
+            $droppedMarkers = StudentMonthlyMarker::where('student_id', $student->id)
+                ->where('period_year', $year)
+                ->whereIn('period_month', $clearedMonths)
+                ->where('type', 'legacy_late')
+                ->delete();
+            $this->stats['markers_cleared'] += $droppedMarkers;
         }
 
         return $firstActivity;
