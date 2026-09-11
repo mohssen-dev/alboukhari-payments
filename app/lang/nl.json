@@ -599,5 +599,6 @@
     "grid.row_not_in_person": "🚪 Persoonlijk opheffen",
     "grid.row_exclude_bulk": "🚷 Uitsluiten van bulk",
     "grid.row_include_bulk": "✓ Opnemen in bulk",
-    "payment.loading": "Laden…"
+    "payment.loading": "Laden…",
+    "brand.tagline": "Betalingen"
 }

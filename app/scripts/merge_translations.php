@@ -428,6 +428,9 @@ $translations = [
     'grid.row_exclude_bulk' => ['en' => '🚷 Exclude from bulk', 'nl' => '🚷 Uitsluiten van bulk', 'ar' => '🚷 استبعاد من الإرسال الجماعي'],
     'grid.row_include_bulk' => ['en' => '✓ Include in bulk', 'nl' => '✓ Opnemen in bulk', 'ar' => '✓ تضمين في الإرسال الجماعي'],
     'payment.loading'       => ['en' => 'Loading…', 'nl' => 'Laden…', 'ar' => 'جارٍ التحميل…'],
+
+    // ---------- Topbar brand ----------
+    'brand.tagline'         => ['en' => 'Payments', 'nl' => 'Betalingen', 'ar' => 'نظام الدفعات'],
 ];
 
 $locales = ['en', 'nl', 'ar'];

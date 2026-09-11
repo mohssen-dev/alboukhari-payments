@@ -599,5 +599,6 @@
     "grid.row_not_in_person": "🚪 إلغاء الحضوري",
     "grid.row_exclude_bulk": "🚷 استبعاد من الإرسال الجماعي",
     "grid.row_include_bulk": "✓ تضمين في الإرسال الجماعي",
-    "payment.loading": "جارٍ التحميل…"
+    "payment.loading": "جارٍ التحميل…",
+    "brand.tagline": "نظام الدفعات"
 }

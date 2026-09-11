@@ -2007,3 +2007,59 @@ pre.json { background: var(--color-surface-alt); padding: 10px; border-radius: v
 @media (prefers-reduced-motion: reduce) {
     .students-grid tbody tr.row-flash > td, .modal-skeleton .sk { animation: none; }
 }
+
+/* ============================================
+   Topbar: never wrap, never overflow (v7.4)
+   Every item used to be allowed to shrink: at <=1440px the school name
+   broke onto 3 lines of 60px (spilling out of the 60px bar), menu labels
+   wrapped onto two lines and the user menu was pushed off-screen.
+   Now nothing wraps; labels collapse to icons by priority as space runs
+   out (the full name stays in each link's tooltip).
+   ============================================ */
+.topbar > *, .topbar .nav-link, .topbar .btn, .user-trigger { flex-shrink: 0; white-space: nowrap; }
+.topbar-spacer { flex: 1 1 auto; min-width: 8px; }
+
+.topbar .brand {
+    height: 60px;
+    line-height: normal;
+    gap: 10px;
+    padding-inline: 4px 16px;
+    text-decoration: none;
+}
+.brand-logo { flex-shrink: 0; }
+.brand-text { display: flex; flex-direction: column; justify-content: center; }
+.brand-name { margin-inline-start: 0; font-size: 14.5px; line-height: 1.2; white-space: nowrap; }
+.brand-tagline {
+    font-size: 10.5px;
+    font-weight: 600;
+    line-height: 1.3;
+    color: var(--color-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    white-space: nowrap;
+}
+html[dir="rtl"] .brand-tagline { text-transform: none; letter-spacing: 0; font-size: 11px; }
+
+/* 1) Secondary links go icon-only — even when active (it stays highlighted),
+      so the bar is the same width on every page. Letting the active one keep
+      its label overflowed Settings/Campaigns pages by up to 68px at ~1270px. */
+@media (max-width: 1680px) {
+    .topbar .nav-link--more { padding-inline: 10px; }
+    .topbar .nav-link--more .nav-label { display: none; }
+}
+/* 2) Every link icon-only except the active one; compact halt button; no user
+      name. (Step 1 needs ~1,240px in Dutch, the widest locale — measured.) */
+@media (max-width: 1260px) {
+    .topbar .nav-link:not(.active) { padding-inline: 10px; }
+    .topbar .nav-link:not(.active) .nav-label { display: none; }
+    .topbar .halt-label, .topbar .user-name-label { display: none; }
+}
+/* 3) Logo only. */
+@media (max-width: 1024px) {
+    .brand-text { display: none; }
+}
+/* Phone drawer: labels are always shown inside the drawer. */
+@media (max-width: 768px) {
+    .topbar .nav-link, .topbar .nav-link:not(.active) { padding: 12px 14px; }
+    .topbar .nav-link .nav-label, .topbar .nav-link:not(.active) .nav-label { display: inline; }
+}

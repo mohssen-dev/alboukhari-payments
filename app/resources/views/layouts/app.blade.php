@@ -14,8 +14,8 @@
     <link rel="icon" type="image/x-icon" href="{{ asset('favicon.ico') }}">
 
     {{-- Preload CSS so wire:navigate transitions feel instant. --}}
-    <link rel="preload" as="style" href="{{ asset('assets/css/app.css') }}?v=7.3">
-    <link rel="stylesheet" href="{{ asset('assets/css/app.css') }}?v=7.3">
+    <link rel="preload" as="style" href="{{ asset('assets/css/app.css') }}?v=7.4">
+    <link rel="stylesheet" href="{{ asset('assets/css/app.css') }}?v=7.4">
     <link rel="preload" as="image" href="{{ asset('assets/img/logo.jpeg') }}">
 
     {{-- Prevent FOUC/x-cloak flicker across page transitions. --}}
@@ -27,9 +27,12 @@
 
 {{-- ====== Topbar ====== --}}
 <nav class="topbar" x-data="{ mobileOpen: false }" @close-panels.window="mobileOpen = false">
-    <a href="{{ route('home') }}" wire:navigate class="brand" style="text-decoration:none;">
+    <a href="{{ route('home') }}" wire:navigate class="brand" title="{{ __('app_name') }}">
         <img src="{{ asset('assets/img/logo.jpeg') }}" alt="Al Boukhari" class="brand-logo">
-        <span class="brand-name d-none-mobile">{{ __('school_name') }}</span>
+        <span class="brand-text">
+            <span class="brand-name">{{ __('school_name') }}</span>
+            <span class="brand-tagline">{{ __('brand.tagline') }}</span>
+        </span>
     </a>
 
     @auth
@@ -48,46 +51,46 @@
         <div class="nav-links" :class="{ 'is-open': mobileOpen }" @click="mobileOpen = false">
         <a href="{{ route('home') }}" wire:navigate class="nav-link {{ request()->routeIs('home') ? 'active' : '' }}">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12l9-9 9 9"/><path d="M5 10v10h14V10"/></svg>
-            {{ __('nav.home') }}
+            <span class="nav-label">{{ __('nav.home') }}</span>
         </a>
 
-        <a href="{{ route('grid.focus') }}" wire:navigate class="nav-link {{ request()->routeIs('grid.focus') ? 'active' : '' }}" title="{{ __('grid.title_focus') }}">
+        <a href="{{ route('grid.focus') }}" wire:navigate class="nav-link nav-link--more {{ request()->routeIs('grid.focus') ? 'active' : '' }}" title="{{ __('grid.open_focus') }}">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="22"/><line x1="2" y1="12" x2="4" y2="12"/><line x1="20" y1="12" x2="22" y2="12"/></svg>
-            {{ __('grid.open_focus') }}
+            <span class="nav-label">{{ __('grid.open_focus') }}</span>
         </a>
 
         @if($currentUser?->canWrite())
-        <a href="{{ route('quick-entry') }}" wire:navigate class="nav-link {{ request()->routeIs('quick-entry') ? 'active' : '' }}">
+        <a href="{{ route('quick-entry') }}" wire:navigate class="nav-link {{ request()->routeIs('quick-entry') ? 'active' : '' }}" title="{{ __('nav.quick_entry') }}">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></svg>
-            {{ __('nav.quick_entry') }}
+            <span class="nav-label">{{ __('nav.quick_entry') }}</span>
         </a>
-        <a href="{{ route('send.form') }}" wire:navigate class="nav-link {{ request()->routeIs('send.*') ? 'active' : '' }}">
+        <a href="{{ route('send.form') }}" wire:navigate class="nav-link {{ request()->routeIs('send.*') ? 'active' : '' }}" title="{{ __('nav.send') }}">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m22 2-7 20-4-9-9-4z"/><path d="M22 2 11 13"/></svg>
-            {{ __('nav.send') }}
+            <span class="nav-label">{{ __('nav.send') }}</span>
         </a>
         @endif
 
-        <a href="{{ route('campaigns.index') }}" wire:navigate class="nav-link {{ request()->routeIs('campaigns.*') ? 'active' : '' }}">
+        <a href="{{ route('campaigns.index') }}" wire:navigate class="nav-link nav-link--more {{ request()->routeIs('campaigns.*') ? 'active' : '' }}" title="{{ __('nav.campaigns') }}">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg>
-            {{ __('nav.campaigns') }}
+            <span class="nav-label">{{ __('nav.campaigns') }}</span>
         </a>
 
         @if($currentUser?->canWrite())
-        <a href="{{ route('templates.index') }}" wire:navigate class="nav-link {{ request()->routeIs('templates.*') ? 'active' : '' }}">
+        <a href="{{ route('templates.index') }}" wire:navigate class="nav-link nav-link--more {{ request()->routeIs('templates.*') ? 'active' : '' }}" title="{{ __('nav.templates') }}">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>
-            {{ __('nav.templates') }}
+            <span class="nav-label">{{ __('nav.templates') }}</span>
         </a>
         @endif
 
-        <a href="{{ route('reports') }}" wire:navigate class="nav-link {{ request()->routeIs('reports') ? 'active' : '' }}">
+        <a href="{{ route('reports') }}" wire:navigate class="nav-link nav-link--more {{ request()->routeIs('reports') ? 'active' : '' }}" title="{{ __('nav.reports') }}">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
-            {{ __('nav.reports') }}
+            <span class="nav-label">{{ __('nav.reports') }}</span>
         </a>
 
         @if($currentUser?->isAdmin())
-        <a href="{{ route('settings') }}" wire:navigate class="nav-link {{ request()->routeIs('settings') ? 'active' : '' }}">
+        <a href="{{ route('settings') }}" wire:navigate class="nav-link nav-link--more {{ request()->routeIs('settings') ? 'active' : '' }}" title="{{ __('nav.settings') }}">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-            {{ __('nav.settings') }}
+            <span class="nav-label">{{ __('nav.settings') }}</span>
         </a>
         @endif
         </div>{{-- /.nav-links --}}
@@ -106,8 +109,9 @@
             <form method="POST" action="{{ route('halt') }}" style="display:inline;margin-inline-start:8px">
                 @csrf
                 <input type="hidden" name="action" value="{{ $halted ? 'resume' : 'halt' }}">
-                <button type="submit" class="btn btn-sm {{ $halted ? 'btn-success' : 'btn-danger' }}">
-                    {{ $halted ? '▶ ' . __('topbar.resume') : '⛔ ' . __('topbar.halt') }}
+                <button type="submit" class="btn btn-sm {{ $halted ? 'btn-success' : 'btn-danger' }}" title="{{ $halted ? __('topbar.resume') : __('topbar.halt') }}">
+                    <span aria-hidden="true">{{ $halted ? '▶' : '⛔' }}</span>
+                    <span class="halt-label">{{ $halted ? __('topbar.resume') : __('topbar.halt') }}</span>
                 </button>
             </form>
         @endif
@@ -116,7 +120,7 @@
         <div class="user-menu" x-data="{ open: false }" @click.away="open = false">
             <button type="button" class="user-trigger" @click="open = !open">
                 <span class="user-avatar">{{ mb_strtoupper(mb_substr($currentUser->name, 0, 1)) }}</span>
-                <span class="d-none-mobile">{{ $currentUser->name }}</span>
+                <span class="d-none-mobile user-name-label">{{ $currentUser->name }}</span>
                 <span class="caret">▾</span>
             </button>
             <div class="user-dropdown" x-show="open" x-cloak x-transition>

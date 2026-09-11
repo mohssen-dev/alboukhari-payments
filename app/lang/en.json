@@ -599,5 +599,6 @@
     "grid.row_not_in_person": "🚪 Remove in-person",
     "grid.row_exclude_bulk": "🚷 Exclude from bulk",
     "grid.row_include_bulk": "✓ Include in bulk",
-    "payment.loading": "Loading…"
+    "payment.loading": "Loading…",
+    "brand.tagline": "Payments"
 }
