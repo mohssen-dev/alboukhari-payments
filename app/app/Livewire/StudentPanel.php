@@ -10,11 +10,14 @@ use App\Services\FeeResolver;
 use App\Services\MonthNames;
 use App\Services\MonthStatusResolver;
 use App\Support\AuthorizesLivewireWrite;
+use App\Support\DispatchesGridRow;
 use Livewire\Component;
 
 class StudentPanel extends Component
 {
     use AuthorizesLivewireWrite;
+    use DispatchesGridRow;
+
     public ?int $studentId = null;
     public string $tab = 'payments'; // payments | settings | notes | siblings
 
@@ -45,7 +48,7 @@ class StudentPanel extends Component
     protected $listeners = [
         'open-student-panel' => 'switchStudent',
         'close-student-panel' => 'closeSelf',
-        'payment-saved' => '$refresh',
+        'payment-saved' => 'onPaymentSaved',
     ];
 
     public function mount(?int $studentId = null)
@@ -59,6 +62,14 @@ class StudentPanel extends Component
     {
         $this->loadStudent($studentId);
         $this->tab = 'payments';
+    }
+
+    /** Re-render only when the saved payment belongs to the student on screen. */
+    public function onPaymentSaved(?int $studentId = null): void
+    {
+        if (!$this->studentId || ($studentId && $studentId !== $this->studentId)) {
+            $this->skipRender();
+        }
     }
 
     /**
@@ -129,7 +140,7 @@ class StudentPanel extends Component
         $student->save();
 
         $this->dispatch('flash', message: __('flash.saved'));
-        $this->dispatch('student-updated');
+        $this->dispatchGridRow($this->studentId);
     }
 
     public function toggleFlag(string $flag)
@@ -142,7 +153,7 @@ class StudentPanel extends Component
         $student->{$flag} = !$student->{$flag};
         $student->save();
         $this->dispatch('flash', message: __('flash.updated'));
-        $this->dispatch('student-updated');
+        $this->dispatchGridRow($this->studentId);
     }
 
     public function addSuspension()
@@ -166,7 +177,7 @@ class StudentPanel extends Component
         $this->suspend_ends_at = '';
         $this->suspend_reason = '';
         $this->dispatch('flash', message: __('flash.suspension_created'));
-        $this->dispatch('student-updated');
+        $this->dispatchGridRow($this->studentId);
     }
 
     public function removeSuspension(int $id)
@@ -175,7 +186,7 @@ class StudentPanel extends Component
 
         StudentSuspension::where('id', $id)->where('student_id', $this->studentId)->delete();
         $this->dispatch('flash', message: __('flash.deleted'));
-        $this->dispatch('student-updated');
+        $this->dispatchGridRow($this->studentId);
     }
 
     public function addOverride()
@@ -204,7 +215,7 @@ class StudentPanel extends Component
         $this->override_amount = null;
         $this->override_reason = '';
         $this->dispatch('flash', message: __('flash.override_added'));
-        $this->dispatch('student-updated');
+        $this->dispatchGridRow($this->studentId);
     }
 
     public function removeOverride(int $id)
@@ -213,7 +224,7 @@ class StudentPanel extends Component
 
         StudentMonthlyFeeOverride::where('id', $id)->where('student_id', $this->studentId)->delete();
         $this->dispatch('flash', message: __('flash.deleted'));
-        $this->dispatch('student-updated');
+        $this->dispatchGridRow($this->studentId);
     }
 
     public function addSurcharge()
@@ -238,7 +249,7 @@ class StudentPanel extends Component
         $this->surcharge_amount = null;
         $this->surcharge_reason = '';
         $this->dispatch('flash', message: __('flash.surcharge_added'));
-        $this->dispatch('student-updated');
+        $this->dispatchGridRow($this->studentId);
     }
 
     public function removeSurcharge(int $id)
@@ -247,7 +258,7 @@ class StudentPanel extends Component
 
         StudentSurcharge::where('id', $id)->where('student_id', $this->studentId)->delete();
         $this->dispatch('flash', message: __('flash.deleted'));
-        $this->dispatch('student-updated');
+        $this->dispatchGridRow($this->studentId);
     }
 
     public function openPayment(int $month)

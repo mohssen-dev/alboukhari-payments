@@ -1,9 +1,12 @@
 <div
-    x-data="studentsGrid()"
-    x-init="init()"
+    x-data="studentsGrid({
+        nowMonth: {{ (int) date('n') }},
+        t: { showing: @js(__('grid.showing')) },
+    })"
+    @grid-row-updated.window="patchRow($event.detail)"
 >
-    {{-- البيانات المُمرَّرة لـ Alpine — تتجدّد تلقائياً مع كل re-render من Livewire --}}
-    <script type="application/json" data-grid-rows>@json(array_values($rowsJson))</script>
+    {{-- Row data for client-side search / filters / sort / CSV — re-read after every grid render. --}}
+    <script type="application/json" data-grid-rows>@json(array_values(array_column($built, 'row')))</script>
 
     {{-- Top progress bar shown during any Livewire round-trip. Gives instant feedback while server processes. --}}
     <div class="livewire-progress" wire:loading.delay.shortest>
@@ -23,7 +26,7 @@
         <div class="kpi info">
             <div class="label">👥 {{ __('Students') }}</div>
             <div class="value">{{ $totalStudents }}</div>
-            <div class="meta" x-text="`Showing ${visibleCount} of ${rows.length}`"></div>
+            <div class="meta" x-text="showingText()"></div>
         </div>
         <div class="kpi success">
             <div class="label">📅 {{ __('Year') }} / {{ __('Period') }}</div>
@@ -130,12 +133,12 @@
     </div>
 
     {{-- ====== The Grid ====== --}}
-    <div class="grid-wrap">
+    <div class="grid-wrap" @scroll.passive="menu.open = false">
         <table class="students-grid">
             <thead>
                 <tr>
                     <th class="sticky-col col-checkbox">
-                        <input type="checkbox" @change="toggleAll($event)" :checked="allSelected">
+                        <input type="checkbox" @change="toggleAll($event.target.checked)" :checked="allSelected">
                     </th>
                     <th class="sticky-col col-id" @click="sortBy('id')">
                         {{ __('columns.id') }}
@@ -161,130 +164,13 @@
                     <th></th>
                 </tr>
             </thead>
-            <tbody>
+            {{-- One delegated listener per event for the whole table (see partials/grid-row). --}}
+            <tbody x-ref="tbody" @click="onClick($event)" @change="onChange($event)" @keydown="onKeydown($event)">
                 @forelse ($students as $student)
-                    @php
-                        $siblingsCount = $student->family_id ? max(0, $student->family->students->count() - 1) : 0;
-                    @endphp
-                    <tr
-                        wire:key="row-{{ $student->id }}"
-                        :class="{ 'selected': selectedIds.includes({{ $student->id }}), 'hidden': !isVisible({{ $student->id }}) }"
-                        x-show="isVisible({{ $student->id }})"
-                    >
-                        <td class="sticky-col col-checkbox">
-                            <input
-                                type="checkbox"
-                                :value="{{ $student->id }}"
-                                :checked="selectedIds.includes({{ $student->id }})"
-                                @change="toggleOne({{ $student->id }})"
-                            >
-                        </td>
-                        <td class="sticky-col col-id">{{ $student->external_id ?? $student->id }}</td>
-                        <td class="sticky-col col-name">
-                            <a href="#"
-                               class="row-link"
-                               wire:click.prevent="openPayment({{ $student->id }}, {{ (int) date('n') }})"
-                               wire:loading.class="row-link-busy"
-                               wire:target="openPayment({{ $student->id }}, {{ (int) date('n') }})"
-                               title="{{ __('actions.add_payment') }} ({{ __('filters.month') }} {{ (int) date('n') }})">
-                                {{ $student->name }}
-                            </a>
-                        </td>
-                        <td style="font-family:ui-monospace,monospace;font-size:11px;color:var(--color-text-muted)">
-                            {{ $student->phone_primary_e164 ?: '—' }}
-                        </td>
-                        <td>
-                            @if ($siblingsCount > 0)
-                                <span class="sibling-badge" wire:click="openFamily({{ $student->id }})" wire:loading.class="badge-busy" wire:target="openFamily({{ $student->id }})" title="{{ __('actions.show_family') }}">
-                                    👨‍👧 {{ $siblingsCount + 1 }}
-                                </span>
-                            @else
-                                <span class="sibling-badge-solo" wire:click="openFamily({{ $student->id }})" wire:loading.class="badge-busy" wire:target="openFamily({{ $student->id }})" title="{{ __('actions.show_family') }}">
-                                    👤
-                                </span>
-                            @endif
-                        </td>
-                        @foreach (range(1, 12) as $m)
-                            @php
-                                $d = $monthData[$student->id][$m] ?? ['status' => 'not_due', 'paid' => 0, 'methodIcon' => ''];
-                                $class = match ($d['status']) {
-                                    'paid' => 'cell-paid',
-                                    'paid_advance' => 'cell-paid-advance',
-                                    'partial' => 'cell-partial',
-                                    'unpaid' => 'cell-unpaid',
-                                    'late' => 'cell-late',
-                                    'legacy_zero' => 'cell-legacy-zero',
-                                    'not_enrolled' => 'cell-not-enrolled',
-                                    default => 'cell-notdue',
-                                };
-                                $display = match ($d['status']) {
-                                    'paid', 'paid_advance', 'partial' => number_format($d['paid'], 0),
-                                    'legacy_zero' => '0',
-                                    'late' => 'X',
-                                    'unpaid' => '·',
-                                    'not_enrolled' => '−',
-                                    default => '',
-                                };
-                            @endphp
-                            <td
-                                class="cell-month {{ $class }}"
-                                wire:click="openPayment({{ $student->id }}, {{ $m }})"
-                                wire:loading.class.delay.shortest="cell-busy"
-                                wire:target="openPayment({{ $student->id }}, {{ $m }})"
-                                role="button"
-                                tabindex="0"
-                                title="{{ $months[$m] }} — {{ \App\Services\MonthStatusResolver::label($d['status']) }} · {{ __('actions.add_payment') }}"
-                            >
-                                <div class="cell-content">
-                                    <span class="amount">{{ $display }}</span>
-                                    @if ($d['methodIcon'])
-                                        <span class="method-icon">{{ $d['methodIcon'] }}</span>
-                                    @endif
-                                    <span class="cell-hint" aria-hidden="true">+</span>
-                                </div>
-                            </td>
-                        @endforeach
-                        @php
-                            $totalBalance = $rowsJson[$student->id]['balance'];
-                        @endphp
-                        <td style="font-weight:700;color:{{ $totalBalance > 0 ? 'var(--color-danger)' : 'var(--color-success)' }}">
-                            {{ number_format($totalBalance, 0) }}€
-                        </td>
-                        <td>
-                            @if ($student->statusBadge())
-                                <span class="status-badge" title="{{ $student->skipReason() ?? '' }}">{{ $student->statusBadge() }}</span>
-                            @else
-                                <span class="pill pill-success">✓</span>
-                            @endif
-                        </td>
-                        <td>
-                            <div class="dropdown" x-data="{ open: false }" @click.outside="open = false">
-                                <button class="icon-btn" @click="open = !open">⋮</button>
-                                <div class="dropdown-menu" x-show="open" x-transition x-cloak>
-                                    <a href="#" wire:click.prevent="openStudent({{ $student->id }})">👁️ {{ __('actions.view_details') }}</a>
-                                    <button wire:click="openPayment({{ $student->id }}, {{ (int) date('n') }})">💶 {{ __('actions.add_payment') }}</button>
-                                    <button wire:click="openFamily({{ $student->id }})">👨‍👩‍👧‍👦 {{ __('actions.show_family') }}</button>
-                                    <button wire:click="openSendMessage({{ $student->id }})">📲 {{ __('actions.send_message') }}</button>
-                                    <div class="divider"></div>
-                                    <button wire:click="toggleFlag({{ $student->id }}, 'is_hidden')">
-                                        {{ $student->is_hidden ? '👁️ Unhide' : '🙈 Hide' }}
-                                    </button>
-                                    <button wire:click="toggleFlag({{ $student->id }}, 'is_blocked_messages')">
-                                        {{ $student->is_blocked_messages ? '✅ Unblock' : '🚫 Block messages' }}
-                                    </button>
-                                    <button wire:click="toggleFlag({{ $student->id }}, 'is_in_person')">
-                                        {{ $student->is_in_person ? '🚪 Remove in-person' : '🏠 In-person' }}
-                                    </button>
-                                    <button wire:click="toggleFlag({{ $student->id }}, 'excluded_from_send_all')">
-                                        {{ $student->excluded_from_send_all ? '✓ Include in bulk' : '🚷 Exclude bulk' }}
-                                    </button>
-                                </div>
-                            </div>
-                        </td>
-                    </tr>
+                    @include('livewire.partials.grid-row', ['student' => $student, 'built' => $built[$student->id]])
                 @empty
                     <tr>
-                        <td colspan="18" style="text-align:center;padding:60px;color:var(--color-text-soft)">
+                        <td colspan="20" style="text-align:center;padding:60px;color:var(--color-text-soft)">
                             <div style="font-size:48px;margin-bottom:8px">📭</div>
                             <div style="margin-bottom:12px">{{ __('common.no_results') }}</div>
                             <a href="{{ route('import.form') }}" class="btn btn-primary">📥 {{ __('actions.import_excel') }}</a>
@@ -299,113 +185,246 @@
         {{ $students->links() }}
     </div>
 
+    {{-- ====== Row actions: ONE shared menu (was one Alpine dropdown per row) ====== --}}
+    <div
+        class="dropdown-menu row-menu"
+        x-show="menu.open"
+        x-cloak
+        :style="{ top: menu.top, bottom: menu.bottom, left: menu.left, right: menu.right }"
+        @click.window="if (menu.open && !$el.contains($event.target) && !$event.target.closest('[data-act=menu]')) menu.open = false"
+        @keydown.window.escape="menu.open = false"
+        @scroll.window.passive="menu.open = false"
+    >
+        <button type="button" @click="menuDo('details')">👁️ {{ __('actions.view_details') }}</button>
+        <button type="button" @click="menuDo('pay')">💶 {{ __('actions.add_payment') }}</button>
+        <button type="button" @click="menuDo('family')">👨‍👩‍👧‍👦 {{ __('actions.show_family') }}</button>
+        <button type="button" @click="menuDo('message')">📲 {{ __('actions.send_message') }}</button>
+        @if (auth()->user()?->canWrite())
+            <div class="divider"></div>
+            <button type="button" @click="menuFlag('is_hidden')" x-text="menu.row?.isHidden ? @js(__('grid.row_unhide')) : @js(__('grid.row_hide'))"></button>
+            <button type="button" @click="menuFlag('is_blocked_messages')" x-text="menu.row?.isBlocked ? @js(__('grid.row_unblock')) : @js(__('grid.row_block'))"></button>
+            <button type="button" @click="menuFlag('is_in_person')" x-text="menu.row?.isInPerson ? @js(__('grid.row_not_in_person')) : @js(__('grid.row_in_person'))"></button>
+            <button type="button" @click="menuFlag('excluded_from_send_all')" x-text="menu.row?.excludedSendAll ? @js(__('grid.row_include_bulk')) : @js(__('grid.row_exclude_bulk'))"></button>
+        @endif
+    </div>
+
     {{-- Modals + student panel live in layouts/app.blade.php, not here.
          They subscribe to events (open-payment-modal, open-family-modal, etc.)
          so opening one does NOT trigger a grid re-render. --}}
 </div>
 
 <script>
-    function studentsGrid() {
+    function studentsGrid(cfg) {
+        // Plain, non-reactive state kept out of Alpine's proxies: per-row
+        // lookups stay O(1) and touching them never re-triggers any binding.
+        // (Each row used to run `rows.find()` inside its own x-show/:class,
+        // i.e. O(n²) work on every keystroke and every refresh.)
+        const index = new Map();
+        let offMorphed = null;
+
         return {
-            rows: [],
             search: '',
             clientFilter: 'all',
             sortKey: 'id',
             sortDir: 'asc',
             selectedIds: [],
+            visibleCount: 0,
+            totalCount: 0,
+            allSelected: false,
+            menu: { open: false, id: null, row: null, top: 'auto', bottom: 'auto', left: 'auto', right: 'auto' },
 
             init() {
-                // أوّل تحميل: اقرأ من العنصر <script data-grid-rows>
-                this.syncRowsFromDom();
-                this.$watch('search', () => { /* triggers reactivity */ });
+                this.readRows();
+                this.applyView();
+                this.$watch('search', () => this.applyView());
+                this.$watch('clientFilter', () => this.applyView());
 
-                // تجديد البيانات مع كل تحديث من Livewire — يحلّ مشكلة perPage>100
-                if (window.Livewire) {
-                    const refresh = () => this.$nextTick(() => this.syncRowsFromDom());
-                    Livewire.hook('morph.updated', ({ el }) => {
-                        if (this.$el.contains(el)) refresh();
-                    });
-                    Livewire.hook('morph.added', ({ el }) => {
-                        if (this.$el.contains(el)) refresh();
-                    });
-                    Livewire.hook('commit', ({ succeed }) => { succeed(refresh); });
-                }
+                // Once per grid render (filters, paging, bulk actions) — not once
+                // per morphed element: the old 'morph.updated' hook re-parsed the
+                // row data hundreds of times per render, and was registered again
+                // on every visit without ever being removed.
+                const myId = this.$wire.$id;
+                offMorphed = Livewire.hook('morphed', ({ component }) => {
+                    if (component.id !== myId) return;
+                    this.readRows();
+                    if (this.sortKey !== 'id' || this.sortDir !== 'asc') this.applySort();
+                    this.applyView();
+                });
             },
 
-            syncRowsFromDom() {
-                const dataEl = this.$el.querySelector('script[data-grid-rows]');
-                if (!dataEl) return;
+            destroy() {
+                if (offMorphed) offMorphed();
+            },
+
+            readRows() {
+                const el = this.$el.querySelector('script[data-grid-rows]');
+                index.clear();
                 try {
-                    const newRows = JSON.parse(dataEl.textContent || '[]');
-                    // فقط استبدِل إذا تغيّرت الأطوال أو محتوى أوّل عنصر — تجنّب re-renders زائدة
-                    if (
-                        newRows.length !== this.rows.length ||
-                        (newRows.length > 0 && this.rows.length > 0 && newRows[0].id !== this.rows[0].id)
-                    ) {
-                        this.rows = newRows;
-                        // تنظيف selectedIds من الـIDs التي لم تعد ظاهرة في الجدول
-                        const visibleIds = new Set(newRows.map(r => r.id));
-                        this.selectedIds = this.selectedIds.filter(id => visibleIds.has(id));
-                    } else {
-                        // البيانات لكنها قد تكون محدّثة (مبالغ، حالات…) — استبدلها على أي حال
-                        this.rows = newRows;
-                    }
+                    JSON.parse(el?.textContent || '[]').forEach(r => index.set(r.id, r));
                 } catch (e) {
-                    console.error('[studentsGrid] parse error:', e);
+                    console.error('[studentsGrid] bad row data', e);
                 }
+                this.totalCount = index.size;
+                this.selectedIds = this.selectedIds.filter(id => index.has(id));
+                this.menu.open = false;
             },
 
-            isVisible(id) {
-                const row = this.rows.find(r => r.id === id);
-                if (!row) return false;
+            rowEls() {
+                return this.$refs.tbody ? this.$refs.tbody.querySelectorAll('tr[data-sid]') : [];
+            },
 
-                // Search
-                if (this.search.trim()) {
-                    if (!row.haystack.includes(this.search.toLowerCase().trim())) return false;
-                }
-
-                // Client filter
-                if (this.clientFilter === 'overdue' && row.balance <= 0) return false;
-                if (this.clientFilter === 'paid_full' && row.balance > 0) return false;
-                if (this.clientFilter === 'with_siblings' && row.siblings === 0) return false;
-
+            matches(row, q, f) {
+                if (q && !row.haystack.includes(q)) return false;
+                if (f === 'overdue' && row.balance <= 0) return false;
+                if (f === 'paid_full' && row.balance > 0) return false;
+                if (f === 'with_siblings' && row.siblings === 0) return false;
                 return true;
             },
 
-            get visibleRows() {
-                return this.rows.filter(r => this.isVisible(r.id));
+            // One DOM pass applies search, filter and selection to every row.
+            applyView() {
+                const q = this.search.trim().toLowerCase();
+                const f = this.clientFilter;
+                const picked = new Set(this.selectedIds);
+                let shown = 0, shownPicked = 0;
+                this.rowEls().forEach(tr => {
+                    const id = +tr.dataset.sid;
+                    const row = index.get(id);
+                    const show = !!row && this.matches(row, q, f);
+                    const isPicked = picked.has(id);
+                    tr.classList.toggle('row-filtered', !show);
+                    tr.classList.toggle('selected', isPicked);
+                    const cb = tr.querySelector('.row-check');
+                    if (cb) cb.checked = isPicked;
+                    if (show) { shown++; if (isPicked) shownPicked++; }
+                });
+                this.visibleCount = shown;
+                this.allSelected = shown > 0 && shownPicked === shown;
             },
 
-            get visibleCount() {
-                return this.visibleRows.length;
+            visibleRows() {
+                return Array.from(this.rowEls())
+                    .filter(tr => !tr.classList.contains('row-filtered'))
+                    .map(tr => index.get(+tr.dataset.sid))
+                    .filter(Boolean);
             },
 
-            get allSelected() {
-                const v = this.visibleRows;
-                return v.length > 0 && v.every(r => this.selectedIds.includes(r.id));
+            showingText() {
+                return cfg.t.showing.replace(':shown', this.visibleCount).replace(':total', this.totalCount);
             },
 
-            toggleAll(e) {
-                const v = this.visibleRows;
-                if (e.target.checked) {
-                    const all = new Set([...this.selectedIds, ...v.map(r => r.id)]);
-                    this.selectedIds = [...all];
-                } else {
-                    const visibleIds = new Set(v.map(r => r.id));
-                    this.selectedIds = this.selectedIds.filter(id => !visibleIds.has(id));
+            // ---- Delegated row events ----
+            onClick(e) {
+                const act = e.target.closest('[data-act]');
+                const tr = act && act.closest('tr[data-sid]');
+                if (!tr) return;
+                e.preventDefault();
+                const id = +tr.dataset.sid;
+                if (act.dataset.act === 'pay') this.openPay(id, +act.dataset.m);
+                else if (act.dataset.act === 'family') Livewire.dispatch('open-family-modal', { studentId: id });
+                else if (act.dataset.act === 'menu') this.openMenu(id, act);
+            },
+
+            onChange(e) {
+                if (!e.target.classList.contains('row-check')) return;
+                this.toggleOne(+e.target.closest('tr[data-sid]').dataset.sid, e.target.checked);
+            },
+
+            onKeydown(e) {
+                if (e.key !== 'Enter' && e.key !== ' ') return;
+                const cell = e.target.closest('.cell-month');
+                if (!cell) return;
+                e.preventDefault();
+                this.openPay(+cell.closest('tr[data-sid]').dataset.sid, +cell.dataset.m);
+            },
+
+            openPay(id, month) {
+                this.menu.open = false;
+                const row = index.get(id);
+                abOpenPayment(id, Number(this.$wire.year), month, row ? row.name : '');
+            },
+
+            // ---- In-place row patch after a change (App\Support\GridRow) ----
+            patchRow(d) {
+                if (!d || !d.html) return;
+                const old = this.$refs.tbody?.querySelector(`tr[data-sid="${d.id}"]`);
+                if (!old) return; // not on this page — nothing on screen changed
+                // The change was computed for another year than the one shown:
+                // name/phone may still differ, so fall back to a normal render.
+                if (Number(d.year) !== Number(this.$wire.year)) {
+                    this.$wire.$refresh();
+                    return;
                 }
+                const tpl = document.createElement('template');
+                tpl.innerHTML = d.html.trim();
+                const fresh = tpl.content.querySelector('tr');
+                if (!fresh) return;
+                old.replaceWith(fresh);
+                index.set(d.id, d.row);
+                if (this.menu.id === d.id) this.menu.row = d.row;
+                this.applyView();
+                fresh.classList.add('row-flash');
+                setTimeout(() => fresh.classList.remove('row-flash'), 900);
             },
 
-            toggleOne(id) {
-                const i = this.selectedIds.indexOf(id);
-                if (i >= 0) this.selectedIds.splice(i, 1);
-                else this.selectedIds.push(id);
+            // ---- Row actions menu ----
+            openMenu(id, btn) {
+                if (this.menu.open && this.menu.id === id) { this.menu.open = false; return; }
+                const r = btn.getBoundingClientRect();
+                const rtl = document.documentElement.dir === 'rtl';
+                const below = window.innerHeight - r.bottom > 320;
+                Object.assign(this.menu, {
+                    id,
+                    row: index.get(id) || null,
+                    open: true,
+                    top: below ? (r.bottom + 4) + 'px' : 'auto',
+                    bottom: below ? 'auto' : (window.innerHeight - r.top + 4) + 'px',
+                    left: rtl ? r.left + 'px' : 'auto',
+                    right: rtl ? 'auto' : (document.documentElement.clientWidth - r.right) + 'px',
+                });
+            },
+
+            menuDo(action) {
+                const id = this.menu.id;
+                this.menu.open = false;
+                if (!id) return;
+                if (action === 'pay') this.openPay(id, cfg.nowMonth);
+                else if (action === 'details') Livewire.dispatch('open-student-panel', { studentId: id });
+                else if (action === 'family') Livewire.dispatch('open-family-modal', { studentId: id });
+                else if (action === 'message') Livewire.dispatch('open-send-message', { studentId: id });
+            },
+
+            menuFlag(flag) {
+                const id = this.menu.id;
+                this.menu.open = false;
+                if (id) this.$wire.toggleFlag(id, flag);
+            },
+
+            // ---- Selection ----
+            toggleOne(id, on) {
+                const has = this.selectedIds.includes(id);
+                if (on && !has) this.selectedIds.push(id);
+                if (!on && has) this.selectedIds = this.selectedIds.filter(x => x !== id);
+                this.applyView();
+            },
+
+            toggleAll(on) {
+                const ids = this.visibleRows().map(r => r.id);
+                if (on) {
+                    this.selectedIds = [...new Set([...this.selectedIds, ...ids])];
+                } else {
+                    const drop = new Set(ids);
+                    this.selectedIds = this.selectedIds.filter(id => !drop.has(id));
+                }
+                this.applyView();
             },
 
             clearSelection() {
                 this.selectedIds = [];
+                this.applyView();
             },
 
+            // ---- Sorting (client-side reorder of the rendered rows) ----
             sortBy(key) {
                 if (this.sortKey === key) {
                     this.sortDir = this.sortDir === 'asc' ? 'desc' : 'asc';
@@ -413,40 +432,36 @@
                     this.sortKey = key;
                     this.sortDir = 'asc';
                 }
-                // Sort the DOM rows by re-arranging via data
-                // Since Livewire owns the DOM, we just reload sorted via JS DOM manipulation:
-                this.$nextTick(() => this.applySort());
+                this.applySort();
             },
 
             applySort() {
-                const tbody = this.$el.querySelector('tbody');
+                const tbody = this.$refs.tbody;
                 if (!tbody) return;
-                const rows = Array.from(tbody.querySelectorAll('tr[wire\\:key^="row-"]'));
                 const key = this.sortKey;
                 const dir = this.sortDir === 'asc' ? 1 : -1;
-                rows.sort((a, b) => {
-                    const aId = parseInt(a.getAttribute('wire:key').replace('row-', ''));
-                    const bId = parseInt(b.getAttribute('wire:key').replace('row-', ''));
-                    const ar = this.rows.find(r => r.id === aId);
-                    const br = this.rows.find(r => r.id === bId);
-                    if (!ar || !br) return 0;
-                    let va = ar[key], vb = br[key];
+                const trs = Array.from(this.rowEls());
+                trs.sort((a, b) => {
+                    const ra = index.get(+a.dataset.sid);
+                    const rb = index.get(+b.dataset.sid);
+                    if (!ra || !rb) return 0;
+                    const va = ra[key], vb = rb[key];
                     if (typeof va === 'string') return va.localeCompare(vb) * dir;
                     return ((va || 0) - (vb || 0)) * dir;
                 });
-                rows.forEach(r => tbody.appendChild(r));
+                trs.forEach(tr => tbody.appendChild(tr));
             },
 
             bulk(flag, value, promptTemplate) {
                 if (this.selectedIds.length === 0) return;
                 const msg = (promptTemplate || '').replace('__COUNT__', this.selectedIds.length);
                 if (msg && !confirm(msg)) return;
-                @this.bulkAction(this.selectedIds, flag, value);
+                this.$wire.bulkAction([...this.selectedIds], flag, value);
                 this.clearSelection();
             },
 
             exportCSV() {
-                const v = this.visibleRows;
+                const v = this.visibleRows();
                 if (v.length === 0) return;
                 const headers = ['ID', 'Name', 'Phone', 'Siblings', 'Balance', 'Hidden', 'Blocked', 'In-person'];
                 const lines = [headers.join(',')];

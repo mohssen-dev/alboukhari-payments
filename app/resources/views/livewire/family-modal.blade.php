@@ -42,12 +42,10 @@
                             @foreach ($members as $m)
                                 <div
                                     class="family-member family-member-clickable {{ $m['is_self'] ? 'is-self' : '' }}"
-                                    wire:click="payNow({{ $m['id'] }}, {{ (int) date('n') }})"
-                                    wire:loading.class="member-busy"
-                                    wire:target="payNow({{ $m['id'] }}, {{ (int) date('n') }})"
+                                    @click="close(); abOpenPayment({{ $m['id'] }}, {{ (int) date('Y') }}, {{ (int) date('n') }}, @js($m['name']))"
                                     role="button"
                                     tabindex="0"
-                                    @keydown.enter.prevent="$wire.payNow({{ $m['id'] }}, {{ (int) date('n') }})"
+                                    @keydown.enter.prevent="close(); abOpenPayment({{ $m['id'] }}, {{ (int) date('Y') }}, {{ (int) date('n') }}, @js($m['name']))"
                                     title="{{ __('actions.add_payment') }}: {{ $m['name'] }}"
                                 >
                                     <div class="member-main">
@@ -73,25 +71,15 @@
                                         <button
                                             type="button"
                                             class="btn btn-sm btn-soft-success"
-                                            wire:click.stop="payNow({{ $m['id'] }}, {{ (int) date('n') }})"
-                                            wire:loading.attr="disabled"
-                                            wire:target="payNow({{ $m['id'] }}, {{ (int) date('n') }})"
+                                            @click.stop="close(); abOpenPayment({{ $m['id'] }}, {{ (int) date('Y') }}, {{ (int) date('n') }}, @js($m['name']))"
                                             title="{{ __('actions.add_payment') }}"
-                                        >
-                                            <span wire:loading.remove wire:target="payNow({{ $m['id'] }}, {{ (int) date('n') }})">💶</span>
-                                            <span wire:loading wire:target="payNow({{ $m['id'] }}, {{ (int) date('n') }})" class="spinner-sm"></span>
-                                        </button>
+                                        >💶</button>
                                         <button
                                             type="button"
                                             class="btn btn-sm"
-                                            wire:click.stop="viewStudent({{ $m['id'] }})"
-                                            wire:loading.attr="disabled"
-                                            wire:target="viewStudent({{ $m['id'] }})"
+                                            @click.stop="close(); Livewire.dispatch('open-student-panel', { studentId: {{ $m['id'] }} })"
                                             title="{{ __('actions.view_details') }}"
-                                        >
-                                            <span wire:loading.remove wire:target="viewStudent({{ $m['id'] }})">👁️</span>
-                                            <span wire:loading wire:target="viewStudent({{ $m['id'] }})" class="spinner-sm"></span>
-                                        </button>
+                                        >👁️</button>
                                     </div>
                                 </div>
                             @endforeach

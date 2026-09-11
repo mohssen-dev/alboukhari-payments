@@ -588,5 +588,16 @@
     "settings.script_defaults_note": "All these values come from the original Apps Script — keep the defaults unless you know what you are doing.",
     "settings.script_templates_note": "These are the exact templates from the original Apps Script — you can edit them here.",
     "settings.sender_id_hint": "Usually \"gText\" — matches the original Apps Script setting.",
-    "skip.not_mobile": "Landline — cannot receive SMS"
+    "skip.not_mobile": "Landline — cannot receive SMS",
+    "grid.showing": "Showing :shown of :total",
+    "grid.row_actions": "Actions",
+    "grid.row_hide": "🙈 Hide",
+    "grid.row_unhide": "👁️ Unhide",
+    "grid.row_block": "🚫 Block messages",
+    "grid.row_unblock": "✅ Unblock messages",
+    "grid.row_in_person": "🏠 Mark in-person",
+    "grid.row_not_in_person": "🚪 Remove in-person",
+    "grid.row_exclude_bulk": "🚷 Exclude from bulk",
+    "grid.row_include_bulk": "✓ Include in bulk",
+    "payment.loading": "Loading…"
 }

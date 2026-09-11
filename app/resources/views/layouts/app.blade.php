@@ -14,8 +14,8 @@
     <link rel="icon" type="image/x-icon" href="{{ asset('favicon.ico') }}">
 
     {{-- Preload CSS so wire:navigate transitions feel instant. --}}
-    <link rel="preload" as="style" href="{{ asset('assets/css/app.css') }}?v=7.2">
-    <link rel="stylesheet" href="{{ asset('assets/css/app.css') }}?v=7.2">
+    <link rel="preload" as="style" href="{{ asset('assets/css/app.css') }}?v=7.3">
+    <link rel="stylesheet" href="{{ asset('assets/css/app.css') }}?v=7.3">
     <link rel="preload" as="image" href="{{ asset('assets/img/logo.jpeg') }}">
 
     {{-- Prevent FOUC/x-cloak flicker across page transitions. --}}
@@ -201,6 +201,11 @@
 @livewireScripts
 
 <script>
+    // Opens the payment modal instantly from anywhere: its shell shows on this
+    // event and fetches its own content (one round-trip, nothing to wait for).
+    window.abOpenPayment = (studentId, year, month, name = '') =>
+        window.dispatchEvent(new CustomEvent('pay-open', { detail: { studentId, year, month, name } }));
+
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
             window.dispatchEvent(new CustomEvent('close-panels'));

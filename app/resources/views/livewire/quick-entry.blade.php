@@ -168,8 +168,8 @@
                 <div class="form-group">
                     <label>{{ __('payment.method') }} <small class="text-muted">({{ __('quickentry.method_hint') }})</small></label>
                     <div class="method-toggle">
-                        <button type="button" class="cash {{ $method === 'cash' ? 'active' : '' }}" wire:click="setMethod('cash')">💵 {{ __('payment.method_cash') }}</button>
-                        <button type="button" class="bank {{ $method === 'bank' ? 'active' : '' }}" wire:click="setMethod('bank')">🏦 {{ __('payment.method_bank') }}</button>
+                        <button type="button" class="cash {{ $method === 'cash' ? 'active' : '' }}" :class="{ active: $wire.method === 'cash' }" @click="$wire.method = 'cash'">💵 {{ __('payment.method_cash') }}</button>
+                        <button type="button" class="bank {{ $method === 'bank' ? 'active' : '' }}" :class="{ active: $wire.method === 'bank' }" @click="$wire.method = 'bank'">🏦 {{ __('payment.method_bank') }}</button>
                     </div>
                 </div>
 

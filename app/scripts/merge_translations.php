@@ -415,6 +415,19 @@ $translations = [
     'settings.sender_id_hint' => ['en' => 'Usually "gText" — matches the original Apps Script setting.', 'nl' => 'Meestal "gText" — komt overeen met het oorspronkelijke Apps Script.', 'ar' => 'عادةً "gText" — مطابق لإعداد السكربت الأصلي.'],
 
     'send.duplicate_warn'  => ['en' => ':count of these messages go to a phone that already appears in this campaign — those parents receive the message more than once, and you pay for each copy. Enable "one message per family" to send once per household.', 'nl' => ':count van deze berichten gaan naar een nummer dat al in deze campagne voorkomt — die ouders ontvangen het bericht meerdere keren en u betaalt voor elke kopie. Zet "één bericht per gezin" aan om per huishouden één keer te sturen.', 'ar' => ':count من هذه الرسائل تذهب إلى رقم مكرّر في نفس الحملة — سيستقبل هؤلاء الأولياء الرسالة أكثر من مرة وستدفع ثمن كل نسخة. فعّل "رسالة واحدة لكل عائلة" للإرسال مرة واحدة لكل بيت.'],
+
+    // ---------- Students grid: shared row menu + counter ----------
+    'grid.showing'          => ['en' => 'Showing :shown of :total', 'nl' => ':shown van :total zichtbaar', 'ar' => 'يُعرض :shown من :total'],
+    'grid.row_actions'      => ['en' => 'Actions', 'nl' => 'Acties', 'ar' => 'إجراءات'],
+    'grid.row_hide'         => ['en' => '🙈 Hide', 'nl' => '🙈 Verbergen', 'ar' => '🙈 إخفاء'],
+    'grid.row_unhide'       => ['en' => '👁️ Unhide', 'nl' => '👁️ Weer tonen', 'ar' => '👁️ إظهار'],
+    'grid.row_block'        => ['en' => '🚫 Block messages', 'nl' => '🚫 Berichten blokkeren', 'ar' => '🚫 حظر الرسائل'],
+    'grid.row_unblock'      => ['en' => '✅ Unblock messages', 'nl' => '✅ Berichten deblokkeren', 'ar' => '✅ إلغاء حظر الرسائل'],
+    'grid.row_in_person'    => ['en' => '🏠 Mark in-person', 'nl' => '🏠 Persoonlijk markeren', 'ar' => '🏠 تعيين كحضوري'],
+    'grid.row_not_in_person'=> ['en' => '🚪 Remove in-person', 'nl' => '🚪 Persoonlijk opheffen', 'ar' => '🚪 إلغاء الحضوري'],
+    'grid.row_exclude_bulk' => ['en' => '🚷 Exclude from bulk', 'nl' => '🚷 Uitsluiten van bulk', 'ar' => '🚷 استبعاد من الإرسال الجماعي'],
+    'grid.row_include_bulk' => ['en' => '✓ Include in bulk', 'nl' => '✓ Opnemen in bulk', 'ar' => '✓ تضمين في الإرسال الجماعي'],
+    'payment.loading'       => ['en' => 'Loading…', 'nl' => 'Laden…', 'ar' => 'جارٍ التحميل…'],
 ];
 
 $locales = ['en', 'nl', 'ar'];

@@ -26,7 +26,7 @@
                             {{ $sib->name }}
                         </span>
                     @endforeach
-                    <button type="button" class="btn btn-sm btn-soft-primary" wire:click="openFamily" style="margin-inline-start:auto">
+                    <button type="button" class="btn btn-sm btn-soft-primary" @click="Livewire.dispatch('open-family-modal', { studentId: {{ $student->id }} })" style="margin-inline-start:auto">
                         👨‍👩‍👧‍👦 {{ __('actions.show_family') }}
                     </button>
                 </div>
@@ -62,8 +62,8 @@
 
             {{-- Quick actions --}}
             <div style="display:flex;gap:6px;margin-bottom:18px">
-                <button class="btn btn-primary btn-sm" style="flex:1" wire:click="openSendMessage">📲 {{ __('actions.send_message') }}</button>
-                <button class="btn btn-soft-success btn-sm" style="flex:1" wire:click="openPayment({{ (int) date('n') }})">💶 {{ __('actions.add_payment') }}</button>
+                <button class="btn btn-primary btn-sm" style="flex:1" @click="Livewire.dispatch('open-send-message', { studentId: {{ $student->id }} })">📲 {{ __('actions.send_message') }}</button>
+                <button class="btn btn-soft-success btn-sm" style="flex:1" @click="abOpenPayment({{ $student->id }}, {{ $year }}, {{ (int) date('n') }}, @js($student->name))">💶 {{ __('actions.add_payment') }}</button>
                 <a class="btn btn-sm" style="flex:1;text-align:center" href="{{ route('exports.statement', $student) }}?year={{ $year }}" target="_blank" rel="noopener">🧾 {{ __('exports.statement') }}</a>
             </div>
 
@@ -111,7 +111,7 @@
                                     {{ number_format($bal, 0) }}
                                 </td>
                                 <td style="padding:6px;text-align:center">
-                                    <button class="btn btn-sm btn-soft-success" wire:click="openPayment({{ $num }})">💶</button>
+                                    <button class="btn btn-sm btn-soft-success" @click="abOpenPayment({{ $student->id }}, {{ $year }}, {{ $num }}, @js($student->name))">💶</button>
                                 </td>
                             </tr>
                         @endforeach
@@ -269,7 +269,7 @@
 
             {{-- Tab: Messages --}}
             @if ($tab === 'messages')
-                <button class="btn btn-primary mb-3" wire:click="openSendMessage">
+                <button class="btn btn-primary mb-3" @click="Livewire.dispatch('open-send-message', { studentId: {{ $student->id }} })">
                     📲 {{ __('actions.send_message') }}
                 </button>
                 @php

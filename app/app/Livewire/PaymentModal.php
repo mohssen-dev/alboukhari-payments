@@ -7,12 +7,15 @@ use App\Models\Student;
 use App\Services\FeeResolver;
 use App\Services\MonthNames;
 use App\Support\AuthorizesLivewireWrite;
+use App\Support\DispatchesGridRow;
 use Livewire\Attributes\On;
 use Livewire\Component;
 
 class PaymentModal extends Component
 {
     use AuthorizesLivewireWrite;
+    use DispatchesGridRow;
+
     public bool $isOpen = false;
     public ?int $studentId = null;
     public ?int $year = null;
@@ -116,6 +119,7 @@ class PaymentModal extends Component
             return;
         }
         $this->dispatch('payment-saved', studentId: $this->studentId);
+        $this->dispatchGridRow($this->studentId, $this->year);
         $this->dispatch('toast', message: __('flash.payment_deleted'), type: 'success');
         $this->open($this->studentId, $this->year, $this->month);
     }
@@ -149,7 +153,9 @@ class PaymentModal extends Component
 
         try {
             if ($this->editingPaymentId) {
-                $p = Payment::findOrFail($this->editingPaymentId);
+                // Scoped to the open student: editingPaymentId is plain client
+                // state, so it must not be able to point at another child's row.
+                $p = Payment::where('student_id', $this->studentId)->findOrFail($this->editingPaymentId);
                 // Editing a legacy_zero row with amount still 0 must keep its
                 // method — converting it to a 0.00 'bank' payment would flip
                 // the month from settled (legacy_zero) to unpaid/late.
@@ -180,6 +186,7 @@ class PaymentModal extends Component
         }
 
         $this->dispatch('payment-saved', studentId: $this->studentId);
+        $this->dispatchGridRow($this->studentId, $this->year);
         $this->dispatch('toast', message: __('flash.payment_saved'), type: 'success');
 
         if ($next) {

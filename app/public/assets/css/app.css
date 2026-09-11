@@ -1971,3 +1971,39 @@ pre.json { background: var(--color-surface-alt); padding: 10px; border-radius: v
     border-color: var(--color-primary);
     box-shadow: 0 0 0 3px var(--color-primary-glow);
 }
+
+/* ============================================
+   Grid: lean rows + in-place row patch (v7.3)
+   Rows carry no per-cell Livewire/Alpine bindings — see partials/grid-row.
+   ============================================ */
+.students-grid td.col-phone { font-family: ui-monospace, monospace; font-size: 11px; color: var(--color-text-muted); }
+.students-grid td.col-balance { font-weight: 700; }
+.students-grid td.col-balance.is-owed { color: var(--color-danger); }
+.students-grid td.col-balance.is-clear { color: var(--color-success); }
+.students-grid tbody tr.row-filtered { display: none; }
+/* Always rendered (no per-cell @if → no Livewire morph markers); hidden when empty. */
+.cell-content .method-icon:empty { display: none; }
+
+/* Brief confirmation glow on a row that was just updated in place. */
+.students-grid tbody tr.row-flash > td { animation: rowFlash 0.9s ease-out; }
+@keyframes rowFlash {
+    from { box-shadow: inset 0 0 0 999px rgba(16, 185, 129, 0.25); }
+    to   { box-shadow: inset 0 0 0 999px rgba(16, 185, 129, 0); }
+}
+
+/* The single shared row-actions menu (viewport-fixed, positioned from JS). */
+.dropdown-menu.row-menu { position: fixed; inset: auto; z-index: 150; }
+
+/* Payment modal: instant skeleton while the server fetches the numbers. */
+.modal-skeleton .sk {
+    border-radius: var(--radius);
+    background: linear-gradient(90deg, var(--color-surface-alt) 25%, var(--color-border) 50%, var(--color-surface-alt) 75%);
+    background-size: 200% 100%;
+    animation: skShimmer 1.1s linear infinite;
+}
+@keyframes skShimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+.payment-row-editing td { background: var(--color-primary-soft); }
+
+@media (prefers-reduced-motion: reduce) {
+    .students-grid tbody tr.row-flash > td, .modal-skeleton .sk { animation: none; }
+}
