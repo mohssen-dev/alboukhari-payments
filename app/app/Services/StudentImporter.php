@@ -198,9 +198,21 @@ class StudentImporter
             }
 
             // قيمة عددية
+            //
+            // How the sheet records money (confirmed by the school, 2026-09-11):
+            //   a positive number = paid in CASH, that amount;
+            //   0                 = the month's fee was paid by BANK transfer.
+            // It used to import positives as 'bank' and 0 as a 'legacy_zero'
+            // marker worth nothing — see the reclassify migration of that date.
             if (is_numeric($strVal)) {
                 $amount = (float) $strVal;
-                $method = $amount == 0 ? 'legacy_zero' : 'bank';
+                if ($amount == 0) {
+                    $method = 'bank';
+                    $amount = FeeResolver::resolve($student, $year, $monthNum)
+                        + FeeResolver::surchargesFor($student, $year, $monthNum);
+                } else {
+                    $method = 'cash';
+                }
 
                 // Re-import replaces ONLY rows this importer created.
                 //

@@ -114,7 +114,7 @@ class ImportNonDestructiveTest extends TestCase
         // '0' as a STRING: PhpSpreadsheet writes a numeric 0 as an empty cell,
         // which reads back as null and never reaches the importer. Real sheets
         // from Excel/Sheets do carry the zero, so a string keeps the fixture
-        // faithful to production (a 0 month becomes a legacy_zero row).
+        // faithful to production (a 0 month becomes a bank row for the fee).
         $sheet = fn () => $this->makeSheet(3, 'Kid Three', [1 => 30, 2 => 30, 3 => '0']);
 
         (new StudentImporter())->import($sheet(), $year);
@@ -220,5 +220,22 @@ class ImportNonDestructiveTest extends TestCase
 
         $this->assertNotNull(Payment::find($otherYear->id),
             'Another school year must not be affected by clearing cells in this one.');
+    }
+
+    public function test_sheet_numbers_are_cash_and_zero_is_the_fee_paid_by_bank(): void
+    {
+        // Confirmed by the school: a positive number is cash, 0 means the
+        // month's fee was paid by bank transfer.
+        (new StudentImporter())->import($this->makeSheet(10, 'Kid Ten', [1 => 30, 2 => 15, 3 => '0']), 2026);
+
+        $byMonth = Payment::where('source', StudentImporter::SOURCE)->get()->keyBy('period_month');
+
+        $this->assertSame('cash', $byMonth[1]->method);
+        $this->assertSame(30.00, (float) $byMonth[1]->amount);
+        $this->assertSame('cash', $byMonth[2]->method);
+        $this->assertSame(15.00, (float) $byMonth[2]->amount);
+        $this->assertSame('bank', $byMonth[3]->method);
+        $this->assertSame(30.00, (float) $byMonth[3]->amount, '0 in the sheet = the 30 € fee, paid by bank');
+        $this->assertSame(0, Payment::where('method', 'legacy_zero')->count());
     }
 }
