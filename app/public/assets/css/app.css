@@ -888,6 +888,40 @@ html[dir="rtl"] .topbar .search-global {
     .family-member .member-actions { grid-column: 1 / -1; justify-content: flex-end; }
 }
 
+/* Family window as a family payment form (v7.5): month / method / date bar,
+   then one amount field per child, prefilled with what is still owed. */
+.family-modal-box { width: 780px; max-width: calc(100vw - 32px); }
+.family-paybar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 10px 14px;
+    padding: 10px 12px;
+    margin-bottom: 12px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+}
+.family-paybar .fp-field { display: flex; flex-direction: column; gap: 4px; }
+.family-paybar .fp-label { font-size: 11px; font-weight: 600; color: var(--color-text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
+html[dir="rtl"] .family-paybar .fp-label { text-transform: none; letter-spacing: 0; }
+.family-paybar .fp-month { min-width: 160px; }
+.family-paybar .fp-method { flex: 1 1 220px; }
+.family-paybar .fp-date { width: 150px; }
+.family-member { grid-template-columns: minmax(0, 1fr) auto auto auto; }
+.family-member .member-month { text-align: center; min-width: 110px; }
+.family-member .member-month-sub { font-size: 11px; color: var(--color-text-muted); margin-top: 4px; white-space: nowrap; }
+.family-member .member-pay { display: flex; align-items: center; gap: 4px; }
+.family-member .member-amount { width: 92px; font-size: 17px; font-weight: 700; text-align: center; padding: 8px 6px; }
+.family-member .member-amount-cur { font-weight: 700; color: var(--color-text-muted); }
+.family-member .meta-balance.is-owed { color: var(--color-danger); font-weight: 700; }
+.family-member .meta-balance.is-clear { color: var(--color-success); font-weight: 700; }
+.modal-footer .fp-hint { margin-inline-end: auto; }
+@media (max-width: 640px) {
+    .family-member { grid-template-columns: 1fr auto; }
+    .family-member .member-month { text-align: start; }
+    .modal-footer .fp-hint { display: none; }
+}
+
 /* ============================================
    Toast notifications
    ============================================ */

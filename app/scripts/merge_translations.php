@@ -431,6 +431,18 @@ $translations = [
 
     // ---------- Topbar brand ----------
     'brand.tagline'         => ['en' => 'Payments', 'nl' => 'Betalingen', 'ar' => 'نظام الدفعات'],
+
+    // ---------- Family window: pay for the whole family at once ----------
+    'family.pay_for'         => ['en' => 'Payment for', 'nl' => 'Betaling voor', 'ar' => 'الدفع عن شهر'],
+    'family.save_all'        => ['en' => 'Save family payment', 'nl' => 'Gezinsbetaling opslaan', 'ar' => 'حفظ دفعة العائلة'],
+    'family.total'           => ['en' => 'Total', 'nl' => 'Totaal', 'ar' => 'المجموع'],
+    'family.month_due'       => ['en' => 'Due :amount €', 'nl' => 'Te betalen :amount €', 'ar' => 'المستحق :amount €'],
+    'family.month_paid'      => ['en' => 'paid :amount €', 'nl' => 'betaald :amount €', 'ar' => 'دُفع :amount €'],
+    'family.balance_to_date' => ['en' => 'Owed to date', 'nl' => 'Openstaand tot nu', 'ar' => 'المتبقي حتى الآن'],
+    'family.saved'           => ['en' => ':count payments saved — :total €', 'nl' => ':count betalingen opgeslagen — :total €', 'ar' => 'تم حفظ :count دفعات — :total €'],
+    'family.nothing_to_save' => ['en' => 'Enter an amount for at least one child.', 'nl' => 'Vul voor minstens één kind een bedrag in.', 'ar' => 'أدخل مبلغاً لطفل واحد على الأقل.'],
+    'family.details'         => ['en' => 'Payment details / edit', 'nl' => 'Betalingsdetails / wijzigen', 'ar' => 'تفاصيل الدفعات / تعديل'],
+    'family.keys_hint'       => ['en' => 'Enter = save · Esc = close', 'nl' => 'Enter = opslaan · Esc = sluiten', 'ar' => 'Enter = حفظ · Esc = إغلاق'],
 ];
 
 $locales = ['en', 'nl', 'ar'];

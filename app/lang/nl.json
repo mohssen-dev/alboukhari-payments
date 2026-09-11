@@ -600,5 +600,15 @@
     "grid.row_exclude_bulk": "🚷 Uitsluiten van bulk",
     "grid.row_include_bulk": "✓ Opnemen in bulk",
     "payment.loading": "Laden…",
-    "brand.tagline": "Betalingen"
+    "brand.tagline": "Betalingen",
+    "family.pay_for": "Betaling voor",
+    "family.save_all": "Gezinsbetaling opslaan",
+    "family.total": "Totaal",
+    "family.month_due": "Te betalen :amount €",
+    "family.month_paid": "betaald :amount €",
+    "family.balance_to_date": "Openstaand tot nu",
+    "family.saved": ":count betalingen opgeslagen — :total €",
+    "family.nothing_to_save": "Vul voor minstens één kind een bedrag in.",
+    "family.details": "Betalingsdetails / wijzigen",
+    "family.keys_hint": "Enter = opslaan · Esc = sluiten"
 }

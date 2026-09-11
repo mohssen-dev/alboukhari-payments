@@ -600,5 +600,15 @@
     "grid.row_exclude_bulk": "🚷 Exclude from bulk",
     "grid.row_include_bulk": "✓ Include in bulk",
     "payment.loading": "Loading…",
-    "brand.tagline": "Payments"
+    "brand.tagline": "Payments",
+    "family.pay_for": "Payment for",
+    "family.save_all": "Save family payment",
+    "family.total": "Total",
+    "family.month_due": "Due :amount €",
+    "family.month_paid": "paid :amount €",
+    "family.balance_to_date": "Owed to date",
+    "family.saved": ":count payments saved — :total €",
+    "family.nothing_to_save": "Enter an amount for at least one child.",
+    "family.details": "Payment details / edit",
+    "family.keys_hint": "Enter = save · Esc = close"
 }
