@@ -117,7 +117,13 @@
                         <p dir="auto">{{ $preview['counter']['sanitized'] }}</p>
                     </div>
                     <x-sms-meter :counter="$preview['counter']" />
-                    <div class="field-help">💶 {{ __('templates.cost_per_message', ['cost' => number_format($preview['cost'], 2)]) }}</div>
+                    @if ($preview['quote']['available'])
+                        @php
+                            $q = $preview['quote'];
+                            $range = \App\Support\MoneyFormat::credits($q['min']['credits']) . ($q['min']['credits'] != $q['max']['credits'] ? '–' . \App\Support\MoneyFormat::credits($q['max']['credits']) : '');
+                        @endphp
+                        <div class="field-help">💳 {{ __('cost.sample', ['range' => \App\Support\MoneyFormat::iso($range), 'eur' => \App\Support\MoneyFormat::iso(\App\Support\MoneyFormat::eur($q['max']['eur']))]) }}</div>
+                    @endif
                     @if ($preview['translation'])
                         <div class="tpl-translation">
                             <span class="tpl-translation__label">🌐 {{ __('templates.translation_only') }}</span>

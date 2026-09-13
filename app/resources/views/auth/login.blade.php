@@ -28,7 +28,7 @@
             }
         })();
     </script>
-    <link rel="stylesheet" href="{{ asset('assets/css/app.css') }}?v=7.9">
+    <link rel="stylesheet" href="{{ asset('assets/css/app.css') }}?v=8.0">
     <link rel="stylesheet" href="{{ asset('assets/css/dark.css') }}?v=1.1">
 </head>
 <body class="auth-body">

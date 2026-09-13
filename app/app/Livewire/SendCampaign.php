@@ -6,6 +6,7 @@ use App\Models\Campaign;
 use App\Models\CampaignRecipient;
 use App\Models\Setting;
 use App\Models\Template;
+use App\Services\BulkGatePricing;
 use App\Services\CampaignSender;
 use App\Services\MonthNames;
 use App\Services\RecipientListBuilder;
@@ -131,6 +132,25 @@ class SendCampaign extends Component
         }
     }
 
+    /** The top-up tier the school buys credits at — sets what one credit is worth in euros. */
+    public function setCreditTier(int $amount): void
+    {
+        $this->assertCanWrite();
+
+        $pricing = app(BulkGatePricing::class);
+        if (in_array($amount, array_column($pricing->tiers(), 'amount'), true)) {
+            Setting::put(BulkGatePricing::TIER_SETTING, (string) $amount);
+        }
+        $this->refreshPreview();
+    }
+
+    /** Ask BulkGate (and the exchange rate) again instead of the cached figures. */
+    public function refreshPricing(): void
+    {
+        app(BulkGatePricing::class)->refresh();
+        $this->refreshPreview();
+    }
+
     public function getCounterProperty(): array
     {
         return SmsCounter::count($this->body, Setting::get('force_ascii', '1') === '1');
@@ -164,8 +184,10 @@ class SendCampaign extends Component
         $builder = new RecipientListBuilder();
         $result = $builder->build($tempCampaign);
 
-        $price = (float) Setting::get('bulkgate_price_per_sms', '0.08');
-        $result['stats']['estimated_cost'] = $price * $result['stats']['total_segments'];
+        // Stored on the campaign in euros: the dearest operator, so it never under-promises.
+        $quote = app(BulkGatePricing::class)->quote((int) $result['stats']['total_segments']);
+        $result['stats']['estimated_cost'] = $quote['max']['eur']
+            ?? (float) Setting::get('bulkgate_price_per_sms', '0.08') * $result['stats']['total_segments'];
 
         $this->previewStats = $result['stats'];
         $this->previewRecipients = array_slice($result['recipients'], 0, 20);
@@ -380,7 +402,7 @@ class SendCampaign extends Component
             'translation' => $translation,
             'sampleTranslation' => $sampleTranslation,
             'unknownVars' => TemplateVariables::unknownIn($this->body),
-            'pricePerSms' => (float) Setting::get('bulkgate_price_per_sms', '0.08'),
+            'quote' => $this->previewStats ? app(BulkGatePricing::class)->quote((int) $this->previewStats['total_segments']) : null,
         ])->layout('layouts.app');
     }
 }

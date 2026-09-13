@@ -15,9 +15,10 @@ use Livewire\Component;
 use Spatie\Activitylog\Models\Activity;
 
 /**
- * Delete a student, or a whole family — admin only, mounted once in the
- * layout and opened with 'open-delete-student' {studentId} or
- * 'open-delete-family' {familyId}.
+ * Delete a student, a whole family, or the students ticked in the grid —
+ * admin only, mounted once in the layout and opened with
+ * 'open-delete-student' {studentId}, 'open-delete-family' {familyId} or
+ * 'open-delete-students' {studentIds}.
  *
  * Deleting takes the student off the grid, out of every message and out of
  * the arrears, but the payment record stays for the reports. The school's
@@ -38,6 +39,8 @@ class DeleteRecord extends Component
     #[Locked] public string $kind = 'student';
     #[Locked] public ?int $studentId = null;
     #[Locked] public ?int $familyId = null;
+    /** @var list<int> the students ticked in the grid ('students' kind) */
+    #[Locked] public array $studentIds = [];
 
     #[On('open-delete-student')]
     public function openStudent(int $studentId): void
@@ -71,6 +74,28 @@ class DeleteRecord extends Component
         $this->isOpen = true;
     }
 
+    /** Many students at once — the grid's selection. One student is the single-student window. */
+    #[On('open-delete-students')]
+    public function openStudents(array $studentIds = []): void
+    {
+        $this->assertAdmin();
+        $this->resetState();
+
+        $ids = Student::whereIn('id', array_map('intval', $studentIds))->pluck('id')->all();
+        if (!$ids) {
+            $this->dispatch('toast', message: __('delete.not_found'), type: 'error');
+            return;
+        }
+        if (count($ids) === 1) {
+            $this->openStudent($ids[0]);
+            return;
+        }
+
+        $this->kind = 'students';
+        $this->studentIds = $ids;
+        $this->isOpen = true;
+    }
+
     public function delete(): void
     {
         $this->assertAdmin();
@@ -85,12 +110,12 @@ class DeleteRecord extends Component
         DB::transaction(fn () => $students->each(fn (Student $s) => self::deleteKeepingPayments($s)));
 
         $ids = $students->pluck('id')->all();
-        $label = $this->kind === 'family' ? (Family::find($this->familyId)?->displayName() ?? '') : $students->first()->name;
-
         $this->dispatch('students-deleted', studentIds: $ids);
-        $this->dispatch('toast', type: 'success', message: $this->kind === 'family'
-            ? __('delete.family_done', ['name' => $label, 'count' => count($ids)])
-            : __('delete.student_done', ['name' => $label]));
+        $this->dispatch('toast', type: 'success', message: match ($this->kind) {
+            'family' => __('delete.family_done', ['name' => Family::find($this->familyId)?->displayName() ?? '', 'count' => count($ids)]),
+            'students' => __('delete.selected_done', ['count' => count($ids)]),
+            default => __('delete.student_done', ['name' => $students->first()->name]),
+        });
 
         $this->close();
     }
@@ -203,14 +228,16 @@ class DeleteRecord extends Component
     /** The students this window deletes — never already-deleted ones. @return Collection<int, Student> */
     private function students(): Collection
     {
-        return $this->kind === 'family'
-            ? ($this->familyId ? Student::where('family_id', $this->familyId)->orderBy('external_id')->orderBy('id')->get() : collect())
-            : Student::whereKey($this->studentId)->get();
+        return match ($this->kind) {
+            'family' => $this->familyId ? Student::where('family_id', $this->familyId)->orderBy('external_id')->orderBy('id')->get() : collect(),
+            'students' => Student::whereIn('id', $this->studentIds)->orderBy('external_id')->orderBy('id')->get(),
+            default => Student::whereKey($this->studentId)->get(),
+        };
     }
 
     private function resetState(): void
     {
-        $this->reset(['isOpen', 'kind', 'studentId', 'familyId']);
+        $this->reset(['isOpen', 'kind', 'studentId', 'familyId', 'studentIds']);
         $this->resetValidation();
     }
 }

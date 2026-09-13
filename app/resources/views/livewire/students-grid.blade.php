@@ -93,6 +93,9 @@
         <button class="btn btn-sm" @click="bulk('is_hidden', true, @js(__('confirm.bulk_hide', ['count' => '__COUNT__'])))">🙈 {{ __('actions.bulk_hide') }}</button>
         <button class="btn btn-sm" @click="bulk('is_blocked_messages', true, @js(__('confirm.bulk_block', ['count' => '__COUNT__'])))">🚫 {{ __('actions.bulk_block') }}</button>
         <button class="btn btn-sm" @click="bulk('is_in_person', true, @js(__('confirm.bulk_in_person', ['count' => '__COUNT__'])))">🏠 {{ __('In-person') }}</button>
+        @if (auth()->user()?->isAdmin())
+            <button class="btn btn-sm btn-soft-danger" @click="Livewire.dispatch('open-delete-students', { studentIds: [...selectedIds] })">{{ __('delete.selected_button') }}</button>
+        @endif
         <button class="btn btn-sm btn-danger" @click="clearSelection()">✕ {{ __('actions.bulk_clear') }}</button>
     </div>
 
@@ -472,7 +475,8 @@
             },
 
             toggleAll(on) {
-                const ids = this.visibleRows().map(r => r.id);
+                // Deleted rows (the "Deleted" filter) are a read-only record — never selectable.
+                const ids = this.visibleRows().filter(r => !r.isDeleted).map(r => r.id);
                 if (on) {
                     this.selectedIds = [...new Set([...this.selectedIds, ...ids])];
                 } else {

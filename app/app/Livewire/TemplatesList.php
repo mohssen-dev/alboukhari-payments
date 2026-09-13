@@ -181,7 +181,7 @@ class TemplatesList extends Component
             'translation' => $translation !== '' ? $render($translation) : null,
             'who' => $who,
             'month' => (MonthNames::full()[$month] ?? '') . ' ' . $year,
-            'cost' => $counter['segments'] * (float) Setting::get('bulkgate_price_per_sms', '0.08'),
+            'quote' => app(\App\Services\BulkGatePricing::class)->quote((int) $counter['segments']),
             'unknown' => TemplateVariables::unknownIn($both),
         ];
     }

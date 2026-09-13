@@ -1,4 +1,4 @@
-{{-- Delete a student or a whole family; their payments stay on record (see App\Livewire\DeleteRecord). --}}
+{{-- Delete a student, a whole family or the ticked students; their payments stay on record (see App\Livewire\DeleteRecord). --}}
 <div>
     @if ($isOpen)
         <div
@@ -23,13 +23,15 @@
         >
             <div class="modal-box delete-box" @click.stop role="alertdialog" aria-labelledby="delete-title">
                 <div class="modal-header">
-                    <h3 id="delete-title">🗑️ {{ $kind === 'family' ? __('delete.family_title') : __('delete.student_title') }}</h3>
+                    <h3 id="delete-title">🗑️ {{ match ($kind) { 'family' => __('delete.family_title'), 'students' => __('delete.selected_title'), default => __('delete.student_title') } }}</h3>
                     <button type="button" class="btn btn-sm btn-ghost" @click="close()" aria-label="{{ __('common.close') }}">✕</button>
                 </div>
 
                 <div class="modal-body">
                     <div class="delete-who">
-                        @if ($kind === 'family')
+                        @if ($kind === 'students')
+                            <strong>{{ __('delete.selected_count', ['count' => count($people)]) }}</strong>
+                        @elseif ($kind === 'family')
                             <strong>👨‍👩‍👧‍👦 {{ $familyName }}</strong>
                             <span class="text-muted">{{ __('delete.children_count', ['count' => count($people)]) }}</span>
                         @elseif (!empty($people))
@@ -52,7 +54,7 @@
                         @foreach ($people as $p)
                             <li wire:key="del-{{ $p['id'] }}">
                                 <div class="delete-person">
-                                    @if ($kind === 'family')
+                                    @if ($kind !== 'student')
                                         <strong>{{ $p['number'] ? '#' . $p['number'] . ' · ' : '' }}{{ $p['name'] }}</strong>
                                     @endif
                                     <span class="text-muted">
@@ -87,7 +89,7 @@
                 <div class="modal-footer">
                     <button type="button" class="btn" @click="close()">{{ __('payment.cancel') }}</button>
                     <button type="button" class="btn btn-danger" @click="run()" :disabled="busy">
-                        <span x-show="!busy">🗑️ {{ $kind === 'family' ? __('delete.family_button_confirm') : __('delete.student_button_confirm') }}</span>
+                        <span x-show="!busy">🗑️ {{ match ($kind) { 'family' => __('delete.family_button_confirm'), 'students' => __('delete.selected_button_confirm', ['count' => count($people)]), default => __('delete.student_button_confirm') } }}</span>
                         <span x-show="busy" x-cloak><span class="spinner-sm"></span> …</span>
                     </button>
                 </div>

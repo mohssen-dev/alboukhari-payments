@@ -38,5 +38,10 @@ abstract class TestCase extends BaseTestCase
         if ($db !== ':memory:') {
             self::fail("REFUSING TO CONTINUE: tests must use an in-memory SQLite DB, got [{$db}].");
         }
+
+        // No test reaches a real service: the send preview now asks BulkGate
+        // for prices, its balance and the dollar rate. Unfaked requests throw,
+        // and those callers degrade to "unavailable" — fast and offline.
+        \Illuminate\Support\Facades\Http::preventStrayRequests();
     }
 }

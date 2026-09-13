@@ -193,6 +193,66 @@ class DeleteRecordTest extends TestCase
         $this->assertSame(4, $restored->payments()->count());
     }
 
+    public function test_the_ticked_students_are_deleted_together_each_keeping_its_payments(): void
+    {
+        $picked = [];
+        foreach (range(1, 20) as $i) {
+            $picked[] = $this->fourMonthStudent(null, "Picked {$i}")->id;
+        }
+        $kept = $this->fourMonthStudent(null, 'Not Picked');
+
+        Livewire::test(DeleteRecord::class)
+            ->dispatch('open-delete-students', studentIds: $picked)
+            ->assertSet('kind', 'students')
+            ->assertSee(__('delete.selected_button_confirm', ['count' => 20]))
+            ->assertSee('Picked 1')
+            ->assertSee('Picked 20')
+            ->call('delete')
+            ->assertHasNoErrors()
+            ->assertSet('isOpen', false)
+            ->assertDispatched('students-deleted', studentIds: $picked);
+
+        $this->assertSame(20, Student::onlyTrashed()->whereIn('id', $picked)->count());
+        $this->assertSame(80, Payment::whereIn('student_id', $picked)->count());
+        $this->assertSame(sprintf('%d-05-01', $this->year), Student::onlyTrashed()->find($picked[7])->withdrawn_at->format('Y-m-d'));
+        $this->assertNotNull(Student::find($kept->id));
+    }
+
+    public function test_a_selection_ignores_unknown_and_already_deleted_ids(): void
+    {
+        $a = $this->fourMonthStudent(null, 'Live A');
+        $b = $this->fourMonthStudent(null, 'Live B');
+        $gone = $this->fourMonthStudent(null, 'Gone Already');
+        $gone->delete();
+
+        Livewire::test(DeleteRecord::class)
+            ->call('openStudents', [$a->id, $b->id, $gone->id, 99999])
+            ->assertSet('studentIds', [$a->id, $b->id]);
+
+        // A selection of one is the ordinary single-student window.
+        Livewire::test(DeleteRecord::class)
+            ->call('openStudents', [$a->id, $gone->id])
+            ->assertSet('kind', 'student')
+            ->assertSet('studentId', $a->id);
+
+        Livewire::test(DeleteRecord::class)
+            ->call('openStudents', [$gone->id])
+            ->assertSet('isOpen', false)
+            ->assertDispatched('toast');
+    }
+
+    public function test_only_admins_see_delete_selected_and_can_open_it(): void
+    {
+        Student::create(['name' => 'Row']);
+        $s = $this->fourMonthStudent();
+
+        $this->get('/')->assertOk()->assertSee(__('delete.selected_button'));
+
+        $this->actingAs($this->user(User::ROLE_STAFF));
+        $this->get('/')->assertOk()->assertDontSee(__('delete.selected_button'));
+        Livewire::test(DeleteRecord::class)->call('openStudents', [$s->id])->assertForbidden();
+    }
+
     public function test_staff_and_viewers_cannot_delete_or_restore(): void
     {
         $s = $this->fourMonthStudent();

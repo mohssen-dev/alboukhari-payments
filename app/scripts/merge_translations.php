@@ -565,6 +565,42 @@ $translations = [
     'filters.deleted' => ['en' => '🗑️ Deleted', 'nl' => '🗑️ Verwijderd', 'ar' => '🗑️ المحذوفون'],
     'grid.row_restore' => ['en' => '↩️ Restore student', 'nl' => '↩️ Leerling herstellen', 'ar' => '↩️ استرجاع الطالب'],
     'grid.row_statement' => ['en' => '🧾 Statement', 'nl' => '🧾 Overzicht', 'ar' => '🧾 كشف الحساب'],
+
+    // Campaign cost from BulkGate's price list (App\Services\BulkGatePricing)
+    'cost.title' => ['en' => 'Campaign cost', 'nl' => 'Kosten van de campagne', 'ar' => 'تكلفة الحملة'],
+    'cost.source' => ['en' => 'BulkGate prices · :sender · :country', 'nl' => 'BulkGate-prijzen · :sender · :country', 'ar' => 'أسعار BulkGate · :sender · :country'],
+    'cost.refresh' => ['en' => 'Refresh', 'nl' => 'Vernieuwen', 'ar' => 'تحديث'],
+    'cost.credits' => ['en' => 'credits', 'nl' => 'credits', 'ar' => 'كردت'],
+    'cost.min' => ['en' => 'Lowest cost', 'nl' => 'Laagste kosten', 'ar' => 'أقل تكلفة'],
+    'cost.max' => ['en' => 'Highest cost', 'nl' => 'Hoogste kosten', 'ar' => 'أعلى تكلفة'],
+    'cost.per_part_hint' => ['en' => ':credits credits per SMS', 'nl' => ':credits credits per sms', 'ar' => ':credits كردت لكل رسالة'],
+    'cost.balance' => ['en' => 'Your balance', 'nl' => 'Uw tegoed', 'ar' => 'رصيدك الآن'],
+    'cost.checked_at' => ['en' => 'Checked :time', 'nl' => 'Gecontroleerd :time', 'ar' => 'آخر تحقق :time'],
+    'cost.balance_unavailable' => ['en' => 'The balance could not be read from BulkGate right now.', 'nl' => 'Het tegoed kon nu niet bij BulkGate worden opgehaald.', 'ar' => 'تعذّر قراءة الرصيد من BulkGate الآن.'],
+    'cost.enough' => ['en' => 'The balance covers this campaign even at the highest cost — at least :left credits (:eur · :usd) remain.', 'nl' => 'Het tegoed dekt deze campagne ook bij de hoogste kosten — er blijft minstens :left credits (:eur · :usd) over.', 'ar' => 'الرصيد يكفي هذه الحملة حتى بأعلى تكلفة — يبقى :left كردت على الأقل (:eur · :usd).'],
+    'cost.tight' => ['en' => 'The balance covers the lowest cost only — up to :short credits (:eur) may be missing.', 'nl' => 'Het tegoed dekt alleen de laagste kosten — er kan tot :short credits (:eur) ontbreken.', 'ar' => 'الرصيد يكفي أقل تكلفة فقط — قد ينقص حتى :short كردت (:eur).'],
+    'cost.short' => ['en' => 'The balance is not enough: at least :short credits (:eur · :usd) are missing. Top up in BulkGate before sending.', 'nl' => 'Het tegoed is niet genoeg: er ontbreekt minstens :short credits (:eur · :usd). Waardeer op in BulkGate vóór het versturen.', 'ar' => 'الرصيد لا يكفي: ينقص :short كردت على الأقل (:eur · :usd). اشحن الرصيد في BulkGate قبل الإرسال.'],
+    'cost.operators' => ['en' => 'Price per SMS by mobile network (:count)', 'nl' => 'Prijs per sms per mobiel netwerk (:count)', 'ar' => 'سعر الرسالة حسب شبكة الهاتف (:count)'],
+    'cost.operator' => ['en' => 'Network', 'nl' => 'Netwerk', 'ar' => 'الشبكة'],
+    'cost.per_sms' => ['en' => 'Credits / SMS', 'nl' => 'Credits / sms', 'ar' => 'كردت / رسالة'],
+    'cost.this_campaign' => ['en' => 'This campaign (:count SMS)', 'nl' => 'Deze campagne (:count sms)', 'ar' => 'هذه الحملة (:count رسالة)'],
+    'cost.why_range' => ['en' => 'BulkGate charges by the network of each number, which is not known in advance (numbers move between networks), so the cost is shown from the cheapest to the dearest network. Every SMS part is charged as one message.', 'nl' => 'BulkGate rekent per netwerk van elk nummer, en dat is vooraf niet bekend (nummers kunnen van netwerk wisselen). Daarom tonen we de kosten van het goedkoopste tot het duurste netwerk. Elk sms-deel telt als één bericht.', 'ar' => 'يحسب BulkGate السعر حسب شبكة كل رقم، ولا نعرفها مسبقاً لأن الأرقام تنتقل بين الشبكات، لذلك نعرض التكلفة من أرخص شبكة إلى أغلاها. كل جزء من الرسالة يُحسب رسالة كاملة.'],
+    'cost.tier_label' => ['en' => 'Credits bought at', 'nl' => 'Credits gekocht tegen', 'ar' => 'سعر شراء الكردت'],
+    'cost.tier_option' => ['en' => 'Top-up from :amount € — :credits credits per 1 € (:bonus% bonus)', 'nl' => 'Opwaarderen vanaf :amount € — :credits credits per 1 € (:bonus% bonus)', 'ar' => 'شحن من :amount € — :credits كردت لكل 1 € (مكافأة :bonus%)'],
+    'cost.credit_value' => ['en' => '1 credit = :eur · :usd', 'nl' => '1 credit = :eur · :usd', 'ar' => '1 كردت = :eur · :usd'],
+    'cost.fx' => ['en' => '1 € = :rate $ (ECB, :date)', 'nl' => '1 € = :rate $ (ECB, :date)', 'ar' => '1 € = :rate $ (البنك المركزي الأوروبي، :date)'],
+    'cost.fx_unavailable' => ['en' => 'Dollar rate unavailable right now', 'nl' => 'Dollarkoers nu niet beschikbaar', 'ar' => 'سعر الدولار غير متاح الآن'],
+    'cost.updated' => ['en' => 'Prices updated :time', 'nl' => 'Prijzen bijgewerkt :time', 'ar' => 'الأسعار محدّثة :time'],
+    'cost.stale' => ['en' => 'Last saved prices (:time) — BulkGate could not be reached', 'nl' => 'Laatst bewaarde prijzen (:time) — BulkGate niet bereikbaar', 'ar' => 'آخر أسعار محفوظة (:time) — تعذّر الوصول إلى BulkGate'],
+    'cost.unavailable' => ['en' => 'BulkGate prices could not be loaded right now, so the cost cannot be calculated. Try "Refresh" in a moment.', 'nl' => 'De BulkGate-prijzen konden nu niet worden geladen, dus de kosten kunnen niet worden berekend. Probeer zo "Vernieuwen".', 'ar' => 'تعذّر جلب أسعار BulkGate الآن، لذلك لا يمكن حساب التكلفة. جرّب «تحديث» بعد قليل.'],
+    'cost.sample' => ['en' => 'This message: :range credits (up to :eur)', 'nl' => 'Dit bericht: :range credits (tot :eur)', 'ar' => 'هذه الرسالة: :range كردت (حتى :eur)'],
+
+    // Delete the students ticked in the grid (DeleteRecord 'students' kind)
+    'delete.selected_button' => ['en' => '🗑️ Delete selected', 'nl' => '🗑️ Selectie verwijderen', 'ar' => '🗑️ حذف المحدَّدين'],
+    'delete.selected_title' => ['en' => 'Delete the selected students', 'nl' => 'Geselecteerde leerlingen verwijderen', 'ar' => 'حذف الطلاب المحدَّدين'],
+    'delete.selected_count' => ['en' => ':count students selected', 'nl' => ':count leerlingen geselecteerd', 'ar' => 'عدد الطلاب المحدَّدين: :count'],
+    'delete.selected_button_confirm' => ['en' => 'Delete :count students', 'nl' => ':count leerlingen verwijderen', 'ar' => 'حذف :count طالب'],
+    'delete.selected_done' => ['en' => ':count students were deleted — the payments are kept', 'nl' => ':count leerlingen zijn verwijderd — de betalingen blijven bewaard', 'ar' => 'حُذف :count طالب — دفعاتهم محفوظة'],
 ];
 
 $locales = ['en', 'nl', 'ar'];

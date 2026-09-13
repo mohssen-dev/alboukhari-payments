@@ -2343,3 +2343,85 @@ html[dir="rtl"] .brand-tagline { text-transform: none; letter-spacing: 0; font-s
 .theme-toggle .icon-sun { display: none; }
 html[data-theme="dark"] .theme-toggle .icon-moon { display: none; }
 html[data-theme="dark"] .theme-toggle .icon-sun { display: block; }
+
+/* ============================================
+   Send preview: KPI tiles + campaign cost panel (BulkGatePricing)
+   ============================================ */
+/* Form beside the preview on wide screens; one column below 900px (it used to stay two ~170px columns on a phone). */
+.send-page { max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); gap: 14px; }
+@media (max-width: 900px) { .send-page { grid-template-columns: minmax(0, 1fr); } }
+.send-preview__kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); margin-top: 14px; }
+@media (max-width: 480px) { .send-preview__kpis { grid-template-columns: 1fr; } }
+
+.cost-panel {
+    margin-top: 14px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    background: var(--color-surface);
+    overflow: hidden;
+}
+.cost-panel__head {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--color-border);
+    background: var(--color-surface-alt);
+}
+.cost-panel__head h4 { margin: 0; font-size: 14px; }
+.cost-panel__source { font-size: 12px; color: var(--color-text-muted); }
+.cost-panel__refresh { margin-inline-start: auto; }
+
+.cost-figures { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.cost-figure {
+    display: flex; flex-direction: column; gap: 2px;
+    padding: 12px 14px;
+    min-width: 0;
+    font-variant-numeric: tabular-nums;
+}
+.cost-figure + .cost-figure { border-inline-start: 1px solid var(--color-border); }
+.cost-figure__label { font-size: 11.5px; font-weight: 700; letter-spacing: 0.02em; color: var(--color-text-muted); }
+.cost-figure__credits { font-size: 22px; font-weight: 800; line-height: 1.15; color: var(--color-text); }
+.cost-figure__credits small { font-size: 12px; font-weight: 600; color: var(--color-text-muted); }
+.cost-figure__money { font-size: 13px; font-weight: 600; color: var(--color-text); }
+.cost-figure__hint { font-size: 11.5px; color: var(--color-text-muted); }
+.cost-figure--balance { background: var(--color-surface-alt); }
+@media (max-width: 640px) {
+    .cost-figures { grid-template-columns: 1fr; }
+    .cost-figure + .cost-figure { border-inline-start: 0; border-top: 1px solid var(--color-border); }
+}
+
+.cost-verdict {
+    margin: 0;
+    padding: 10px 14px;
+    font-size: 13px; font-weight: 600; line-height: 1.6;
+    border-top: 1px solid var(--color-border);
+    background: var(--color-surface-alt);
+    font-variant-numeric: tabular-nums;
+}
+.cost-panel--enough { border-color: var(--color-success); }
+.cost-panel--enough .cost-verdict { background: var(--color-success-soft); color: var(--color-success); }
+.cost-panel--tight { border-color: var(--color-warning); }
+.cost-panel--tight .cost-verdict { background: var(--color-warning-soft); }
+.cost-panel--short { border-color: var(--color-danger); }
+.cost-panel--short .cost-verdict { background: var(--color-danger-soft); color: var(--color-danger); }
+
+.cost-operators { border-top: 1px solid var(--color-border); }
+.cost-operators summary { cursor: pointer; padding: 10px 14px; font-size: 13px; font-weight: 600; }
+.cost-operators summary:focus-visible { outline: 2px solid var(--color-primary); outline-offset: -2px; }
+.cost-operators__scroll { overflow-x: auto; padding: 0 14px; }
+.cost-operators table { width: 100%; border-collapse: collapse; font-size: 12.5px; font-variant-numeric: tabular-nums; }
+.cost-operators th, .cost-operators td { padding: 7px 8px; text-align: start; border-bottom: 1px solid var(--color-border); white-space: nowrap; }
+.cost-operators thead th { font-size: 11.5px; color: var(--color-text-muted); font-weight: 700; }
+.cost-operators tbody th { font-weight: 600; }
+.cost-note { margin: 8px 14px 12px; font-size: 12px; line-height: 1.6; color: var(--color-text-muted); }
+
+.cost-panel__foot {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 6px 16px;
+    padding: 10px 14px;
+    border-top: 1px solid var(--color-border);
+    font-size: 12px; color: var(--color-text-muted);
+    font-variant-numeric: tabular-nums;
+}
+.cost-tier { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 0; max-width: 100%; min-width: 0; }
+/* min-width 0: a flex item never shrinks below its longest option otherwise, and spilled out of the panel on a phone. */
+.cost-tier .form-select { width: auto; max-width: 100%; min-width: 0; padding-block: 4px; font-size: 12px; }
+.cost-stale { color: var(--color-warning); font-weight: 600; }

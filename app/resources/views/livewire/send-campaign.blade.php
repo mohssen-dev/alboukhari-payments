@@ -2,7 +2,7 @@
     // Everything that changes the preview — the panel dims while it rebuilds.
     $previewTargets = 'refreshPreview,type,year,month,thresholdAmount,groupByFamily,templateId,body';
 @endphp
-<div class="send-page" style="max-width:1200px;margin:0 auto;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);gap:14px" wire:init="refreshPreview">
+<div class="send-page" wire:init="refreshPreview">
     <div class="page-card">
         <h2 style="margin-top:0">📨 {{ __('send.title') }}</h2>
 
@@ -163,7 +163,14 @@
                 </div>
                 @if ($sampleCounter)
                     <x-sms-meter :counter="$sampleCounter" />
-                    <div class="field-help">💶 {{ number_format($sampleCounter['segments'] * $pricePerSms, 2) }} € {{ __('send.per_message') }}</div>
+                    @if ($quote && $quote['available'])
+                        @php
+                            $partMin = $quote['per_part']['min']['credits'] * $sampleCounter['segments'];
+                            $partMax = $quote['per_part']['max']['credits'] * $sampleCounter['segments'];
+                            $range = \App\Support\MoneyFormat::credits($partMin) . ($partMin != $partMax ? '–' . \App\Support\MoneyFormat::credits($partMax) : '');
+                        @endphp
+                        <div class="field-help">💳 {{ __('cost.sample', ['range' => \App\Support\MoneyFormat::iso($range), 'eur' => \App\Support\MoneyFormat::iso(\App\Support\MoneyFormat::eur($quote['per_part']['max']['eur'] * $sampleCounter['segments']))]) }}</div>
+                    @endif
                 @endif
                 @if ($sampleTranslation)
                     <div class="tpl-translation">
@@ -173,7 +180,7 @@
                 @endif
             @endif
 
-            <div class="kpi-grid" style="grid-template-columns:1fr 1fr;margin-top:14px">
+            <div class="kpi-grid send-preview__kpis">
                 <div class="kpi info">
                     <div class="label">👥 {{ __('send.recipients') }}</div>
                     <div class="value">{{ $previewStats['total_recipients'] }}</div>
@@ -186,11 +193,11 @@
                     <div class="label">🚫 {{ __('send.skipped') }}</div>
                     <div class="value">{{ $previewStats['total_skipped'] }}</div>
                 </div>
-                <div class="kpi success">
-                    <div class="label">💵 {{ __('send.estimated_cost') }}</div>
-                    <div class="value" style="font-size:20px">{{ number_format($previewStats['estimated_cost'] ?? 0, 2) }} €</div>
-                </div>
             </div>
+
+            @if ($quote)
+                @include('livewire.partials.cost-panel', ['quote' => $quote])
+            @endif
 
             {{-- Siblings share a parent's phone: without family grouping the
                  same household is messaged (and billed) several times. --}}
