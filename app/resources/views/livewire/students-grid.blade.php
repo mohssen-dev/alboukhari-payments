@@ -67,6 +67,9 @@
         </div>
 
         <div class="actions-group">
+            @if (auth()->user()?->canWrite())
+                <button type="button" class="btn btn-primary btn-sm" @click="Livewire.dispatch('open-student-form', { studentId: null })">{{ __('student.add') }}</button>
+            @endif
             <a href="{{ route('quick-entry') }}" wire:navigate class="btn btn-warning btn-sm">⚡ {{ __('actions.quick_entry') }}</a>
             <a href="{{ route('import.form') }}" wire:navigate class="btn btn-success btn-sm">📥 {{ __('actions.import_excel') }}</a>
             <a href="{{ route('grid.focus') }}" wire:navigate class="btn btn-sm">🎯 {{ __('grid.open_focus') }}</a>
@@ -200,6 +203,7 @@
         <button type="button" @click="menuDo('family')">👨‍👩‍👧‍👦 {{ __('actions.show_family') }}</button>
         <button type="button" @click="menuDo('message')">📲 {{ __('actions.send_message') }}</button>
         @if (auth()->user()?->canWrite())
+            <button type="button" @click="menuDo('edit')">{{ __('student.edit') }}</button>
             <div class="divider"></div>
             <button type="button" @click="menuFlag('is_hidden')" x-text="menu.row?.isHidden ? @js(__('grid.row_unhide')) : @js(__('grid.row_hide'))"></button>
             <button type="button" @click="menuFlag('is_blocked_messages')" x-text="menu.row?.isBlocked ? @js(__('grid.row_unblock')) : @js(__('grid.row_block'))"></button>
@@ -349,10 +353,11 @@
                 if (!d || !d.html) return;
                 const old = this.$refs.tbody?.querySelector(`tr[data-sid="${d.id}"]`);
                 if (!old) return; // not on this page — nothing on screen changed
-                // The change was computed for another year than the one shown:
-                // name/phone may still differ, so fall back to a normal render.
+                // Computed for another year than the one shown: a payment there
+                // changes nothing on screen, but a student-level change (name,
+                // phone, flags) does — then fall back to a normal render.
                 if (Number(d.year) !== Number(this.$wire.year)) {
-                    this.$wire.$refresh();
+                    if (d.scope !== 'year') this.$wire.$refresh();
                     return;
                 }
                 const tpl = document.createElement('template');
@@ -392,6 +397,7 @@
                 else if (action === 'details') Livewire.dispatch('open-student-panel', { studentId: id });
                 else if (action === 'family') Livewire.dispatch('open-family-modal', { studentId: id });
                 else if (action === 'message') Livewire.dispatch('open-send-message', { studentId: id });
+                else if (action === 'edit') Livewire.dispatch('open-student-form', { studentId: id });
             },
 
             menuFlag(flag) {

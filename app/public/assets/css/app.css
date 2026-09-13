@@ -515,7 +515,9 @@ html[dir="rtl"] .topbar .search-global {
 .students-grid tbody tr.selected td.sticky-col.col-checkbox { background: var(--color-primary-soft); }
 
 .students-grid th.sticky-col.col-id, .students-grid td.sticky-col.col-id {
-    inset-inline-start: 36px; width: 50px; background: var(--color-surface-alt); z-index: 11;
+    /* min/max pin the width: the name column is offset by exactly 36 + 50px,
+       so a shrinking ID column left a gap that showed cells scrolling under. */
+    inset-inline-start: 36px; width: 50px; min-width: 50px; max-width: 50px; background: var(--color-surface-alt); z-index: 11;
 }
 .students-grid tbody td.sticky-col.col-id { background: white; color: var(--color-text-muted); font-size: 11px; }
 .students-grid tbody tr:hover td.sticky-col.col-id { background: var(--color-surface-alt); }
@@ -921,6 +923,155 @@ html[dir="rtl"] .family-paybar .fp-label { text-transform: none; letter-spacing:
     .family-member .member-month { text-align: start; }
     .modal-footer .fp-hint { display: none; }
 }
+
+/* Family window v2 (v7.6): the year's payments table on top, the month form below. */
+.family-modal-box { width: 1000px; }
+.family-summary { gap: 10px 16px; flex-wrap: wrap; }
+.family-summary .btn { margin-inline-start: auto; }
+.family-summary .fam-owed { color: var(--color-danger); }
+.family-summary .fam-clear { color: var(--color-success); }
+.family-controls { display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: flex-end; margin-bottom: 10px; }
+.family-controls .fp-field { display: flex; flex-direction: column; gap: 4px; }
+.family-controls .fp-label { font-size: 11px; font-weight: 600; color: var(--color-text-muted); }
+.family-controls .fp-year { min-width: 110px; }
+.family-controls .fp-month { min-width: 150px; }
+.family-table-wrap { overflow-x: auto; border: 1px solid var(--color-border); border-radius: var(--radius); margin-bottom: 16px; }
+.family-table { width: 100%; border-collapse: collapse; font-size: 12.5px; font-variant-numeric: tabular-nums; }
+.family-table th, .family-table td { padding: 7px 5px; text-align: center; border-bottom: 1px solid var(--color-border); white-space: nowrap; }
+.family-table thead th { background: var(--color-surface-alt); color: var(--color-text-muted); font-size: 11px; font-weight: 700; }
+.family-table tbody tr:last-child td { border-bottom: none; }
+.family-table .fam-name { text-align: start; min-width: 140px; position: sticky; inset-inline-start: 0; z-index: 1; background: var(--color-surface); font-weight: 600; }
+.family-table thead .fam-name, .family-table tfoot .fam-name { background: var(--color-surface-alt); }
+.family-table .fam-name-link { background: none; border: 0; padding: 0; font: inherit; color: var(--color-text); cursor: pointer; text-align: start; }
+.family-table .fam-name-link:hover { color: var(--color-primary); text-decoration: underline; }
+.family-table tr.is-self .fam-name-link { color: var(--color-primary-text); }
+.family-table th.fam-month, .family-table td.fam-cell { cursor: pointer; min-width: 42px; }
+.family-table th.fam-month:hover { color: var(--color-text); }
+.family-table td.fam-cell { font-weight: 700; }
+.family-table td.fam-cell:hover { outline: 2px solid var(--color-primary); outline-offset: -2px; }
+.family-table .is-selected-month { box-shadow: inset 0 0 0 2px var(--color-primary); }
+.family-table thead th.is-selected-month { color: var(--color-primary-text); background: var(--color-primary-soft); }
+.family-table .fam-total { font-weight: 700; }
+.family-table .fam-owed { color: var(--color-danger); font-weight: 800; }
+.family-table .fam-clear { color: var(--color-success); font-weight: 800; }
+.family-table tfoot td { background: var(--color-surface-alt); font-weight: 800; border-top: 2px solid var(--color-border-strong); border-bottom: none; }
+.family-pay-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 12px; margin-bottom: 8px; }
+.family-pay-head h4 { margin: 0; font-size: 14px; }
+.family-member { grid-template-columns: minmax(0, 1fr) auto auto 76px auto; }
+.family-member.is-adding { border-color: var(--color-success); }
+.family-member.is-reducing { border-color: var(--color-danger); }
+.family-member .member-diff { font-size: 12.5px; font-weight: 800; text-align: center; font-variant-numeric: tabular-nums; }
+.family-member .member-diff.is-adding { color: var(--color-success); }
+.family-member .member-diff.is-reducing { color: var(--color-danger); }
+.family-member .fp-fill { padding: 4px 8px; font-size: 11px; min-height: 0; }
+@media (max-width: 640px) {
+    .family-member { grid-template-columns: 1fr auto; }
+    .family-member .member-diff { text-align: start; }
+}
+
+/* Enrolment month (payment modal + family window) */
+.enroll-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 10px;
+    padding: 8px 12px;
+    margin-bottom: 14px;
+    border: 1px dashed var(--color-border-strong);
+    border-radius: var(--radius);
+    font-size: 12.5px;
+    color: var(--color-text-muted);
+}
+.enroll-bar strong { color: var(--color-text); }
+.enroll-bar > .btn:first-of-type { margin-inline-start: auto; }
+.enroll-bar.is-before { border-color: var(--color-warning); background: var(--color-warning-soft); }
+.family-table .fam-enrolled { font-size: 10.5px; font-weight: 500; color: var(--color-text-muted); margin-top: 2px; }
+.family-member .fp-enroll-row { display: flex; align-items: center; justify-content: center; gap: 4px; margin-top: 5px; }
+.family-member .fp-enroll { padding: 3px 8px; font-size: 11px; min-height: 0; }
+
+/* Template placeholders: click-to-insert chips (templates editor + send page) */
+.tpl-vars { display: flex; flex-direction: column; gap: 6px; margin: 2px 0 10px; }
+.tpl-vars__title { font-size: 11px; font-weight: 600; color: var(--color-text-muted); }
+.tpl-vars__list { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; }
+.tpl-vars__group { font-size: 11px; color: var(--color-text-muted); margin-inline-end: 2px; }
+.tpl-var {
+    direction: ltr;
+    font-family: ui-monospace, monospace;
+    font-size: 11.5px;
+    padding: 3px 8px;
+    border-radius: 999px;
+    border: 1px solid var(--color-border);
+    background: var(--color-surface-alt);
+    color: var(--color-primary-text);
+    cursor: pointer;
+    transition: border-color 0.12s, background 0.12s;
+}
+.tpl-var:hover { border-color: var(--color-primary); background: var(--color-primary-soft); }
+
+/* A rendered message: one paragraph per language, each in its own direction. */
+.tpl-message {
+    background: var(--color-surface-alt);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    padding: 12px 14px;
+    font-size: 13px;
+    line-height: 1.7;
+    color: var(--color-text);
+}
+.tpl-message p { margin: 0; white-space: pre-wrap; }
+.tpl-message p + p { margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--color-border-strong); }
+.tpl-preview { margin-top: 6px; }
+/* A template's Arabic translation: for staff only, never sent — so it reads
+   as a note beside the message, not as part of it. */
+.tpl-translation {
+    margin-top: 10px;
+    padding: 9px 12px;
+    border: 1px dashed var(--color-border-strong);
+    border-radius: var(--radius);
+    font-size: 12.5px;
+}
+.tpl-translation__label { display: block; font-size: 11px; font-weight: 700; color: var(--color-text-muted); margin-bottom: 3px; }
+.tpl-translation p { margin: 0; white-space: pre-wrap; line-height: 1.7; color: var(--color-text); }
+.tpl-preview__head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 10px; margin-bottom: 8px; }
+.send-unknown { display: block; padding: 8px 12px; margin-top: 8px; white-space: normal; }
+.tpl-table .tpl-cell-body {
+    font-size: 12px;
+    color: var(--color-text-muted);
+    max-width: 480px;
+    margin-top: 6px;
+    line-height: 1.5;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+}
+.tpl-table .tpl-cell-body.is-ar { margin-top: 4px; }
+.tpl-table tr.tpl-section td { text-align: start; padding: 10px 16px; font-weight: 700; background: var(--color-surface-alt); color: var(--color-text-muted); }
+/* The students grid never wraps cells; template text must, or the table grows
+   wider than its card and spills over the editor beside it. */
+.tpl-table tbody td { white-space: normal; }
+.tpl-table tbody td:last-child { white-space: nowrap; }
+
+/* Send page: the preview rebuilds itself; it dims while it does. */
+.send-preview { transition: opacity 0.15s; }
+.send-preview.is-refreshing { opacity: 0.55; }
+.send-preview__head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px; }
+.send-preview__head h3 { margin: 0; }
+.send-preview__live { font-size: 11.5px; font-weight: 600; color: var(--color-success); }
+.send-preview__busy { font-size: 11.5px; color: var(--color-text-muted); }
+.send-preview__sample-title { margin: 14px 0 8px; }
+.send-preview .sk {
+    border-radius: var(--radius);
+    background: linear-gradient(90deg, var(--color-surface-alt) 25%, var(--color-border) 50%, var(--color-surface-alt) 75%);
+    background-size: 200% 100%;
+    animation: skShimmer 1.1s linear infinite;
+}
+@media (prefers-reduced-motion: reduce) { .send-preview .sk { animation: none; } }
+
+/* Student form (add / edit) */
+.student-form-box { width: 720px; max-width: calc(100vw - 32px); }
+.student-form-family { display: block; padding: 8px 12px; margin: -4px 0 14px; font-size: 12.5px; white-space: normal; }
+.student-form-check { display: inline-flex; align-items: center; gap: 8px; margin: 2px 0 14px; font-size: 13px; cursor: pointer; }
 
 /* ============================================
    Toast notifications
@@ -1401,8 +1552,8 @@ html, body { max-width: 100vw; overflow-x: hidden; }
     .students-grid tbody td, .students-grid thead th { padding: 6px 4px; }
 
     /* Grid: reduce sticky-col widths */
-    .students-grid th.sticky-col.col-id, .students-grid td.sticky-col.col-id { min-width: 32px; }
-    .students-grid th.sticky-col.col-name, .students-grid td.sticky-col.col-name { min-width: 90px; }
+    .students-grid th.sticky-col.col-id, .students-grid td.sticky-col.col-id { width: 32px; min-width: 32px; max-width: 32px; }
+    .students-grid th.sticky-col.col-name, .students-grid td.sticky-col.col-name { min-width: 90px; inset-inline-start: 68px; /* 36 + 32 */ }
 }
 
 /* Print — sensible defaults */
@@ -2010,7 +2161,8 @@ pre.json { background: var(--color-surface-alt); padding: 10px; border-radius: v
    Grid: lean rows + in-place row patch (v7.3)
    Rows carry no per-cell Livewire/Alpine bindings — see partials/grid-row.
    ============================================ */
-.students-grid td.col-phone { font-family: ui-monospace, monospace; font-size: 11px; color: var(--color-text-muted); }
+/* Phone numbers always read left-to-right — in Arabic the "+" jumped to the end. */
+.students-grid td.col-phone { font-family: ui-monospace, monospace; font-size: 11px; color: var(--color-text-muted); direction: ltr; unicode-bidi: isolate; }
 .students-grid td.col-balance { font-weight: 700; }
 .students-grid td.col-balance.is-owed { color: var(--color-danger); }
 .students-grid td.col-balance.is-clear { color: var(--color-success); }
@@ -2082,8 +2234,9 @@ html[dir="rtl"] .brand-tagline { text-transform: none; letter-spacing: 0; font-s
     .topbar .nav-link--more .nav-label { display: none; }
 }
 /* 2) Every link icon-only except the active one; compact halt button; no user
-      name. (Step 1 needs ~1,240px in Dutch, the widest locale — measured.) */
-@media (max-width: 1260px) {
+      name. (Step 1 needs ~1,285px in Dutch, the widest locale, with the theme
+      toggle — measured; 1320 keeps a margin.) */
+@media (max-width: 1320px) {
     .topbar .nav-link:not(.active) { padding-inline: 10px; }
     .topbar .nav-link:not(.active) .nav-label { display: none; }
     .topbar .halt-label, .topbar .user-name-label { display: none; }
@@ -2097,3 +2250,24 @@ html[dir="rtl"] .brand-tagline { text-transform: none; letter-spacing: 0; font-s
     .topbar .nav-link, .topbar .nav-link:not(.active) { padding: 12px 14px; }
     .topbar .nav-link .nav-label, .topbar .nav-link:not(.active) .nav-label { display: inline; }
 }
+
+/* Theme toggle (dark / light). Colours come from tokens, so dark.css only
+   has to redefine the tokens. */
+.theme-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    margin-inline-start: 8px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    background: var(--color-surface-alt);
+    color: var(--color-text-muted);
+    cursor: pointer;
+    transition: color 0.15s, background 0.15s, border-color 0.15s;
+}
+.theme-toggle:hover { color: var(--color-text); border-color: var(--color-border-strong); }
+.theme-toggle .icon-sun { display: none; }
+html[data-theme="dark"] .theme-toggle .icon-moon { display: none; }
+html[data-theme="dark"] .theme-toggle .icon-sun { display: block; }

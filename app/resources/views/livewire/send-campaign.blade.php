@@ -1,4 +1,8 @@
-<div style="max-width:1200px;margin:0 auto;display:grid;grid-template-columns:1fr 1.2fr;gap:14px">
+@php
+    // Everything that changes the preview — the panel dims while it rebuilds.
+    $previewTargets = 'refreshPreview,type,year,month,thresholdAmount,groupByFamily,templateId,body';
+@endphp
+<div class="send-page" style="max-width:1200px;margin:0 auto;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);gap:14px" wire:init="refreshPreview">
     <div class="page-card">
         <h2 style="margin-top:0">📨 {{ __('send.title') }}</h2>
 
@@ -35,7 +39,7 @@
         @if (in_array($type, ['paid_less_than','balance_above']))
             <div class="form-group">
                 <label>{{ __('send.threshold') }}</label>
-                <input type="number" step="0.01" class="form-input" wire:model.live="thresholdAmount">
+                <input type="number" step="0.01" class="form-input" wire:model.live.debounce.500ms="thresholdAmount">
                 <small class="text-muted">
                     @if ($type === 'paid_less_than')
                         {{ __('Will send to anyone who paid less than this amount this month') }}
@@ -56,23 +60,39 @@
         <div class="form-group">
             <label>{{ __('send.template') }}</label>
             <select class="form-select" wire:model.live="templateId">
-                <option value="">{{ __('send.free_text') }}</option>
-                @foreach ($templates as $tpl)
-                    <option value="{{ $tpl->id }}">{{ $tpl->name }}</option>
-                @endforeach
+                <option value="">{{ __('send.manual_template') }}</option>
+                <optgroup label="{{ __('send.library_templates') }}">
+                    @foreach ($libraryTemplates as $tpl)
+                        <option value="{{ $tpl->id }}">{{ $tpl->name }}</option>
+                    @endforeach
+                </optgroup>
+                @if ($manualTemplates->isNotEmpty())
+                    <optgroup label="{{ __('send.manual_history') }}">
+                        @foreach ($manualTemplates as $tpl)
+                            <option value="{{ $tpl->id }}">{{ $tpl->name }}</option>
+                        @endforeach
+                    </optgroup>
+                @endif
             </select>
+            @if (!$templateId)
+                <div class="field-help">✍️ {{ __('send.manual_help') }}</div>
+            @endif
         </div>
 
         <div class="form-group">
             <label>{{ __('send.body') }}</label>
-            <textarea class="form-textarea" wire:model.live.debounce.300ms="body" rows="6"></textarea>
+            <x-template-vars />
+            <textarea class="form-textarea" data-tpl-target dir="auto" wire:model.live.debounce.500ms="body" rows="8"></textarea>
             <x-sms-meter :counter="$counter" />
-            <small class="text-muted">
-                <code>@{{Naam}}</code> <code>@{{month}}</code> <code>@{{المستحق}}</code> <code>@{{المتبقي}}</code>
-                @if ($groupByFamily)
-                    <br>{{ __('Family:') }} <code>@{{أسماء_الأبناء}}</code> <code>@{{المبلغ_العائلي}}</code>
-                @endif
-            </small>
+            @if ($translation)
+                <div class="tpl-translation">
+                    <span class="tpl-translation__label">🌐 {{ __('templates.translation_only') }}</span>
+                    <p dir="rtl">{{ $translation }}</p>
+                </div>
+            @endif
+            @if ($unknownVars)
+                <div class="pill pill-danger send-unknown">⚠️ {{ __('tplvar.unknown', ['vars' => \App\Support\TemplateVariables::display($unknownVars)]) }}</div>
+            @endif
         </div>
 
         <div class="form-group">
@@ -85,7 +105,7 @@
         <div class="form-group">
             <label>🧪 {{ __('send.test_phone') }}</label>
             <div style="display:flex;gap:6px">
-                <input type="text" class="form-input" wire:model="testPhone" placeholder="+316xxxxxxxx" style="flex:1">
+                <input type="text" class="form-input" wire:model="testPhone" placeholder="+316xxxxxxxx" style="flex:1" dir="ltr">
                 <button class="btn btn-warning" wire:click="sendTest" wire:loading.attr="disabled" wire:target="sendTest">{{ __('send.test_send') }}</button>
             </div>
         </div>
@@ -107,14 +127,13 @@
         </div>
 
         <div style="display:flex;gap:8px;margin-top:16px">
-            <button class="btn btn-soft-primary" wire:click="preview" wire:loading.attr="disabled" wire:target="preview,launch,schedule" style="flex:1">👁️ {{ __('send.preview') }}</button>
             @if ($scheduleEnabled)
-                <button class="btn btn-primary" wire:click="schedule" wire:confirm="{{ __('common.confirm') }}" wire:loading.attr="disabled" wire:target="preview,launch,schedule,sendTest" style="flex:1">
+                <button class="btn btn-primary" wire:click="schedule" wire:confirm="{{ __('common.confirm') }}" wire:loading.attr="disabled" wire:target="launch,schedule,sendTest" style="flex:1">
                     <span wire:loading.remove wire:target="schedule">⏰ {{ __('send.schedule_btn') }}</span>
                     <span wire:loading wire:target="schedule">⏳ …</span>
                 </button>
             @else
-                <button class="btn btn-success" wire:click="launch" wire:confirm="{{ __('common.confirm') }}" wire:loading.attr="disabled" wire:target="preview,launch,schedule,sendTest" style="flex:1">
+                <button class="btn btn-success" wire:click="launch" wire:confirm="{{ __('common.confirm') }}" wire:loading.attr="disabled" wire:target="launch,schedule,sendTest" style="flex:1">
                     <span wire:loading.remove wire:target="launch">🚀 {{ __('send.launch') }}</span>
                     <span wire:loading wire:target="launch">⏳ {{ __('send.launching') }}</span>
                 </button>
@@ -126,11 +145,35 @@
         @endif
     </div>
 
-    <div class="page-card">
-        <h3 style="margin-top:0">👁️ {{ __('send.preview') }}</h3>
+    {{-- Live preview: rebuilt automatically after every change. --}}
+    <div class="page-card send-preview" wire:loading.class="is-refreshing" wire:target="{{ $previewTargets }}">
+        <div class="send-preview__head">
+            <h3>👁️ {{ __('send.preview') }}</h3>
+            <span class="send-preview__live" wire:loading.remove wire:target="{{ $previewTargets }}">● {{ __('send.preview_live') }}</span>
+            <span class="send-preview__busy" wire:loading wire:target="{{ $previewTargets }}"><span class="spinner-sm"></span> {{ __('send.preview_updating') }}</span>
+        </div>
 
         @if ($previewStats)
-            <div class="kpi-grid" style="grid-template-columns:1fr 1fr">
+            @if (!empty($previewRecipients))
+                <h4 class="send-preview__sample-title">📝 {{ __('send.sample') }} — {{ $previewRecipients[0]['name'] }}</h4>
+                <div class="tpl-message">
+                    @foreach (preg_split('/\n{2,}/', $sampleCounter['sanitized'] ?? $previewRecipients[0]['body']) as $para)
+                        <p dir="auto">{{ $para }}</p>
+                    @endforeach
+                </div>
+                @if ($sampleCounter)
+                    <x-sms-meter :counter="$sampleCounter" />
+                    <div class="field-help">💶 {{ number_format($sampleCounter['segments'] * $pricePerSms, 2) }} € {{ __('send.per_message') }}</div>
+                @endif
+                @if ($sampleTranslation)
+                    <div class="tpl-translation">
+                        <span class="tpl-translation__label">🌐 {{ __('templates.translation_only') }}</span>
+                        <p dir="rtl">{{ $sampleTranslation }}</p>
+                    </div>
+                @endif
+            @endif
+
+            <div class="kpi-grid" style="grid-template-columns:1fr 1fr;margin-top:14px">
                 <div class="kpi info">
                     <div class="label">👥 {{ __('send.recipients') }}</div>
                     <div class="value">{{ $previewStats['total_recipients'] }}</div>
@@ -167,7 +210,7 @@
                     @foreach ($previewRecipients as $r)
                         <tr>
                             <td style="padding:7px 12px;border-bottom:1px solid var(--color-border)">{{ $r['name'] }}</td>
-                            <td style="padding:7px 12px;border-bottom:1px solid var(--color-border);font-family:ui-monospace,monospace;color:var(--color-text-muted)">{{ $r['phone'] }}</td>
+                            <td style="padding:7px 12px;border-bottom:1px solid var(--color-border);font-family:ui-monospace,monospace;color:var(--color-text-muted)" dir="ltr">{{ $r['phone'] }}</td>
                             <td style="padding:7px 12px;border-bottom:1px solid var(--color-border);text-align:end">{{ $r['segments'] }} 📲</td>
                         </tr>
                     @endforeach
@@ -187,13 +230,13 @@
                     </table>
                 </div>
             @endif
-
-            <h4 style="margin-top:14px">📝 {{ __('send.sample') }}</h4>
-            <div style="background:var(--color-warning-soft);padding:12px;border-radius:var(--radius);font-size:13px;white-space:pre-wrap;line-height:1.6">{{ $previewRecipients[0]['body'] ?? '' }}</div>
+        @elseif ($previewError)
+            <div class="pill pill-warning" style="display:block;padding:10px 14px;margin-top:10px">⚠️ {{ $previewError }}</div>
         @else
-            <div style="text-align:center;padding:60px 0;color:var(--color-text-soft)">
-                <div style="font-size:48px;margin-bottom:8px">👁️</div>
-                <div>{{ __('Click Preview to see recipients before sending') }}</div>
+            <div class="send-preview__skeleton" aria-busy="true">
+                <div class="sk" style="height:90px;margin:12px 0"></div>
+                <div class="sk" style="height:70px;margin-bottom:12px"></div>
+                <div class="sk" style="height:160px"></div>
             </div>
         @endif
     </div>

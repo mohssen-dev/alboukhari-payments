@@ -33,6 +33,11 @@ class PaymentModal extends Component
     public float $dueAmount = 0;
     public float $paidSoFar = 0;
 
+    /** The student's enrolment date (Y-m-d) — set from this modal with setEnrollmentMonth(). */
+    public ?string $enrolledAt = null;
+    /** Recorded payments for months before the month on screen (kept if enrolment moves past them). */
+    public int $paymentsBefore = 0;
+
     public function mount(?int $initialStudentId = null, ?int $initialYear = null, ?int $initialMonth = null): void
     {
         if ($initialStudentId && $initialYear && $initialMonth) {
@@ -48,6 +53,11 @@ class PaymentModal extends Component
         $this->year = $year;
         $this->month = $month;
         $this->studentName = $student->name;
+        $this->enrolledAt = $student->enrolled_at?->format('Y-m-d');
+        $this->paymentsBefore = $student->payments()
+            ->whereIn('method', ['cash', 'bank'])
+            ->whereRaw('(period_year * 12 + period_month) < ?', [$year * 12 + $month])
+            ->count();
 
         $this->dueAmount = FeeResolver::dueAmount($student, $year, $month);
         $this->paidSoFar = FeeResolver::paidAmount($student, $year, $month);
@@ -85,7 +95,7 @@ class PaymentModal extends Component
 
     private function resetFormState(): void
     {
-        $this->reset(['isOpen', 'studentId', 'year', 'month', 'amount', 'method', 'note', 'paid_at', 'editingPaymentId', 'existingPayments', 'studentName', 'dueAmount', 'paidSoFar']);
+        $this->reset(['isOpen', 'studentId', 'year', 'month', 'amount', 'method', 'note', 'paid_at', 'editingPaymentId', 'existingPayments', 'studentName', 'dueAmount', 'paidSoFar', 'enrolledAt', 'paymentsBefore']);
         $this->method = 'cash';
     }
 
@@ -119,7 +129,7 @@ class PaymentModal extends Component
             return;
         }
         $this->dispatch('payment-saved', studentId: $this->studentId);
-        $this->dispatchGridRow($this->studentId, $this->year);
+        $this->dispatchGridRow($this->studentId, $this->year, 'year');
         $this->dispatch('toast', message: __('flash.payment_deleted'), type: 'success');
         $this->open($this->studentId, $this->year, $this->month);
     }
@@ -186,7 +196,7 @@ class PaymentModal extends Component
         }
 
         $this->dispatch('payment-saved', studentId: $this->studentId);
-        $this->dispatchGridRow($this->studentId, $this->year);
+        $this->dispatchGridRow($this->studentId, $this->year, 'year');
         $this->dispatch('toast', message: __('flash.payment_saved'), type: 'success');
 
         if ($next) {
@@ -207,9 +217,76 @@ class PaymentModal extends Component
         }
     }
 
+    /**
+     * Make the month on screen the student's first billed month: every month
+     * before it stops being owed (FeeResolver / MonthStatusResolver treat it
+     * as not enrolled). Recorded payments are never touched.
+     */
+    public function setEnrollmentMonth(): void
+    {
+        $this->assertCanWrite();
+
+        $student = Student::find($this->studentId);
+        if (!$student || !$this->year || !$this->month) {
+            return;
+        }
+
+        $startYm = $this->year * 12 + $this->month;
+        if ($student->withdrawn_at && ($student->withdrawn_at->year * 12 + $student->withdrawn_at->month) <= $startYm) {
+            $this->dispatch('toast', message: __('enroll.after_withdrawal'), type: 'error');
+            return;
+        }
+
+        $student->update(['enrolled_at' => sprintf('%04d-%02d-01', $this->year, $this->month)]);
+        $this->afterEnrollmentChange($student, __('enroll.saved', ['month' => $this->monthLabel()]));
+    }
+
+    public function clearEnrollment(): void
+    {
+        $this->assertCanWrite();
+
+        $student = Student::find($this->studentId);
+        if (!$student) {
+            return;
+        }
+
+        $student->update(['enrolled_at' => null]);
+        $this->afterEnrollmentChange($student, __('enroll.cleared'));
+    }
+
+    private function afterEnrollmentChange(Student $student, string $message): void
+    {
+        // Enrolment shifts which months are owed in every year → 'student' scope.
+        $this->dispatchGridRow($student->id, $this->year, 'student');
+        $this->dispatch('student-updated', studentId: $student->id);
+        $this->dispatch('toast', message: $message, type: 'success');
+        $this->open($student->id, $this->year, $this->month);
+    }
+
+    private function monthLabel(): string
+    {
+        return (MonthNames::full()[$this->month] ?? '') . ' ' . $this->year;
+    }
+
     public function render()
     {
         $monthName = $this->month ? (MonthNames::full()[$this->month] ?? '') : '';
-        return view('livewire.payment-modal', compact('monthName'));
+
+        $enrollLabel = null;
+        $enrollYm = null;
+        if ($this->enrolledAt) {
+            $d = \Carbon\Carbon::parse($this->enrolledAt);
+            $enrollLabel = (MonthNames::full()[$d->month] ?? '') . ' ' . $d->year;
+            $enrollYm = $d->year * 12 + $d->month;
+        }
+        $ym = ($this->year && $this->month) ? $this->year * 12 + $this->month : null;
+
+        return view('livewire.payment-modal', [
+            'monthName' => $monthName,
+            'enrollLabel' => $enrollLabel,
+            'isEnrollMonth' => $ym !== null && $enrollYm === $ym,
+            'beforeEnroll' => $ym !== null && $enrollYm !== null && $ym < $enrollYm,
+            'canWrite' => (bool) auth()->user()?->canWrite(),
+        ]);
     }
 }

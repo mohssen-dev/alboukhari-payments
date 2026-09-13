@@ -135,6 +135,27 @@
                             </div>
                         </div>
 
+                        {{-- Enrolment month: months before it are not owed. --}}
+                        <div class="enroll-bar {{ $beforeEnroll ? 'is-before' : '' }}">
+                            <span>📅 {{ __('enroll.label') }}: <strong>{{ $enrollLabel ?? __('enroll.not_set') }}</strong></span>
+                            @if ($beforeEnroll)
+                                <span class="pill pill-warning">{{ __('enroll.before_hint') }}</span>
+                            @endif
+                            @if ($canWrite)
+                                @if ($isEnrollMonth)
+                                    <span class="pill pill-success">{{ __('enroll.is_this') }}</span>
+                                    <button type="button" class="btn btn-sm btn-ghost" wire:click="clearEnrollment" wire:confirm="{{ __('enroll.clear_confirm') }}">{{ __('enroll.clear_btn') }}</button>
+                                @else
+                                    <button
+                                        type="button"
+                                        class="btn btn-sm btn-soft-primary"
+                                        wire:click="setEnrollmentMonth"
+                                        wire:confirm="{{ __('enroll.confirm', ['month' => $monthName . ' ' . $year]) }}{{ $paymentsBefore > 0 ? ' ' . __('enroll.confirm_payments', ['count' => $paymentsBefore]) : '' }}"
+                                    >{{ __('enroll.set_btn', ['month' => $monthName . ' ' . $year]) }}</button>
+                                @endif
+                            @endif
+                        </div>
+
                         @if (count($existingPayments) > 0)
                             <div style="margin-bottom:14px;padding:10px;background:var(--color-warning-soft);border-radius:var(--radius)">
                                 <strong class="fs-xs" style="text-transform:uppercase;letter-spacing:0.06em">{{ __('Existing payments this month') }}:</strong>

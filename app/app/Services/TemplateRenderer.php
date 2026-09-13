@@ -4,7 +4,12 @@ namespace App\Services;
 
 use App\Models\Family;
 use App\Models\Student;
+use App\Support\TemplateVariables;
 
+/**
+ * Fills a template's placeholders (English names — see TemplateVariables;
+ * the old Arabic names still work) for one student or a whole family.
+ */
 class TemplateRenderer
 {
     private const MONTHS_NL = [
@@ -36,25 +41,21 @@ class TemplateRenderer
         // quoting a negative amount owed.
         $balance = max(0.0, $due - $paid);
 
-        $vars = [
-            'Naam' => $student->name,
-            'name' => $student->name,
-            'اسم' => $student->name,
-            'month' => self::MONTHS_EN[$month] ?? '',
-            'month_nl' => self::MONTHS_NL[$month] ?? '',
-            'month_ar' => self::MONTHS_AR[$month] ?? '',
-            'الشهر' => self::MONTHS_AR[$month] ?? '',
-            'year' => $year,
-            'السنة' => $year,
+        return TemplateVariables::fill($template, self::period($year, $month) + [
+            'student_name' => $student->name,
             'due' => number_format($due, 2),
             'paid' => number_format($paid, 2),
             'balance' => number_format($balance, 2),
-            'المستحق' => number_format($due, 2),
-            'المدفوع' => number_format($paid, 2),
-            'المتبقي' => number_format($balance, 2),
-        ];
-
-        return self::replace($template, $vars);
+            // The family placeholders still mean something for one child, so a
+            // family template sent per student never leaks a raw {{…}}.
+            'children_names' => $student->name,
+            'unpaid_names' => $balance > 0 ? $student->name : '—',
+            'children_count' => 1,
+            'family_total' => number_format($due, 2),
+            'family_paid' => number_format($paid, 2),
+            'family_balance' => number_format($balance, 2),
+            'children_details' => sprintf('%s: %s€', $student->name, number_format($due, 0)),
+        ]);
     }
 
     /**
@@ -83,11 +84,10 @@ class TemplateRenderer
         foreach ($students as $student) {
             $due = FeeResolver::dueAmount($student, $year, $month);
             $paid = FeeResolver::paidAmount($student, $year, $month);
-            $bal = $due - $paid;
             $totalDue += $due;
             $totalPaid += $paid;
 
-            if ($bal > 0) {
+            if ($due - $paid > 0) {
                 $unpaidNames[] = $student->name;
             }
             $detailsLines[] = sprintf('%s: %s€', $student->name, number_format($due, 0));
@@ -96,38 +96,30 @@ class TemplateRenderer
         // An overpaying family must never see a negative figure in an SMS.
         $familyOutstanding = max(0.0, $totalDue - $totalPaid);
 
-        $vars = [
-            'Naam' => implode(' و ', $names),
-            'name' => implode(' و ', $names),
-            'children_names' => implode('، ', $names),
-            'أسماء_الأبناء' => implode('، ', $names),
-            'unpaid_names' => implode('، ', $unpaidNames),
-            'أسماء_غير_المدفوعين' => implode('، ', $unpaidNames) ?: '—',
+        return TemplateVariables::fill($template, self::period($year, $month) + [
+            // Joined with "&" / "," so the same value reads right in a Dutch
+            // line and in its Arabic translation (it used to join with "و").
+            'student_name' => implode(' & ', $names),
+            'due' => number_format($totalDue, 2),
+            'paid' => number_format($totalPaid, 2),
+            'balance' => number_format($familyOutstanding, 2),
+            'children_names' => implode(', ', $names),
+            'unpaid_names' => $unpaidNames ? implode(', ', $unpaidNames) : '—',
             'children_count' => count($students),
-            'عدد_الأبناء' => count($students),
             'family_total' => number_format($totalDue, 2),
             'family_paid' => number_format($totalPaid, 2),
             'family_balance' => number_format($familyOutstanding, 2),
-            'المبلغ_العائلي' => number_format($totalDue, 2),
-            'المتبقي_العائلي' => number_format($familyOutstanding, 2),
-            'تفاصيل_الأبناء' => implode("\n", $detailsLines),
-            'month' => self::MONTHS_EN[$month] ?? '',
-            'month_nl' => self::MONTHS_NL[$month] ?? '',
-            'month_ar' => self::MONTHS_AR[$month] ?? '',
-            'الشهر' => self::MONTHS_AR[$month] ?? '',
-            'year' => $year,
-            'السنة' => $year,
-        ];
-
-        return self::replace($template, $vars);
+            'children_details' => implode("\n", $detailsLines),
+        ]);
     }
 
-    private static function replace(string $template, array $vars): string
+    private static function period(int $year, int $month): array
     {
-        $out = $template;
-        foreach ($vars as $key => $val) {
-            $out = preg_replace('/\{\{\s*' . preg_quote($key, '/') . '\s*\}\}/u', (string) $val, $out);
-        }
-        return $out;
+        return [
+            'month_nl' => self::MONTHS_NL[$month] ?? '',
+            'month_ar' => self::MONTHS_AR[$month] ?? '',
+            'month_en' => self::MONTHS_EN[$month] ?? '',
+            'year' => $year,
+        ];
     }
 }

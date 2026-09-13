@@ -1,21 +1,20 @@
-<div style="max-width:1200px;margin:0 auto;display:grid;grid-template-columns:{{ $editing ? '1fr 1fr' : '1fr' }};gap:14px">
+@php
+    $defaultForLabel = function (string $key): string {
+        return match ($key) {
+            'first_friday' => __('templates.default_first_friday'),
+            'mid_month'    => __('templates.default_mid_month'),
+            default        => $key,
+        };
+    };
+@endphp
+<div class="templates-page" style="max-width:1280px;margin:0 auto;display:grid;grid-template-columns:{{ $editing ? 'minmax(0,1fr) minmax(0,1.1fr)' : '1fr' }};gap:14px">
     <div class="page-card" style="padding:0">
         <div style="display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid var(--color-border)">
             <h2 style="margin:0">📝 {{ __('nav.templates') }}</h2>
             <button class="btn btn-primary" wire:click="newTemplate">+ {{ __('templates.new') }}</button>
         </div>
 
-        @php
-            $defaultForLabel = function (string $key): string {
-                return match ($key) {
-                    'first_friday' => __('templates.default_first_friday'),
-                    'mid_month'    => __('templates.default_mid_month'),
-                    default        => $key,
-                };
-            };
-        @endphp
-
-        <table class="students-grid" style="font-size:13px">
+        <table class="students-grid tpl-table" style="font-size:13px">
             <thead>
                 <tr>
                     <th style="text-align:start;padding:8px 16px">{{ __('templates.col_name') }}</th>
@@ -25,46 +24,8 @@
                 </tr>
             </thead>
             <tbody>
-                @forelse ($templates as $t)
-                    <tr>
-                        <td style="text-align:start;padding:10px 16px">
-                            <strong>{{ $t->name }}</strong>
-                            <div class="fs-xs text-muted" style="font-family:ui-monospace,monospace">{{ $t->code }}</div>
-                            <div class="fs-xs text-muted mt-2" style="max-width:420px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ $t->body }}</div>
-                        </td>
-                        <td><span class="pill pill-info">{{ strtoupper($t->language) }}</span></td>
-                        <td>
-                            @if ($t->default_for !== 'none')
-                                <span class="pill pill-warning">{{ $defaultForLabel($t->default_for) }}</span>
-                            @else
-                                <span class="text-soft">—</span>
-                            @endif
-                        </td>
-                        <td style="white-space:nowrap">
-                            <button
-                                type="button"
-                                class="btn btn-sm btn-soft-primary"
-                                wire:click="edit({{ $t->id }})"
-                                title="{{ __('templates.action_edit') }}"
-                                aria-label="{{ __('templates.action_edit') }}"
-                            >✏️</button>
-                            <button
-                                type="button"
-                                class="btn btn-sm"
-                                wire:click="duplicate({{ $t->id }})"
-                                title="{{ __('templates.action_duplicate') }}"
-                                aria-label="{{ __('templates.action_duplicate') }}"
-                            >📋</button>
-                            <button
-                                type="button"
-                                class="btn btn-sm btn-soft-danger"
-                                wire:click="delete({{ $t->id }})"
-                                wire:confirm="{{ __('common.confirm') }}"
-                                title="{{ __('templates.action_delete') }}"
-                                aria-label="{{ __('templates.action_delete') }}"
-                            >🗑️</button>
-                        </td>
-                    </tr>
+                @forelse ($libraryTemplates as $t)
+                    @include('livewire.partials.template-row', ['t' => $t, 'defaultForLabel' => $defaultForLabel])
                 @empty
                     <tr>
                         <td colspan="4" style="padding:56px 24px;text-align:center;color:var(--color-text-soft)">
@@ -79,6 +40,15 @@
                         </td>
                     </tr>
                 @endforelse
+
+                @if ($manualTemplates->isNotEmpty())
+                    <tr class="tpl-section">
+                        <td colspan="4">{{ __('templates.manual_section') }} ({{ $manualTemplates->count() }})</td>
+                    </tr>
+                    @foreach ($manualTemplates as $t)
+                        @include('livewire.partials.template-row', ['t' => $t, 'defaultForLabel' => $defaultForLabel])
+                    @endforeach
+                @endif
             </tbody>
         </table>
     </div>
@@ -90,15 +60,17 @@
             @keydown.window.escape="$wire.set('editing', false)"
         >
             <h3 style="margin-top:0">{{ $editId ? __('common.edit') : __('templates.new') }}</h3>
-            <div class="form-group">
-                <label>{{ __('templates.code') }} <span class="text-muted">({{ __('templates.code_hint') }})</span></label>
-                <input type="text" class="form-input" wire:model="code" placeholder="{{ __('templates.code_placeholder') }}">
-                @error('code') <small class="text-danger">{{ $message }}</small> @enderror
-            </div>
-            <div class="form-group">
-                <label>{{ __('templates.display_name') }}</label>
-                <input type="text" class="form-input" wire:model="name">
-                @error('name') <small class="text-danger">{{ $message }}</small> @enderror
+            <div class="form-row cols-2">
+                <div class="form-group">
+                    <label>{{ __('templates.code') }} <span class="text-muted">({{ __('templates.code_hint') }})</span></label>
+                    <input type="text" class="form-input" wire:model="code" placeholder="{{ __('templates.code_placeholder') }}" dir="ltr">
+                    @error('code') <small class="text-danger">{{ $message }}</small> @enderror
+                </div>
+                <div class="form-group">
+                    <label>{{ __('templates.display_name') }}</label>
+                    <input type="text" class="form-input" wire:model="name">
+                    @error('name') <small class="text-danger">{{ $message }}</small> @enderror
+                </div>
             </div>
             <div class="form-row cols-2">
                 <div class="form-group">
@@ -118,17 +90,47 @@
                     </select>
                 </div>
             </div>
+
+            <x-template-vars />
+
             <div class="form-group">
-                <label>{{ __('send.body') }}</label>
-                <textarea class="form-textarea" wire:model.live.debounce.300ms="body" rows="7"></textarea>
-                @if ($counter)
-                    <x-sms-meter :counter="$counter" />
-                @endif
-                <small class="text-muted">
-                    <code>@{{Naam}}</code> <code>@{{month}}</code> <code>@{{المستحق}}</code> <code>@{{المتبقي}}</code> <code>@{{أسماء_الأبناء}}</code> <code>@{{المبلغ_العائلي}}</code>
-                </small>
+                <label>🇳🇱 {{ __('templates.body_nl') }}</label>
+                <textarea class="form-textarea" data-tpl-target dir="ltr" wire:model.live.debounce.400ms="body" rows="5"></textarea>
+                @error('body') <small class="text-danger">{{ $message }}</small> @enderror
             </div>
-            <div style="display:flex;gap:8px;justify-content:flex-end">
+            <div class="form-group">
+                <label>🌐 {{ __('templates.body_ar') }}</label>
+                <textarea class="form-textarea" data-tpl-target dir="rtl" wire:model.live.debounce.400ms="body_ar" rows="4"></textarea>
+                <div class="field-help">ℹ️ {{ __('templates.body_ar_hint') }}</div>
+                @error('body_ar') <small class="text-danger">{{ $message }}</small> @enderror
+            </div>
+
+            @if ($preview)
+                <div class="tpl-preview">
+                    <div class="tpl-preview__head">
+                        <strong>📨 {{ __('templates.preview_title') }}</strong>
+                        @if ($preview['who'])
+                            <span class="text-muted fs-xs">{{ __('templates.preview_for', ['name' => $preview['who'], 'month' => $preview['month']]) }}</span>
+                        @endif
+                    </div>
+                    <div class="tpl-message">
+                        <p dir="auto">{{ $preview['counter']['sanitized'] }}</p>
+                    </div>
+                    <x-sms-meter :counter="$preview['counter']" />
+                    <div class="field-help">💶 {{ __('templates.cost_per_message', ['cost' => number_format($preview['cost'], 2)]) }}</div>
+                    @if ($preview['translation'])
+                        <div class="tpl-translation">
+                            <span class="tpl-translation__label">🌐 {{ __('templates.translation_only') }}</span>
+                            <p dir="rtl">{{ $preview['translation'] }}</p>
+                        </div>
+                    @endif
+                    @if ($preview['unknown'])
+                        <div class="pill pill-danger send-unknown">⚠️ {{ __('tplvar.unknown', ['vars' => \App\Support\TemplateVariables::display($preview['unknown'])]) }}</div>
+                    @endif
+                </div>
+            @endif
+
+            <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:14px">
                 <button class="btn" wire:click="$set('editing', false)">{{ __('common.cancel') }}</button>
                 <button class="btn btn-primary" wire:click="save">💾 {{ __('common.save') }}</button>
             </div>

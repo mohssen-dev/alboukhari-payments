@@ -49,6 +49,7 @@ class StudentPanel extends Component
         'open-student-panel' => 'switchStudent',
         'close-student-panel' => 'closeSelf',
         'payment-saved' => 'onPaymentSaved',
+        'student-updated' => 'onStudentUpdated',
     ];
 
     public function mount(?int $studentId = null)
@@ -62,6 +63,16 @@ class StudentPanel extends Component
     {
         $this->loadStudent($studentId);
         $this->tab = 'payments';
+    }
+
+    /** The student form saved this student: reload the editable fields shown here. */
+    public function onStudentUpdated(?int $studentId = null): void
+    {
+        if ($this->studentId && $studentId === $this->studentId) {
+            $this->loadStudent($this->studentId);
+        } else {
+            $this->skipRender();
+        }
     }
 
     /** Re-render only when the saved payment belongs to the student on screen. */

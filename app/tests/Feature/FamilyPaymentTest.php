@@ -13,8 +13,9 @@ use Livewire\Livewire;
 use Tests\TestCase;
 
 /**
- * The family window is a family payment form: one amount per child for one
- * month, prefilled with what is still owed, saved in one go.
+ * The family window: the year's payments per child on top, and one amount
+ * per child for the chosen month below. Each amount is the month's TOTAL —
+ * raising it records the difference, lowering it reduces what was recorded.
  */
 class FamilyPaymentTest extends TestCase
 {
@@ -52,28 +53,44 @@ class FamilyPaymentTest extends TestCase
         return [$f, $a, $b];
     }
 
-    private function pay(Student $s, float $amount, int $month): void
+    private function pay(Student $s, float $amount, ?int $month = null, ?string $paidAt = null, string $method = 'cash'): Payment
     {
-        Payment::create([
-            'student_id' => $s->id, 'period_year' => $this->year, 'period_month' => $month,
-            'amount' => $amount, 'method' => 'cash', 'paid_at' => date('Y-m-d'),
+        return Payment::create([
+            'student_id' => $s->id, 'period_year' => $this->year, 'period_month' => $month ?? $this->month,
+            'amount' => $amount, 'method' => $method, 'paid_at' => $paidAt ?? date('Y-m-d'),
         ]);
     }
 
-    public function test_the_window_opens_with_each_childs_amount_ready(): void
+    private function member($lw, Student $s): array
+    {
+        return collect($lw->get('members'))->firstWhere('id', $s->id);
+    }
+
+    private function recorded(Student $s, ?int $year = null, ?int $month = null): float
+    {
+        return (float) Payment::where('student_id', $s->id)
+            ->where('period_year', $year ?? $this->year)
+            ->where('period_month', $month ?? $this->month)
+            ->sum('amount');
+    }
+
+    public function test_the_window_opens_with_the_table_and_each_childs_amount_ready(): void
     {
         [, $a, $b] = $this->family();
-        $this->pay($b, 30, $this->month); // B already paid this month
+        $this->pay($b, 30);
 
         $lw = Livewire::test(FamilyModal::class)->call('open', $a->id);
 
         $this->assertTrue($lw->get('isOpen'));
-        $this->assertSame('30', $lw->get('amounts')[$a->id], 'what A still owes is prefilled');
-        $this->assertSame('', $lw->get('amounts')[$b->id], 'a fully paid child starts empty');
-        $lw->assertSeeHtml('data-fm-amount');
+        $this->assertSame('30', $lw->get('amounts')[$a->id], 'what A owes is suggested');
+        $this->assertSame('30', $lw->get('amounts')[$b->id], 'B shows what is already recorded');
+        $this->assertEquals(0, $this->member($lw, $a)['month_paid']);
+        $this->assertEquals(30, $this->member($lw, $b)['month_paid']);
+        $this->assertEquals(30, $this->member($lw, $b)['months'][$this->month]['paid'], 'the year table carries each month');
+        $lw->assertSeeHtml('family-table')->assertSeeHtml('data-fm-amount');
     }
 
-    public function test_save_all_records_a_payment_per_child_and_patches_their_rows(): void
+    public function test_saving_records_new_payments_and_patches_each_row(): void
     {
         [, $a, $b] = $this->family();
 
@@ -85,12 +102,117 @@ class FamilyPaymentTest extends TestCase
             ->call('saveAll');
 
         $this->assertSame(2, Payment::count());
-        $this->assertDatabaseHas('payments', ['student_id' => $a->id, 'period_year' => $this->year, 'period_month' => $this->month, 'amount' => 30, 'method' => 'bank']);
-        $this->assertDatabaseHas('payments', ['student_id' => $b->id, 'period_year' => $this->year, 'period_month' => $this->month, 'amount' => 15, 'method' => 'bank']);
+        $this->assertDatabaseHas('payments', ['student_id' => $a->id, 'amount' => 30, 'method' => 'bank']);
+        $this->assertDatabaseHas('payments', ['student_id' => $b->id, 'amount' => 15, 'method' => 'bank']);
 
-        $patched = collect(data_get($lw->effects, 'dispatches'))->where('name', 'grid-row-updated')->pluck('params.id')->sort()->values()->all();
-        $this->assertSame([$a->id, $b->id], $patched, 'each paid child\'s grid row is patched in place');
-        $this->assertFalse($lw->get('isOpen'), 'the window closes after a successful save');
+        $patched = collect(data_get($lw->effects, 'dispatches'))->where('name', 'grid-row-updated');
+        $this->assertSame([$a->id, $b->id], $patched->pluck('params.id')->sort()->values()->all());
+        $this->assertSame(['year'], $patched->pluck('params.scope')->unique()->values()->all(),
+            'a payment only changes that year — a grid showing another year must not re-render');
+
+        $this->assertTrue($lw->get('isOpen'), 'the window stays open to show the result');
+        $this->assertEquals(30, $this->member($lw, $a)['month_paid'], 'the table is refreshed');
+    }
+
+    public function test_unchanged_amounts_are_not_recorded_twice(): void
+    {
+        [, $a, $b] = $this->family();
+        $this->pay($b, 30);
+
+        $lw = Livewire::test(FamilyModal::class)
+            ->call('open', $a->id)
+            ->set("amounts.{$a->id}", '')   // A: nothing today
+            ->call('saveAll');              // B still shows its recorded 30
+
+        $this->assertSame(1, Payment::count(), 'showing what is recorded must never add it again');
+        $lw->assertDispatched('toast');
+    }
+
+    public function test_lowering_an_amount_reduces_the_recorded_payment(): void
+    {
+        [, $a] = $this->family();
+        $p = $this->pay($a, 30, null, null, 'cash');
+
+        Livewire::test(FamilyModal::class)
+            ->call('open', $a->id)
+            ->set("amounts.{$a->id}", '20')
+            ->set('method', 'bank')
+            ->call('saveAll');
+
+        $this->assertSame(1, Payment::where('student_id', $a->id)->count());
+        $this->assertEquals(20, (float) $p->fresh()->amount);
+        $this->assertSame('cash', $p->fresh()->method, 'a correction keeps how it was paid');
+    }
+
+    public function test_clearing_an_amount_removes_the_payment(): void
+    {
+        [, $a] = $this->family();
+        $this->pay($a, 30);
+
+        Livewire::test(FamilyModal::class)
+            ->call('open', $a->id)
+            ->set("amounts.{$a->id}", '')
+            ->call('saveAll');
+
+        $this->assertSame(0, Payment::where('student_id', $a->id)->count());
+    }
+
+    public function test_raising_an_amount_records_only_the_difference(): void
+    {
+        [, $a] = $this->family();
+        $this->pay($a, 15, null, null, 'cash');
+
+        Livewire::test(FamilyModal::class)
+            ->call('open', $a->id)
+            ->set("amounts.{$a->id}", '30')
+            ->set('method', 'bank')
+            ->call('saveAll');
+
+        $this->assertEquals(30, $this->recorded($a));
+        $this->assertDatabaseHas('payments', ['student_id' => $a->id, 'amount' => 15, 'method' => 'cash']);
+        $this->assertDatabaseHas('payments', ['student_id' => $a->id, 'amount' => 15, 'method' => 'bank']);
+    }
+
+    public function test_reducing_across_several_payments_takes_from_the_newest_first(): void
+    {
+        [, $a] = $this->family();
+        $older = $this->pay($a, 30, null, date('Y-m-01'));
+        $newer = $this->pay($a, 15, null, date('Y-m-d', strtotime(date('Y-m-01') . ' +4 days')));
+
+        Livewire::test(FamilyModal::class)
+            ->call('open', $a->id)
+            ->set("amounts.{$a->id}", '20')
+            ->call('saveAll');
+
+        $this->assertNull(Payment::find($newer->id), 'the newest payment goes first');
+        $this->assertEquals(20, (float) $older->fresh()->amount);
+        $this->assertEquals(20, $this->recorded($a));
+    }
+
+    public function test_next_year_can_be_paid_ahead_and_the_table_follows_the_year(): void
+    {
+        [, $a] = $this->family();
+        $next = $this->year + 1;
+
+        $lw = Livewire::test(FamilyModal::class)
+            ->call('open', $a->id)
+            ->set('year', $next)
+            ->set('month', 1)
+            ->set("amounts.{$a->id}", '30')
+            ->call('saveAll');
+
+        $this->assertEquals(30, $this->recorded($a, $next, 1));
+        $this->assertSame($next, $lw->get('year'));
+        $this->assertEquals(30, $this->member($lw, $a)['months'][1]['paid'], 'the table shows next year');
+    }
+
+    public function test_a_year_outside_the_offered_range_is_clamped(): void
+    {
+        [, $a] = $this->family();
+
+        $lw = Livewire::test(FamilyModal::class)->call('open', $a->id)->set('year', 1990);
+
+        $this->assertSame($this->year - 1, $lw->get('year'));
     }
 
     public function test_a_child_outside_this_family_cannot_be_paid_through_it(): void
@@ -122,22 +244,7 @@ class FamilyPaymentTest extends TestCase
         $this->assertSame(0, Payment::count(), 'SECURITY: a viewer recorded a payment through the family window');
     }
 
-    public function test_nothing_to_save_keeps_the_window_open(): void
-    {
-        [, $a, $b] = $this->family();
-
-        $lw = Livewire::test(FamilyModal::class)
-            ->call('open', $a->id)
-            ->set("amounts.{$a->id}", '')
-            ->set("amounts.{$b->id}", '0')
-            ->call('saveAll');
-
-        $this->assertSame(0, Payment::count());
-        $this->assertTrue($lw->get('isOpen'));
-        $lw->assertDispatched('toast');
-    }
-
-    public function test_picking_another_month_recomputes_what_is_owed(): void
+    public function test_picking_another_month_recomputes_the_form(): void
     {
         [, $a] = $this->family();
         $this->pay($a, 30, 1);
@@ -145,10 +252,12 @@ class FamilyPaymentTest extends TestCase
         $lw = Livewire::test(FamilyModal::class)->call('open', $a->id);
 
         $lw->set('month', 1);
-        $this->assertSame('', $lw->get('amounts')[$a->id], 'January is already paid');
+        $this->assertEquals(30, $this->member($lw, $a)['month_paid']);
+        $this->assertSame('30', $lw->get('amounts')[$a->id]);
 
         $lw->set('month', 2);
-        $this->assertSame('30', $lw->get('amounts')[$a->id]);
+        $this->assertEquals(0, $this->member($lw, $a)['month_paid']);
+        $this->assertSame('30', $lw->get('amounts')[$a->id], 'nothing recorded → the fee is suggested');
     }
 
     public function test_a_child_not_enrolled_that_month_is_skipped(): void
@@ -156,7 +265,7 @@ class FamilyPaymentTest extends TestCase
         [$f, $a] = $this->family();
         $later = Student::create([
             'name' => 'Kid Later', 'family_id' => $f->id, 'default_fee_amount' => 30,
-            'enrolled_at' => ($this->year + 1) . '-01-01',
+            'enrolled_at' => ($this->year + 2) . '-01-01',
         ]);
 
         $lw = Livewire::test(FamilyModal::class)->call('open', $a->id);

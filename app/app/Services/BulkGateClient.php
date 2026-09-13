@@ -67,8 +67,11 @@ class BulkGateClient
             if (str_starts_with((string) $n, '+')) { $anyHasPlus = true; break; }
         }
 
-        $textToSend = $forceAscii ? AsciiSanitizer::sanitize($text) : $text;
-        $unicode = !$forceAscii && (bool) preg_match('/[^\x00-\x7F]/', $textToSend);
+        // Same preparation the counter uses — so Arabic survives force_ascii
+        // (it is sent as Unicode) and the cost shown is the cost billed.
+        $prepared = \App\Support\SmsText::prepare($text, $forceAscii);
+        $textToSend = $prepared['text'];
+        $unicode = $prepared['unicode'];
 
         $payload = [
             'application_id' => $appId,

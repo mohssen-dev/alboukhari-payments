@@ -10,7 +10,26 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{{ __('auth.sign_in') }} · {{ __('app_name') }}</title>
     <link rel="icon" type="image/x-icon" href="{{ asset('favicon.ico') }}">
-    <link rel="stylesheet" href="{{ asset('assets/css/app.css') }}?v=6.0">
+    {{-- Same theme bootstrap as layouts/app.blade.php (no light flash). --}}
+    <script>
+        (function () {
+            var apply = function () {
+                var t = 'light';
+                try { t = localStorage.getItem('ab-theme') === 'dark' ? 'dark' : 'light'; } catch (e) {}
+                document.documentElement.setAttribute('data-theme', t);
+            };
+            apply();
+            if (!window.abThemeHooked) {
+                window.abThemeHooked = true;
+                document.addEventListener('livewire:navigating', function (e) {
+                    if (e.detail && e.detail.onSwap) e.detail.onSwap(apply);
+                });
+                document.addEventListener('livewire:navigated', apply);
+            }
+        })();
+    </script>
+    <link rel="stylesheet" href="{{ asset('assets/css/app.css') }}?v=7.6">
+    <link rel="stylesheet" href="{{ asset('assets/css/dark.css') }}?v=1.0">
 </head>
 <body class="auth-body">
 

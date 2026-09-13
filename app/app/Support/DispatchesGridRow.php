@@ -9,7 +9,14 @@ namespace App\Support;
  */
 trait DispatchesGridRow
 {
-    protected function dispatchGridRow(?int $studentId, ?int $year = null): void
+    /**
+     * @param string $scope 'year'    — only that year's months changed (a payment):
+     *                                  a grid showing another year ignores it;
+     *                                  'student' — the student itself changed (name,
+     *                                  phone, flags): a grid showing another year
+     *                                  re-renders so the row stays correct.
+     */
+    protected function dispatchGridRow(?int $studentId, ?int $year = null, string $scope = 'student'): void
     {
         if (!$studentId) {
             return;
@@ -17,7 +24,7 @@ trait DispatchesGridRow
 
         $payload = GridRow::payload($studentId, $year ?? (int) date('Y'));
         if ($payload) {
-            $this->dispatch('grid-row-updated', ...$payload);
+            $this->dispatch('grid-row-updated', ...$payload, scope: $scope);
         }
     }
 }

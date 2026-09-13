@@ -1,0 +1,485 @@
+/* ============================================
+   Al Boukhari — Dark mode  (dark.css v1.0)
+   Loaded after app.css. Every rule is scoped to html[data-theme="dark"],
+   so light mode is untouched.
+
+   Approach
+   1. Redefine the design tokens (most of app.css follows automatically).
+   2. Override the colours app.css hardcodes (white, hex, rgba).
+   3. Where an override would out-rank an app.css state rule
+      (:hover, .active, .selected ...), that state rule is re-declared here.
+
+   Colour roles in dark
+   - --color-primary / -success / -danger / -warning / -info are LIGHT tints,
+     readable as text on dark surfaces. Solid buttons, badges and toasts that
+     put white text on those colours get a deeper "solid" shade below.
+   - *-soft tokens are dark tints of the same hue (not pastel).
+   ============================================ */
+
+html[data-theme="dark"] {
+    color-scheme: dark;
+
+    /* Surfaces — layered green-tinted charcoal, never pure black */
+    --color-bg: #0f1412;
+    --color-surface: #161d1a;
+    --color-surface-alt: #1c2521;
+    --color-surface-3: #19211d;
+    --color-border: #2a3530;
+    --color-border-strong: #3a4842;
+    --color-text: #e6ece8;
+    --color-text-muted: #9fb0a7;
+    --color-text-soft: #8a9b93;
+
+    /* Brand green (text / accents) */
+    --color-primary: #5fbf87;
+    --color-primary-hover: #74cc98;
+    --color-primary-deep: #8fd6ab;
+    --color-primary-soft: #1a3326;
+    --color-primary-text: #86d3a5;
+    --color-primary-glow: rgba(95, 191, 135, 0.22);
+
+    /* Brand gold */
+    --color-accent: #c9a57f;
+    --color-accent-hover: #dcbd98;
+    --color-accent-soft: #33291c;
+    --color-accent-glow: rgba(201, 165, 127, 0.22);
+
+    /* Status */
+    --color-success: #6dd49a;
+    --color-success-soft: #173324;
+    --color-warning: #e0b06a;
+    --color-warning-soft: #3a2d17;
+    --color-danger: #f07a7a;
+    --color-danger-soft: #3d1d1f;
+    --color-info: #5ec4d8;
+    --color-info-soft: #14323a;
+
+    --brand-gradient: linear-gradient(135deg, #2b7a4c 0%, #1d5536 100%);
+    --gold-gradient: linear-gradient(135deg, #d4b089 0%, #b48e63 100%);
+
+    --shadow-xs: 0 1px 2px 0 rgba(0, 0, 0, 0.35);
+    --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.45), 0 1px 2px -1px rgba(0, 0, 0, 0.35);
+    --shadow-md: 0 4px 12px -2px rgba(0, 0, 0, 0.5), 0 2px 4px -2px rgba(0, 0, 0, 0.35);
+    --shadow-lg: 0 12px 24px -6px rgba(0, 0, 0, 0.55), 0 4px 8px -4px rgba(0, 0, 0, 0.4);
+    --shadow-xl: 0 24px 48px -12px rgba(0, 0, 0, 0.65);
+
+    /* Dark-only helpers (solid fills that carry white text, elevated layers) */
+    --dm-elevated: #1f2925;
+    --dm-elevated-hover: #27332e;
+    --dm-input: #111714;
+    --dm-primary-solid: #2a7a4b;
+    --dm-primary-solid-hover: #2f8452;
+    --dm-success-solid: #237a4a;
+    --dm-success-solid-hover: #2d8150;
+    --dm-warning-solid: #8a5d18;
+    --dm-warning-solid-hover: #9c6a1d;
+    --dm-danger-solid: #b83333;
+    --dm-danger-solid-hover: #c73d3d;
+    --dm-info-solid: #0e6377;
+
+    scrollbar-color: #3a4842 #0f1412;
+    accent-color: #4fae76;
+}
+
+html[data-theme="dark"] ::selection { background: rgba(95, 191, 135, 0.35); color: #ffffff; }
+html[data-theme="dark"] ::placeholder { color: #7d8e86; opacity: 1; }
+
+/* ============================================
+   Topbar, language switcher, user menu
+   ============================================ */
+html[data-theme="dark"] .topbar { box-shadow: 0 1px 0 rgba(0, 0, 0, 0.4); }
+html[data-theme="dark"] .topbar .brand .logo-mark { background: var(--brand-gradient); }
+html[data-theme="dark"] .topbar .search-global {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%239fb0a7' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.3-4.3'/%3E%3C/svg%3E");
+    color: var(--color-text);
+}
+html[data-theme="dark"] .topbar .search-global:focus {
+    background-color: var(--dm-input);
+    box-shadow: 0 0 0 3px var(--color-primary-glow);
+}
+
+html[data-theme="dark"] .lang-switcher a.active {
+    background: var(--dm-elevated-hover);
+    color: var(--color-primary);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+}
+
+html[data-theme="dark"] .nav-toggle { background: var(--color-surface-alt); }
+html[data-theme="dark"] .nav-toggle:hover { background: var(--dm-elevated-hover); }
+
+html[data-theme="dark"] .brand-logo {
+    /* The logo is a JPEG on white — keep its white tile, just soften the frame. */
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5), 0 0 0 1px var(--color-border-strong);
+}
+
+html[data-theme="dark"] .user-trigger:hover { border-color: rgba(95, 191, 135, 0.25); }
+html[data-theme="dark"] .user-avatar { box-shadow: 0 2px 6px -1px rgba(0, 0, 0, 0.6); }
+html[data-theme="dark"] .user-dropdown {
+    background: var(--dm-elevated);
+    border-color: var(--color-border-strong);
+    box-shadow: 0 18px 40px -12px rgba(0, 0, 0, 0.7), 0 4px 12px -4px rgba(0, 0, 0, 0.5);
+}
+html[data-theme="dark"] .user-role { background: var(--dm-primary-solid); color: #ffffff; }
+html[data-theme="dark"] .dropdown-item:hover { background: var(--color-primary-soft); color: var(--color-primary-deep); }
+html[data-theme="dark"] .dropdown-item.danger:hover { background: var(--color-danger-soft); color: var(--color-danger); }
+
+/* Livewire top progress bar (was indigo/violet) */
+html[data-theme="dark"] .livewire-progress { background: rgba(95, 191, 135, 0.12); }
+html[data-theme="dark"] .livewire-progress-bar {
+    background: linear-gradient(90deg, var(--color-primary), var(--color-accent));
+    box-shadow: 0 0 8px rgba(95, 191, 135, 0.5);
+}
+
+/* ============================================
+   Buttons
+   (.btn is re-coloured, so every variant and hover is re-declared)
+   ============================================ */
+html[data-theme="dark"] .btn {
+    background: var(--dm-elevated);
+    border-color: var(--color-border-strong);
+    color: var(--color-text);
+}
+html[data-theme="dark"] .btn:hover:not(:disabled) {
+    background: var(--dm-elevated-hover);
+    border-color: #4a5a53;
+}
+
+html[data-theme="dark"] .btn-primary { background: var(--dm-primary-solid); border-color: var(--dm-primary-solid); color: #ffffff; }
+html[data-theme="dark"] .btn-primary:hover:not(:disabled) { background: var(--dm-primary-solid-hover); border-color: var(--dm-primary-solid-hover); }
+
+html[data-theme="dark"] .btn-success { background: var(--dm-success-solid); border-color: var(--dm-success-solid); color: #ffffff; }
+html[data-theme="dark"] .btn-success:hover:not(:disabled) { background: var(--dm-success-solid-hover); border-color: var(--dm-success-solid-hover); }
+
+html[data-theme="dark"] .btn-warning { background: var(--dm-warning-solid); border-color: var(--dm-warning-solid); color: #ffffff; }
+html[data-theme="dark"] .btn-warning:hover:not(:disabled) { background: var(--dm-warning-solid-hover); border-color: var(--dm-warning-solid-hover); }
+
+html[data-theme="dark"] .btn-danger { background: var(--dm-danger-solid); border-color: var(--dm-danger-solid); color: #ffffff; }
+html[data-theme="dark"] .btn-danger:hover:not(:disabled) { background: var(--dm-danger-solid-hover); border-color: var(--dm-danger-solid-hover); }
+
+/* Secondary text inside a solid button (e.g. the "Ctrl+Enter" hint) */
+html[data-theme="dark"] :is(.btn-primary, .btn-success, .btn-warning, .btn-danger) :is(.text-soft, .text-muted) { color: #f2f7f4; }
+
+html[data-theme="dark"] .btn-soft-primary { background: var(--color-primary-soft); color: var(--color-primary-text); border-color: rgba(95, 191, 135, 0.22); }
+html[data-theme="dark"] .btn-soft-success { background: var(--color-success-soft); color: var(--color-success); border-color: rgba(109, 212, 154, 0.22); }
+html[data-theme="dark"] .btn-soft-danger { background: var(--color-danger-soft); color: #f49a9a; border-color: rgba(240, 122, 122, 0.25); }
+html[data-theme="dark"] .btn-soft-warning { background: var(--color-warning-soft); color: #ecc07e; border-color: rgba(224, 176, 106, 0.25); }
+html[data-theme="dark"] .btn-soft-primary:hover:not(:disabled) { background: #20402f; }
+html[data-theme="dark"] .btn-soft-success:hover:not(:disabled) { background: #1c3f2c; }
+html[data-theme="dark"] .btn-soft-danger:hover:not(:disabled) { background: #4a2326; }
+html[data-theme="dark"] .btn-soft-warning:hover:not(:disabled) { background: #46361b; }
+
+html[data-theme="dark"] .btn-ghost { background: transparent; border-color: transparent; color: var(--color-text-muted); }
+html[data-theme="dark"] .btn-ghost:hover,
+html[data-theme="dark"] .btn-ghost:hover:not(:disabled) { color: var(--color-text); background: var(--color-surface-alt); border-color: transparent; }
+
+html[data-theme="dark"] .icon-btn { color: var(--color-text); opacity: 0.7; }
+html[data-theme="dark"] .icon-btn:hover { opacity: 1; background: var(--color-surface-alt); }
+
+/* ============================================
+   Form controls
+   ============================================ */
+html[data-theme="dark"] .form-input,
+html[data-theme="dark"] .form-select,
+html[data-theme="dark"] .form-textarea {
+    background: var(--dm-input);
+    border-color: var(--color-border-strong);
+    color: var(--color-text);
+}
+/* .form-control (profile, users) has no base style in app.css, so it is a
+   native field. Giving it a dark fill drops the native look and Chrome falls
+   back to a 2px inset border — swap that for a 1px solid one (padding-block
+   keeps the field the same height). */
+html[data-theme="dark"] .form-control:not(.auth-input) {
+    background: var(--dm-input);
+    border: 1px solid var(--color-border-strong);
+    border-radius: 4px;
+    padding-block: 2px;
+    color: var(--color-text);
+}
+html[data-theme="dark"] .form-input:focus,
+html[data-theme="dark"] .form-select:focus,
+html[data-theme="dark"] .form-textarea:focus {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px var(--color-primary-glow);
+}
+html[data-theme="dark"] .form-input:disabled,
+html[data-theme="dark"] .form-select:disabled,
+html[data-theme="dark"] .form-textarea:disabled,
+html[data-theme="dark"] .form-input[readonly] {
+    background: var(--color-surface-alt);
+    color: var(--color-text-muted);
+}
+
+/* Bare inputs / selects that app.css leaves to the browser */
+html[data-theme="dark"] :where(input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]):not([type=color]), select, textarea) {
+    color: var(--color-text);
+}
+html[data-theme="dark"] select option { background: var(--color-surface); color: var(--color-text); }
+
+/* Payment method toggle */
+html[data-theme="dark"] .method-toggle button {
+    background: var(--color-surface-alt);
+    border-color: var(--color-border-strong);
+    color: var(--color-text);
+}
+html[data-theme="dark"] .method-toggle button.cash.active {
+    background: var(--color-warning-soft);
+    border-color: var(--color-warning);
+    color: #f3cd8e;
+}
+html[data-theme="dark"] .method-toggle button.bank.active {
+    background: var(--color-info-soft);
+    border-color: var(--color-info);
+    color: #8fdcec;
+}
+
+/* ============================================
+   KPI cards, filters, actions, bulk bar
+   ============================================ */
+html[data-theme="dark"] .kpi.success { background: linear-gradient(135deg, #173324, var(--color-surface)); border-color: #2b5a3e; }
+html[data-theme="dark"] .kpi.success .value { color: #7fdca8; }
+html[data-theme="dark"] .kpi.warning { background: linear-gradient(135deg, #382b15, var(--color-surface)); border-color: #6b5226; }
+html[data-theme="dark"] .kpi.warning .value { color: #f0c47c; }
+html[data-theme="dark"] .kpi.danger { background: linear-gradient(135deg, #3a1c1e, var(--color-surface)); border-color: #6e3032; }
+html[data-theme="dark"] .kpi.danger .value { color: #f79c9c; }
+html[data-theme="dark"] .kpi.info { background: linear-gradient(135deg, #1d2140, var(--color-surface)); border-color: #3a4176; }
+html[data-theme="dark"] .kpi.info .value { color: #b3bbff; }
+
+html[data-theme="dark"] .filters-bar input,
+html[data-theme="dark"] .filters-bar select {
+    background: var(--dm-input);
+    border-color: var(--color-border-strong);
+    color: var(--color-text);
+}
+
+/* Deeper than the primary button so the 70%-opacity "selected" label and the
+   translucent buttons inside stay above 4.5:1. */
+html[data-theme="dark"] .bulk-bar { background: #1d5234; color: #ffffff; box-shadow: inset 0 0 0 1px #2b6b45, var(--shadow-md); }
+html[data-theme="dark"] .bulk-bar .btn { background: rgba(255, 255, 255, 0.14); color: #ffffff; border-color: rgba(255, 255, 255, 0.28); }
+html[data-theme="dark"] .bulk-bar .btn:hover:not(:disabled) { background: rgba(255, 255, 255, 0.24); border-color: rgba(255, 255, 255, 0.4); }
+html[data-theme="dark"] .bulk-bar .btn-danger { background: var(--dm-danger-solid); border-color: #d04848; }
+html[data-theme="dark"] .bulk-bar .btn-danger:hover:not(:disabled) { background: var(--dm-danger-solid-hover); border-color: #d04848; }
+
+/* ============================================
+   Students grid
+   ============================================ */
+html[data-theme="dark"] .students-grid thead th .sort-icon { opacity: 0.6; }
+html[data-theme="dark"] .students-grid thead th.sorted .sort-icon,
+html[data-theme="dark"] .students-grid thead th .sort-icon.sorted { opacity: 1; }
+
+/* Sticky columns — opaque in every state (content must not bleed through) */
+html[data-theme="dark"] .students-grid tbody td.sticky-col.col-checkbox,
+html[data-theme="dark"] .students-grid tbody td.sticky-col.col-id,
+html[data-theme="dark"] .students-grid tbody td.sticky-col.col-name { background: var(--color-surface); }
+html[data-theme="dark"] .students-grid tbody tr:hover td.sticky-col.col-checkbox,
+html[data-theme="dark"] .students-grid tbody tr:hover td.sticky-col.col-id,
+html[data-theme="dark"] .students-grid tbody tr:hover td.sticky-col.col-name { background: var(--color-surface-alt); }
+html[data-theme="dark"] .students-grid tbody tr.selected td.sticky-col.col-checkbox,
+html[data-theme="dark"] .students-grid tbody tr.selected td.sticky-col.col-id,
+html[data-theme="dark"] .students-grid tbody tr.selected td.sticky-col.col-name { background: var(--color-primary-soft); }
+html[data-theme="dark"] .students-grid tbody td.sticky-col.col-id { color: var(--color-text-muted); }
+
+/* A visible edge between the frozen columns and the scrolling months */
+html[data-theme="dark"] .students-grid th.sticky-col.col-name,
+html[data-theme="dark"] .students-grid td.sticky-col.col-name { box-shadow: inset -1px 0 0 var(--color-border); }
+html[dir="rtl"][data-theme="dark"] .students-grid th.sticky-col.col-name,
+html[dir="rtl"][data-theme="dark"] .students-grid td.sticky-col.col-name { box-shadow: inset 1px 0 0 var(--color-border); }
+
+/* Month status cells: dark tints of the light-mode hues, bright numbers */
+html[data-theme="dark"] .cell-paid {
+    background: linear-gradient(135deg, #163826, #1a412d);
+    color: #9fe6bb;
+}
+html[data-theme="dark"] .cell-paid-advance {
+    background: linear-gradient(135deg, #0f4a3e, #135646);
+    color: #aef3de;
+}
+html[data-theme="dark"] .cell-partial {
+    background: linear-gradient(135deg, #3b2e13, #463716);
+    color: #f6d182;
+}
+html[data-theme="dark"] .cell-unpaid {
+    background: #361c1f;
+    color: #ffa3a3;
+}
+html[data-theme="dark"] .cell-late {
+    background: linear-gradient(135deg, #58202a, #672429);
+    color: #ffd6d6;
+}
+html[data-theme="dark"] .cell-legacy-zero {
+    background: linear-gradient(135deg, #0f3346, #133d53);
+    color: #a6dbf5;
+}
+html[data-theme="dark"] .cell-notdue {
+    background: var(--color-surface-alt);
+    color: var(--color-text-soft);
+}
+html[data-theme="dark"] .cell-not-enrolled {
+    background: repeating-linear-gradient(45deg, #171e1b, #171e1b 4px, #1d2622 4px, #1d2622 8px);
+    color: #8a9a92;
+}
+html[data-theme="dark"] .cell-content .method-icon { opacity: 0.85; }
+html[data-theme="dark"] .cell-month:hover,
+html[data-theme="dark"] .cell-month:focus-visible { outline-color: var(--color-primary); }
+
+html[data-theme="dark"] .sibling-badge { background: var(--dm-success-solid); color: #ffffff; }
+html[data-theme="dark"] .sibling-badge:hover { background: var(--dm-success-solid-hover); }
+
+/* Row flash after an in-place update — stronger glow reads better on dark */
+html[data-theme="dark"] .students-grid tbody tr.row-flash > td { animation-name: rowFlashDark; }
+@keyframes rowFlashDark {
+    from { box-shadow: inset 0 0 0 999px rgba(95, 191, 135, 0.32); }
+    to   { box-shadow: inset 0 0 0 999px rgba(95, 191, 135, 0); }
+}
+
+/* ============================================
+   Side panel, summary tiles, sibling chips, tabs
+   ============================================ */
+html[data-theme="dark"] .side-panel-backdrop { background: rgba(0, 0, 0, 0.55); }
+html[data-theme="dark"] .side-panel { background: var(--color-surface); border-inline-start: 1px solid var(--color-border); }
+
+html[data-theme="dark"] .sibling-chip { background: var(--dm-elevated); border-color: var(--color-border-strong); color: var(--color-text); }
+html[data-theme="dark"] .sibling-chip:hover { background: var(--dm-primary-solid); color: #ffffff; border-color: var(--dm-primary-solid); }
+
+/* ============================================
+   Modals, family window, skeleton
+   ============================================ */
+html[data-theme="dark"] .modal-backdrop { background: rgba(0, 0, 0, 0.62); }
+html[data-theme="dark"] .modal-box { background: var(--color-surface); border: 1px solid var(--color-border); }
+
+html[data-theme="dark"] .family-member { background: var(--color-surface-alt); border-color: var(--color-border); }
+html[data-theme="dark"] .family-member:hover { background: var(--dm-elevated-hover); border-color: var(--color-border-strong); }
+html[data-theme="dark"] .family-member.is-self { border-color: var(--color-primary); background: var(--color-primary-soft); }
+html[data-theme="dark"] .family-member-clickable:hover {
+    border-color: var(--color-primary);
+    background: var(--color-primary-soft);
+    box-shadow: 0 2px 10px -2px rgba(0, 0, 0, 0.5);
+}
+
+html[data-theme="dark"] .modal-skeleton .sk {
+    background: linear-gradient(90deg, var(--color-surface-alt) 25%, #2a3530 50%, var(--color-surface-alt) 75%);
+    background-size: 200% 100%;
+}
+
+/* ============================================
+   Toasts
+   ============================================ */
+html[data-theme="dark"] .toast {
+    background: var(--dm-elevated-hover);
+    color: var(--color-text);
+    border: 1px solid var(--color-border-strong);
+    box-shadow: 0 12px 28px -8px rgba(0, 0, 0, 0.7);
+}
+html[data-theme="dark"] .toast.success { background: var(--dm-success-solid); border-color: #2f9a5f; color: #ffffff; }
+html[data-theme="dark"] .toast.error { background: var(--dm-danger-solid); border-color: #d04848; color: #ffffff; }
+html[data-theme="dark"] .toast.warning { background: var(--dm-warning-solid); border-color: #b07a26; color: #ffffff; }
+html[data-theme="dark"] .toast.info { background: var(--dm-info-solid); border-color: #1685a0; color: #ffffff; }
+
+/* ============================================
+   Pills, badges, status dots
+   ============================================ */
+html[data-theme="dark"] .pill-success { background: var(--color-success-soft); color: #86deab; }
+html[data-theme="dark"] .pill-warning { background: var(--color-warning-soft); color: #eec27f; }
+html[data-theme="dark"] .pill-danger { background: var(--color-danger-soft); color: #f7a3a3; }
+html[data-theme="dark"] .pill-info { background: var(--color-info-soft); color: #86d6e6; }
+
+html[data-theme="dark"] .badge.role-admin { background: var(--dm-primary-solid); color: #ffffff; }
+html[data-theme="dark"] .badge.role-staff { border-color: rgba(201, 165, 127, 0.3); }
+
+html[data-theme="dark"] .status-dot.ok { box-shadow: 0 0 0 3px rgba(109, 212, 154, 0.2); }
+
+html[data-theme="dark"] .field-script-default { color: #86d6e6; }
+
+/* ============================================
+   Dropdowns (row menu etc.)
+   ============================================ */
+html[data-theme="dark"] .dropdown-menu {
+    background: var(--dm-elevated);
+    border-color: var(--color-border-strong);
+    box-shadow: 0 16px 36px -10px rgba(0, 0, 0, 0.75);
+}
+html[data-theme="dark"] .dropdown-menu a:hover,
+html[data-theme="dark"] .dropdown-menu button:hover { background: var(--dm-elevated-hover); }
+html[data-theme="dark"] .dropdown-menu .divider { border-top-color: var(--color-border-strong); }
+
+/* ============================================
+   Pagination, settings
+   ============================================ */
+html[data-theme="dark"] .page-btn:hover:not(.disabled):not(.active) { background: var(--dm-elevated-hover); }
+html[data-theme="dark"] .page-btn.active {
+    background: var(--dm-primary-solid);
+    color: #ffffff;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+
+html[data-theme="dark"] .script-banner {
+    background: linear-gradient(135deg, #15301f, #173324);
+    border-color: #2b5a3e;
+    color: #9fe6bb;
+}
+/* WhatsApp setup banner carries an inline blue palette (settings.blade.php) —
+   !important is the only way past an inline style. */
+html[data-theme="dark"] .script-banner[style*="#eff6ff"] {
+    background: linear-gradient(135deg, #14233d, #172a48) !important;
+    border-color: #2d4a7a !important;
+    color: #b9cffb !important;
+}
+html[data-theme="dark"] .script-banner[style*="#eff6ff"] a[style] { color: #d3e1ff !important; }
+
+/* ============================================
+   Auth (login)
+   ============================================ */
+html[data-theme="dark"] .auth-body {
+    background:
+        radial-gradient(70% 60% at 20% 10%, rgba(47, 138, 85, 0.2) 0%, transparent 65%),
+        radial-gradient(55% 45% at 80% 90%, rgba(180, 142, 99, 0.16) 0%, transparent 60%),
+        linear-gradient(180deg, #0f1412 0%, #141a15 100%);
+}
+html[data-theme="dark"] .auth-body::before { opacity: 0.12; mix-blend-mode: soft-light; }
+html[data-theme="dark"] .auth-orb-a { opacity: 0.16; }
+html[data-theme="dark"] .auth-orb-b { opacity: 0.12; }
+html[data-theme="dark"] .auth-orb-c { opacity: 0.07; }
+
+html[data-theme="dark"] .auth-card {
+    background: rgba(22, 29, 26, 0.9);
+    box-shadow:
+        0 20px 50px -20px rgba(0, 0, 0, 0.8),
+        0 8px 16px -8px rgba(0, 0, 0, 0.5),
+        inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    border-color: rgba(201, 165, 127, 0.22);
+}
+html[data-theme="dark"] .auth-card::before {
+    background: linear-gradient(135deg, rgba(201, 165, 127, 0.35), transparent 40%, rgba(95, 191, 135, 0.3));
+}
+html[data-theme="dark"] .auth-logo-img {
+    box-shadow: 0 16px 32px -12px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(201, 165, 127, 0.3);
+}
+html[data-theme="dark"] .auth-input {
+    background: var(--dm-input);
+    border-color: var(--color-border-strong);
+    color: var(--color-text);
+}
+html[data-theme="dark"] .auth-error { border-color: rgba(240, 122, 122, 0.3); }
+html[data-theme="dark"] .auth-submit {
+    box-shadow: 0 8px 16px -6px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+html[data-theme="dark"] .auth-submit:hover:not(:disabled) { box-shadow: 0 12px 24px -6px rgba(0, 0, 0, 0.7); }
+
+/* ============================================
+   Dashboard, cards, tables, activity
+   ============================================ */
+html[data-theme="dark"] .dash-hero {
+    background:
+        radial-gradient(80% 100% at 0% 0%, rgba(201, 165, 127, 0.14) 0%, transparent 60%),
+        linear-gradient(135deg, #22603d 0%, #173f29 100%);
+    border: 1px solid #28553a;
+    box-shadow: 0 12px 28px -12px rgba(0, 0, 0, 0.7);
+}
+html[data-theme="dark"] .dash-hero .btn { background: rgba(255, 255, 255, 0.1); color: #ffffff; border-color: rgba(255, 255, 255, 0.24); }
+html[data-theme="dark"] .dash-hero .btn:hover:not(:disabled) { background: rgba(255, 255, 255, 0.18); border-color: rgba(255, 255, 255, 0.38); }
+html[data-theme="dark"] .dash-hero .btn.btn-primary { background: #f3efe6; color: #1b5733; border-color: #f3efe6; }
+html[data-theme="dark"] .dash-hero .btn.btn-primary:hover:not(:disabled) { background: #ffffff; border-color: #ffffff; }
+
+html[data-theme="dark"] .stat-card:hover { box-shadow: 0 16px 28px -16px rgba(0, 0, 0, 0.8), var(--shadow-md); }
+html[data-theme="dark"] .dash-bar.danger > span { background: linear-gradient(135deg, #e05555 0%, #b83333 100%); }
+

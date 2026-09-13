@@ -171,7 +171,8 @@ final class GridRow
         ];
     }
 
-    private static function cellClass(string $status): string
+    /** Status → the colour class shared by the grid and the family window. */
+    public static function cellClass(string $status): string
     {
         return match ($status) {
             'paid' => 'cell-paid',
@@ -185,7 +186,8 @@ final class GridRow
         };
     }
 
-    private static function cellDisplay(string $status, float $paid): string
+    /** Status → the short text a month cell shows (amount, X, ·, −). */
+    public static function cellDisplay(string $status, float $paid): string
     {
         return match ($status) {
             'paid', 'paid_advance', 'partial' => number_format($paid, 0),

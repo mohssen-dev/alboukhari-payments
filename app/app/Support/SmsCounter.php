@@ -7,6 +7,9 @@ namespace App\Support;
  *
  * - GSM-7 (إنجليزي/هولندي بعد ASCII): 160 لحرف واحدة، 153 للمتعدد.
  * - UCS-2 (عربي/Unicode): 70 لحرف واحدة، 67 للمتعدد.
+ *
+ * The text is prepared exactly as it will be sent (SmsText), so a message
+ * with an Arabic translation is counted as Unicode — the way it is billed.
  */
 class SmsCounter
 {
@@ -15,8 +18,9 @@ class SmsCounter
      */
     public static function count(string $text, bool $forceAscii = true): array
     {
-        $sanitized = $forceAscii ? AsciiSanitizer::sanitize($text) : $text;
-        $isUnicode = !$forceAscii && self::hasUnicode($sanitized);
+        $prepared = SmsText::prepare($text, $forceAscii);
+        $sanitized = $prepared['text'];
+        $isUnicode = $prepared['unicode'];
 
         if ($isUnicode) {
             $length = mb_strlen($sanitized, 'UTF-8');

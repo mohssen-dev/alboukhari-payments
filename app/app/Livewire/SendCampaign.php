@@ -5,13 +5,15 @@ namespace App\Livewire;
 use App\Models\Campaign;
 use App\Models\CampaignRecipient;
 use App\Models\Setting;
-use App\Models\Student;
 use App\Models\Template;
 use App\Services\CampaignSender;
 use App\Services\MonthNames;
 use App\Services\RecipientListBuilder;
 use App\Support\AuthorizesLivewireWrite;
 use App\Support\SmsCounter;
+use App\Support\TemplateVariables;
+use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use Livewire\Component;
 
 class SendCampaign extends Component
@@ -24,6 +26,7 @@ class SendCampaign extends Component
     public ?float $thresholdAmount = null;
     public bool $groupByFamily = false;
 
+    /** The selected template, or null for a manual message (kept in the template history on send). */
     public ?int $templateId = null;
     public string $body = '';
     public string $tag = '';
@@ -33,6 +36,8 @@ class SendCampaign extends Component
     public ?array $previewStats = null;
     public ?array $previewRecipients = null;
     public ?array $previewSkipped = null;
+    /** Why the automatic preview could not be built (e.g. an empty message). */
+    public ?string $previewError = null;
     public ?int $campaignId = null;
     public string $resultMessage = '';
 
@@ -64,31 +69,45 @@ class SendCampaign extends Component
         }
 
         $this->loadDefaultTemplate();
+        // The preview itself is built right after the first paint (wire:init).
     }
 
     public function loadDefaultTemplate()
     {
-        $tpl = Template::query()->first();
+        $tpl = Template::library()->orderBy('id')->first();
         if ($tpl) {
             $this->templateId = $tpl->id;
-            $this->body = $tpl->body;
+            $this->body = $tpl->messageBody();
         }
     }
 
     /**
-     * Any change to the targeting criteria invalidates a shown preview.
-     *
-     * The preview panel (recipient count, segment count, estimated cost) used
-     * to survive a change of type/month/year/threshold/grouping, so an admin
-     * could preview "20 late payers", switch the type to "send to all", and
-     * launch while the screen still showed 20 — sending to 299 parents.
+     * Every change rebuilds the preview automatically — recipients, segments,
+     * cost and the real message of the first recipient — so what is shown is
+     * always what would be sent. It used to wait for a Preview click and could
+     * go stale: an admin previewed "20 late payers", switched the type to
+     * "send to all" and launched while the screen still said 20.
      */
     public function updated($property): void
     {
-        if (in_array($property, ['type', 'year', 'month', 'thresholdAmount', 'groupByFamily'], true)) {
-            $this->previewStats = null;
-            $this->previewRecipients = null;
-            $this->previewSkipped = null;
+        if ($property === 'templateId') {
+            $tpl = $this->templateId ? Template::find($this->templateId) : null;
+            if ($tpl) {
+                $this->body = $tpl->messageBody();
+            }
+        }
+
+        if ($property === 'body' && $this->templateId) {
+            // Editing a template's text makes it a manual message: sent exactly
+            // as typed, and kept in the template history when sent.
+            $tpl = Template::find($this->templateId);
+            if (!$tpl || trim($tpl->messageBody()) !== trim($this->body)) {
+                $this->templateId = null;
+            }
+        }
+
+        if (in_array($property, ['type', 'year', 'month', 'thresholdAmount', 'groupByFamily', 'templateId', 'body'], true)) {
+            $this->refreshPreview();
         }
     }
 
@@ -97,11 +116,18 @@ class SendCampaign extends Component
         $this->thresholdAmount = in_array($this->type, ['paid_less_than', 'balance_above']) ? 30 : null;
     }
 
-    public function updatedTemplateId()
+    public function refreshPreview(): void
     {
-        if ($this->templateId) {
-            $tpl = Template::find($this->templateId);
-            if ($tpl) $this->body = $tpl->body;
+        try {
+            $this->preview();
+            $this->previewError = null;
+        } catch (ValidationException $e) {
+            $this->previewStats = null;
+            $this->previewRecipients = null;
+            $this->previewSkipped = null;
+            $this->previewError = collect($e->errors())->flatten()->first();
+            // Explain in the preview panel; don't paint red errors while typing.
+            $this->resetErrorBag();
         }
     }
 
@@ -118,6 +144,9 @@ class SendCampaign extends Component
             'year' => 'required|integer',
             'month' => 'required|integer|min:1|max:12',
             'thresholdAmount' => in_array($this->type, ['paid_less_than', 'balance_above']) ? 'required|numeric|min:0' : 'nullable',
+        ], [], [
+            'body' => __('send.body'),
+            'thresholdAmount' => __('send.threshold'),
         ]);
 
         // إنشاء حملة draft مؤقتة (لا نحفظها بعد)
@@ -156,17 +185,19 @@ class SendCampaign extends Component
             return;
         }
 
-        try {
-            $sender = app(CampaignSender::class);
-            $client = app(\App\Services\BulkGateClient::class);
-            $result = $client->send($this->testPhone, $this->body, 'TEST');
+        // The real message of the first recipient, not the raw {{…}} template.
+        $text = $this->previewRecipients[0]['body'] ?? $this->body;
 
-            $count = SmsCounter::count($this->body, true);
+        try {
+            $client = app(\App\Services\BulkGateClient::class);
+            $result = $client->send($this->testPhone, $text, 'TEST');
+
+            $count = SmsCounter::count($text, Setting::get('force_ascii', '1') === '1');
             \App\Models\MessageLog::create([
                 'type' => 'test',
                 'provider' => 'bulkgate',
                 'phone' => $this->testPhone,
-                'body' => $this->body,
+                'body' => $text,
                 'segments' => $count['segments'],
                 'status' => $result['status'],
                 'tag' => 'TEST',
@@ -201,6 +232,8 @@ class SendCampaign extends Component
             $this->dispatch('flash', message: __('flash.no_recipients'));
             return;
         }
+
+        $this->keepManualTemplate();
 
         $campaign = Campaign::create([
             'type' => $this->type,
@@ -242,6 +275,8 @@ class SendCampaign extends Component
             $this->dispatch('flash', message: __('flash.no_recipients'));
             return;
         }
+
+        $this->keepManualTemplate();
 
         \DB::transaction(function () {
             $campaign = Campaign::create([
@@ -288,15 +323,64 @@ class SendCampaign extends Component
         $this->dispatch('flash', message: $this->resultMessage);
     }
 
+    /**
+     * A manual message is kept in the template history ('manual' origin) the
+     * moment it is sent or scheduled, so it can be reviewed or reused later.
+     * The same text sent again reuses its history entry.
+     */
+    private function keepManualTemplate(): void
+    {
+        if ($this->templateId) {
+            return;
+        }
+
+        $body = trim($this->body);
+        $tpl = Template::manual()->where('body', $body)->first();
+
+        if (!$tpl) {
+            $plain = trim(preg_replace('/\s+/u', ' ', preg_replace(TemplateVariables::PATTERN, '…', $body)));
+            $tpl = Template::create([
+                'code' => 'manual_' . now()->format('YmdHis') . '_' . Str::lower(Str::random(4)),
+                'name' => '✍️ ' . now()->format('Y-m-d H:i') . ' — ' . Str::limit($plain, 40),
+                'language' => preg_match('/\p{Latin}/u', $body) ? 'nl' : 'ar',
+                'body' => $body,
+                'origin' => Template::ORIGIN_MANUAL,
+                'default_for' => 'none',
+            ]);
+        }
+
+        $this->templateId = $tpl->id;
+        $this->dispatch('toast', message: __('send.manual_saved'), type: 'success');
+    }
+
     public function render()
     {
-        $templates = Template::all();
-        $months = MonthNames::full();
+        $forceAscii = Setting::get('force_ascii', '1') === '1';
+        $sample = $this->previewRecipients[0]['body'] ?? null;
+
+        // The selected template's Arabic translation — shown to staff so they
+        // understand the message, never sent. Filled in for the sample recipient.
+        $tpl = $this->templateId ? Template::find($this->templateId) : null;
+        $translation = $tpl && trim((string) $tpl->body_ar) !== '' ? trim($tpl->body_ar) : null;
+        $sampleTranslation = null;
+        $sampleStudentId = $this->previewRecipients[0]['student_id'] ?? null;
+        if ($translation && $sampleStudentId && ($student = \App\Models\Student::find($sampleStudentId))) {
+            $sampleTranslation = $this->groupByFamily && $student->family
+                ? \App\Services\TemplateRenderer::renderForFamily($translation, $student->family, $this->year, $this->month)
+                : \App\Services\TemplateRenderer::renderForStudent($translation, $student, $this->year, $this->month);
+        }
+
         return view('livewire.send-campaign', [
-            'templates' => $templates,
-            'months' => $months,
+            'libraryTemplates' => Template::library()->orderBy('id')->get(),
+            'manualTemplates' => Template::manual()->latest('id')->limit(15)->get(),
+            'months' => MonthNames::full(),
             'types' => self::TYPES,
             'counter' => $this->counter,
+            'sampleCounter' => $sample !== null ? SmsCounter::count($sample, $forceAscii) : null,
+            'translation' => $translation,
+            'sampleTranslation' => $sampleTranslation,
+            'unknownVars' => TemplateVariables::unknownIn($this->body),
+            'pricePerSms' => (float) Setting::get('bulkgate_price_per_sms', '0.08'),
         ])->layout('layouts.app');
     }
 }

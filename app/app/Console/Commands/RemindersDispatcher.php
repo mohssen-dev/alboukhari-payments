@@ -62,7 +62,7 @@ class RemindersDispatcher extends Command
             'period_year' => $year,
             'period_month' => $month,
             'template_id' => $template->id,
-            'body_template' => $template->body,
+            'body_template' => $template->messageBody(), // Dutch + Arabic translation when enabled
             'group_by_family' => false,
             'tag' => $type . '-auto-' . date('Ymd'),
         ]);

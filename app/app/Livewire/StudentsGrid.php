@@ -44,6 +44,9 @@ class StudentsGrid extends Component
         $this->focus = $focus;
     }
 
+    /** A new student is a new row, not a patch — re-render once. */
+    protected $listeners = ['student-created' => '$refresh'];
+
     public function updatingFilterStatus() { $this->resetPage(); }
     public function updatingYear() { $this->resetPage(); }
     public function updatingPerPage() { $this->resetPage(); }

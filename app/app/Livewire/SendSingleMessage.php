@@ -61,7 +61,7 @@ class SendSingleMessage extends Component
             $student = Student::find($this->studentId);
             $year = (int) date('Y');
             $month = (int) date('n');
-            $this->body = TemplateRenderer::renderForStudent($tpl->body, $student, $year, $month);
+            $this->body = TemplateRenderer::renderForStudent($tpl->messageBody(), $student, $year, $month);
         }
     }
 

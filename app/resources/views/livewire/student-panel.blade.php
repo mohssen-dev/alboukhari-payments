@@ -13,6 +13,9 @@
     <div class="side-panel" :class="{ 'panel-closing': closing }">
         <div class="side-panel-header">
             <h2>{{ $student->name }}</h2>
+            @if (auth()->user()?->canWrite())
+                <button type="button" class="btn btn-sm btn-soft-primary" style="margin-inline-start:auto" @click="Livewire.dispatch('open-student-form', { studentId: {{ $student->id }} })" title="{{ __('student.edit') }}">✏️</button>
+            @endif
             <button type="button" class="btn btn-sm btn-ghost" @click="close()" title="{{ __('common.close_esc') }}" aria-label="{{ __('common.close') }}">✕</button>
         </div>
 

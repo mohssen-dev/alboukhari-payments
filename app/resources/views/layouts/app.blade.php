@@ -13,9 +13,34 @@
 
     <link rel="icon" type="image/x-icon" href="{{ asset('favicon.ico') }}">
 
+    {{-- Theme is applied before any CSS paints, so dark mode never flashes light.
+         Stored per browser; wire:navigate keeps <html> attributes across pages. --}}
+    <script>
+        (function () {
+            var apply = function () {
+                var t = 'light';
+                try { t = localStorage.getItem('ab-theme') === 'dark' ? 'dark' : 'light'; } catch (e) {}
+                document.documentElement.setAttribute('data-theme', t);
+            };
+            apply();
+            // wire:navigate copies the next page's <html> attributes over this
+            // one and DROPS the rest — data-theme with them, which is why the
+            // page fell back to light on every navigation. Re-apply it inside
+            // the swap, before the new page paints.
+            if (!window.abThemeHooked) {
+                window.abThemeHooked = true;
+                document.addEventListener('livewire:navigating', function (e) {
+                    if (e.detail && e.detail.onSwap) e.detail.onSwap(apply);
+                });
+                document.addEventListener('livewire:navigated', apply);
+            }
+        })();
+    </script>
+
     {{-- Preload CSS so wire:navigate transitions feel instant. --}}
-    <link rel="preload" as="style" href="{{ asset('assets/css/app.css') }}?v=7.5">
-    <link rel="stylesheet" href="{{ asset('assets/css/app.css') }}?v=7.5">
+    <link rel="preload" as="style" href="{{ asset('assets/css/app.css') }}?v=7.6">
+    <link rel="stylesheet" href="{{ asset('assets/css/app.css') }}?v=7.6">
+    <link rel="stylesheet" href="{{ asset('assets/css/dark.css') }}?v=1.0">
     <link rel="preload" as="image" href="{{ asset('assets/img/logo.jpeg') }}">
 
     {{-- Prevent FOUC/x-cloak flicker across page transitions. --}}
@@ -103,6 +128,11 @@
             <a href="{{ route('locale.switch', 'nl') }}" class="{{ $locale === 'nl' ? 'active' : '' }}">NL</a>
             <a href="{{ route('locale.switch', 'ar') }}" class="{{ $locale === 'ar' ? 'active' : '' }}">عر</a>
         </div>
+
+        <button type="button" class="theme-toggle" onclick="abToggleTheme()" title="{{ __('topbar.theme') }}" aria-label="{{ __('topbar.theme') }}">
+            <svg class="icon-moon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+            <svg class="icon-sun" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+        </button>
 
         @if($currentUser?->canWrite())
             @php $halted = \App\Services\HaltService::isHalted(); @endphp
@@ -200,6 +230,7 @@
     <livewire:family-modal />
     <livewire:send-single-message />
     <livewire:student-panel />
+    <livewire:student-form />
 @endauth
 
 @livewireScripts
@@ -209,6 +240,13 @@
     // event and fetches its own content (one round-trip, nothing to wait for).
     window.abOpenPayment = (studentId, year, month, name = '') =>
         window.dispatchEvent(new CustomEvent('pay-open', { detail: { studentId, year, month, name } }));
+
+    // Dark / light toggle — remembered per browser (see the <head> script).
+    window.abToggleTheme = () => {
+        const next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+        document.documentElement.setAttribute('data-theme', next);
+        try { localStorage.setItem('ab-theme', next); } catch (e) {}
+    };
 
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
