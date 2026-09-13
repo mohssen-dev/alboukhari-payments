@@ -66,7 +66,7 @@ class GridRowPatchTest extends TestCase
     /** One <tr data-sid=…> out of rendered HTML, whitespace-normalised. */
     private function rowFrom(string $html, int $id): string
     {
-        $found = preg_match('#<tr wire:key="row-' . $id . '" data-sid="' . $id . '">.*?</tr>#s', $html, $m);
+        $found = preg_match('#<tr wire:key="row-' . $id . '" data-sid="' . $id . '"[^>]*>.*?</tr>#s', $html, $m);
         $this->assertSame(1, $found, "row {$id} not found in the rendered HTML");
 
         return trim(preg_replace('/\s+/', ' ', $m[0]));

@@ -40,7 +40,8 @@ class Payment extends Model
 
     public function student(): BelongsTo
     {
-        return $this->belongsTo(Student::class);
+        // Deleted students keep their payments — the record still names them.
+        return $this->belongsTo(Student::class)->withTrashed();
     }
 
     public function methodIcon(): string

@@ -263,6 +263,7 @@ class FamilyModal extends Component
             'monthNames' => MonthNames::full(),
             'yearOptions' => self::yearOptions(),
             'canWrite' => (bool) auth()->user()?->canWrite(),
+            'isAdmin' => (bool) auth()->user()?->isAdmin(),
         ]);
     }
 

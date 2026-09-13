@@ -31,7 +31,7 @@ class StudentsGrid extends Component
      */
     public const VIEW_COOKIE = 'grid_view';
     public const PER_PAGE = [50, 100, 200, 500];
-    public const STATUSES = ['all', 'visible', 'hidden', 'blocked', 'in_person', 'suspended'];
+    public const STATUSES = ['all', 'visible', 'hidden', 'blocked', 'in_person', 'suspended', 'deleted'];
     public const CLIENT_FILTERS = ['all', 'overdue', 'paid_full', 'with_siblings'];
 
     public string $filterStatus = 'all';
@@ -79,6 +79,32 @@ class StudentsGrid extends Component
         $this->clientFilter = in_array($value, self::CLIENT_FILTERS, true) ? $value : 'all';
         $this->rememberView();
         $this->skipRender();
+    }
+
+    /** Bring a deleted student back into the lists, with the dates it had before the delete. */
+    public function restoreStudent(int $studentId): void
+    {
+        $this->assertAdmin();
+
+        $student = Student::onlyTrashed()->find($studentId);
+        if (!$student) {
+            return;
+        }
+        DeleteRecord::restore($student);
+
+        $this->dispatch('toast', type: 'success', message: __('delete.restored', ['name' => $student->name]));
+        $this->onStudentsDeleted(); // the row left this list — keep the page in range
+    }
+
+    /** Rows left the list (DeleteRecord) — re-render; rare enough not to patch. */
+    #[On('students-deleted')]
+    public function onStudentsDeleted(): void
+    {
+        // Deleting the last row(s) of the last page would leave an empty page.
+        $lastPage = max(1, (int) ceil($this->filteredQuery()->count() / $this->perPage));
+        if ($this->getPage() > $lastPage) {
+            $this->setPage($lastPage);
+        }
     }
 
     /**
@@ -190,6 +216,8 @@ class StudentsGrid extends Component
                   });
             }),
             'visible' => $query->where('is_hidden', false),
+            // Deleted students keep their payment record — listed read-only here.
+            'deleted' => $query->onlyTrashed(),
             default => null,
         };
 

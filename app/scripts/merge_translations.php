@@ -537,6 +537,34 @@ $translations = [
     // Grid: a remembered filter can hide every row on the page
     'grid.filtered_empty' => ['en' => 'No student on this page matches the search or filter.', 'nl' => 'Geen leerling op deze pagina past bij de zoekopdracht of het filter.', 'ar' => 'لا يوجد طالب في هذه الصفحة يطابق البحث أو الفلتر المختار.'],
     'grid.clear_filter' => ['en' => 'Show all', 'nl' => 'Alles tonen', 'ar' => 'عرض الكل'],
+
+    // Delete a student / family — payments stay on record (App\Livewire\DeleteRecord)
+    'delete.student_button' => ['en' => '🗑️ Delete student', 'nl' => '🗑️ Leerling verwijderen', 'ar' => '🗑️ حذف الطالب'],
+    'delete.family_button' => ['en' => '🗑️ Delete family', 'nl' => '🗑️ Gezin verwijderen', 'ar' => '🗑️ حذف العائلة'],
+    'delete.student_title' => ['en' => 'Delete student', 'nl' => 'Leerling verwijderen', 'ar' => 'حذف الطالب'],
+    'delete.family_title' => ['en' => 'Delete family', 'nl' => 'Gezin verwijderen', 'ar' => 'حذف العائلة'],
+    'delete.student_button_confirm' => ['en' => 'Delete student', 'nl' => 'Leerling verwijderen', 'ar' => 'حذف الطالب'],
+    'delete.family_button_confirm' => ['en' => 'Delete family', 'nl' => 'Gezin verwijderen', 'ar' => 'حذف العائلة'],
+    'delete.children_count' => ['en' => ':count children', 'nl' => ':count kinderen', 'ar' => 'عدد الأبناء: :count'],
+    'delete.payments_kept_title' => ['en' => 'The payments stay on record', 'nl' => 'De betalingen blijven bewaard', 'ar' => 'الدفعات تبقى محفوظة في السجل'],
+    'delete.payments_kept' => ['en' => ':count payments totalling :total € stay in the reports and the statement.', 'nl' => ':count betalingen, samen :total €, blijven in de rapporten en het overzicht.', 'ar' => ':count دفعة بمجموع :total € تبقى في التقارير وكشف الحساب.'],
+    'delete.paid_range' => ['en' => 'Paid :count × (:total €), :from – :to', 'nl' => ':count× betaald (:total €), :from – :to', 'ar' => 'دفع :count دفعة (:total €) من :from إلى :to'],
+    'delete.no_payments' => ['en' => 'No payments recorded', 'nl' => 'Geen betalingen geregistreerd', 'ar' => 'لا توجد دفعات مسجلة'],
+    'delete.last_owed' => ['en' => 'Last month owed (the last month paid)', 'nl' => 'Laatste verschuldigde maand (laatst betaalde maand)', 'ar' => 'آخر شهر مستحق (آخر شهر دفع عنه)'],
+    'delete.nothing_owed' => ['en' => 'Never paid — no month will be owed', 'nl' => 'Nooit betaald — er is geen maand verschuldigd', 'ar' => 'لم يدفع أي شهر — لن يُطالَب بأي شهر'],
+    'delete.what_happens' => ['en' => 'What deleting does:', 'nl' => 'Wat verwijderen doet:', 'ar' => 'ماذا يحدث عند الحذف:'],
+    'delete.after_last_month' => ['en' => 'Nothing is owed for any month after the last month paid.', 'nl' => 'Na de laatst betaalde maand is niets meer verschuldigd.', 'ar' => 'لا يُطالَب بأي شهر بعد آخر شهر دفع عنه.'],
+    'delete.leaves_lists' => ['en' => 'Gone from the grid, messages, reminders and arrears.', 'nl' => 'Verdwijnt uit het overzicht, berichten, herinneringen en achterstanden.', 'ar' => 'يختفي من الجدول والرسائل والتذكيرات والمتأخرات.'],
+    'delete.see_and_restore' => ['en' => 'Still listed with its payments under the "🗑️ Deleted" filter, and can be restored from there.', 'nl' => 'Blijft met de betalingen zichtbaar onder het filter "🗑️ Verwijderd" en kan daar worden hersteld.', 'ar' => 'يبقى ظاهراً مع دفعاته في فلتر «🗑️ المحذوفون»، ويمكن استرجاعه من هناك.'],
+    'delete.student_done' => ['en' => ':name was deleted — the payments are kept', 'nl' => ':name is verwijderd — de betalingen blijven bewaard', 'ar' => 'حُذف الطالب :name — دفعاته محفوظة'],
+    'delete.family_done' => ['en' => ':name and its :count children were deleted — the payments are kept', 'nl' => ':name en de :count kinderen zijn verwijderd — de betalingen blijven bewaard', 'ar' => 'حُذفت :name وأبناؤها (:count) — دفعاتهم محفوظة'],
+    'delete.not_found' => ['en' => 'Not found — it may already have been deleted.', 'nl' => 'Niet gevonden — misschien al verwijderd.', 'ar' => 'غير موجود، ربما حُذف مسبقاً.'],
+    'delete.deleted_badge' => ['en' => 'Deleted — last month owed: :month', 'nl' => 'Verwijderd — laatste verschuldigde maand: :month', 'ar' => 'محذوف — آخر شهر مستحق: :month'],
+    'delete.deleted_badge_none' => ['en' => 'Deleted — never paid, nothing owed', 'nl' => 'Verwijderd — nooit betaald, niets verschuldigd', 'ar' => 'محذوف — لم يدفع، لا شيء مستحق'],
+    'delete.restored' => ['en' => ':name is back in the list.', 'nl' => ':name staat weer in de lijst.', 'ar' => 'استُرجع :name إلى القائمة.'],
+    'filters.deleted' => ['en' => '🗑️ Deleted', 'nl' => '🗑️ Verwijderd', 'ar' => '🗑️ المحذوفون'],
+    'grid.row_restore' => ['en' => '↩️ Restore student', 'nl' => '↩️ Leerling herstellen', 'ar' => '↩️ استرجاع الطالب'],
+    'grid.row_statement' => ['en' => '🧾 Statement', 'nl' => '🧾 Overzicht', 'ar' => '🧾 كشف الحساب'],
 ];
 
 $locales = ['en', 'nl', 'ar'];

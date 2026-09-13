@@ -50,7 +50,18 @@ class StudentPanel extends Component
         'close-student-panel' => 'closeSelf',
         'payment-saved' => 'onPaymentSaved',
         'student-updated' => 'onStudentUpdated',
+        'students-deleted' => 'onStudentsDeleted',
     ];
+
+    /** The student on screen was deleted for good — close instead of failing to load it. */
+    public function onStudentsDeleted(array $studentIds = []): void
+    {
+        if ($this->studentId && in_array($this->studentId, $studentIds, true)) {
+            $this->closeSelf();
+        } else {
+            $this->skipRender();
+        }
+    }
 
     public function mount(?int $studentId = null)
     {

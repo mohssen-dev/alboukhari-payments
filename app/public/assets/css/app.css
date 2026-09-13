@@ -2209,6 +2209,47 @@ pre.json { background: var(--color-surface-alt); padding: 10px; border-radius: v
 }
 .grid-focus-actions { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
 
+/* Delete window (App\Livewire\DeleteRecord) — the payments stay on record. */
+/* Width only above phone size — below 768px every modal is a full-screen sheet. */
+@media (min-width: 769px) { .delete-box { width: 580px; max-width: calc(100vw - 32px); } }
+.delete-box .modal-header { background: var(--color-danger-soft); }
+.delete-box .modal-header h3 { color: var(--color-danger); }
+.delete-box .modal-body { display: flex; flex-direction: column; gap: 12px; }
+.delete-who { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px; font-size: 15px; }
+.delete-kept {
+    display: flex; flex-direction: column; gap: 2px;
+    padding: 10px 14px;
+    border: 1px solid var(--color-success);
+    border-radius: var(--radius);
+    background: var(--color-success-soft);
+    font-size: 13px;
+    font-variant-numeric: tabular-nums;
+}
+.delete-kept strong { color: var(--color-success); }
+.delete-people {
+    list-style: none; margin: 0; padding: 0;
+    border: 1px solid var(--color-border); border-radius: var(--radius);
+    max-height: 260px; overflow-y: auto;
+}
+.delete-people li {
+    display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px 16px;
+    padding: 10px 12px; font-size: 13px;
+    font-variant-numeric: tabular-nums;
+}
+.delete-people li + li { border-top: 1px solid var(--color-border); }
+.delete-person { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.delete-last { font-size: 13px; }
+.delete-last strong { color: var(--color-text); }
+.delete-what { font-size: 13px; color: var(--color-text-muted); }
+.delete-what ul { margin: 4px 0 0; padding-inline-start: 20px; }
+.delete-what li { margin: 2px 0; }
+/* A deleted student in the grid ("Deleted" filter): readable record, nothing clickable. */
+.students-grid tbody tr.row-deleted .col-name .row-link { color: var(--color-text-muted); cursor: default; }
+.students-grid tbody tr.row-deleted .cell-month,
+.students-grid tbody tr.row-deleted [data-act="noop"] { cursor: default; }
+.students-grid tbody tr.row-deleted .cell-hint { display: none; }
+.modal-footer .student-form-delete { margin-inline-end: auto; }
+
 /* Every row on the page hidden by the search or client filter. */
 .grid-filtered-empty {
     display: flex;

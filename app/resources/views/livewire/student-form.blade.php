@@ -102,6 +102,9 @@
                 </form>
 
                 <div class="modal-footer">
+                    @if ($studentId && auth()->user()?->isAdmin())
+                        <button type="button" class="btn btn-soft-danger student-form-delete" @click="close(); Livewire.dispatch('open-delete-student', { studentId: {{ (int) $studentId }} })">{{ __('delete.student_button') }}</button>
+                    @endif
                     <span class="text-muted fs-xs fp-hint">Enter · Ctrl+Enter = {{ __('common.save') }} · Esc</span>
                     <button type="button" class="btn" @click="close()">{{ __('payment.cancel') }}</button>
                     <button type="button" class="btn btn-primary" @click="save()" :disabled="saving">

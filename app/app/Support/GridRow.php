@@ -97,6 +97,18 @@ final class GridRow
 
         $siblings = $student->family ? max(0, $student->family->students->count() - 1) : 0;
 
+        // A deleted student is shown read-only, for its payment record.
+        $isDeleted = $student->trashed();
+        $deletedNote = null;
+        if ($isDeleted) {
+            $w = $student->withdrawn_at;
+            $neverOwed = !$w || ($student->enrolled_at && $w->lte($student->enrolled_at->copy()->startOfMonth()));
+            $lastOwed = $w?->copy()->startOfMonth()->subMonth();
+            $deletedNote = $neverOwed
+                ? __('delete.deleted_badge_none')
+                : __('delete.deleted_badge', ['month' => MonthNames::full()[$lastOwed->month] . ' ' . $lastOwed->year]);
+        }
+
         return [
             'cells' => $cells,
             // Client-side data for search / filters / sort / CSV.
@@ -111,8 +123,9 @@ final class GridRow
                 'isBlocked' => (bool) $student->is_blocked_messages,
                 'isInPerson' => (bool) $student->is_in_person,
                 'excludedSendAll' => (bool) $student->excluded_from_send_all,
-                'badge' => $student->statusBadge(),
-                'skipReason' => $student->skipReason(),
+                'isDeleted' => $isDeleted,
+                'badge' => $isDeleted ? '🗑️' : $student->statusBadge(),
+                'skipReason' => $isDeleted ? $deletedNote : $student->skipReason(),
                 'haystack' => mb_strtolower(implode(' ', array_filter([
                     $student->name,
                     $student->phone_primary_raw,

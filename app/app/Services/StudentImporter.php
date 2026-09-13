@@ -103,7 +103,9 @@ class StudentImporter
                 // كشف العائلة عبر الرقم
                 $family = $this->ensureFamily($phonePrimaryE164);
 
-                $student = Student::updateOrCreate(
+                // withTrashed: a deleted student keeps its sheet number (unique
+                // index) — update it in place instead of failing on a duplicate.
+                $student = Student::withTrashed()->updateOrCreate(
                     ['external_id' => $externalId],
                     [
                         'name' => $name,

@@ -16,7 +16,8 @@ class CampaignsController extends Controller
     {
         // recipients.student eager-loaded — the blade shows $r->student?->name
         // per row, which lazy-fired one query per recipient (~300/page view).
-        $campaign->load(['recipients.student:id,name']);
+        // withTrashed: a deleted student still has a name in the send history.
+        $campaign->load(['recipients.student' => fn ($q) => $q->withTrashed()->select('id', 'name')]);
         return view('campaigns-show', compact('campaign'));
     }
 

@@ -2,6 +2,7 @@
     x-data="studentsGrid({
         nowMonth: {{ (int) date('n') }},
         clientFilter: @js($clientFilter),
+        statementUrl: @js(route('exports.statement', '__ID__')),
         t: { showing: @js(__('grid.showing')) },
     })"
     @grid-row-updated.window="patchRow($event.detail)"
@@ -120,6 +121,7 @@
             <option value="blocked">{{ __('filters.blocked') }}</option>
             <option value="in_person">{{ __('filters.in_person') }}</option>
             <option value="suspended">{{ __('filters.suspended') }}</option>
+            <option value="deleted">{{ __('filters.deleted') }}</option>
         </select>
 
         <select wire:model.live="year">
@@ -210,18 +212,35 @@
         @keydown.window.escape="menu.open = false"
         @scroll.window.passive="menu.open = false"
     >
-        <button type="button" @click="menuDo('details')">👁️ {{ __('actions.view_details') }}</button>
-        <button type="button" @click="menuDo('pay')">💶 {{ __('actions.add_payment') }}</button>
-        <button type="button" @click="menuDo('family')">👨‍👩‍👧‍👦 {{ __('actions.show_family') }}</button>
-        <button type="button" @click="menuDo('message')">📲 {{ __('actions.send_message') }}</button>
-        @if (auth()->user()?->canWrite())
-            <button type="button" @click="menuDo('edit')">{{ __('student.edit') }}</button>
-            <div class="divider"></div>
-            <button type="button" @click="menuFlag('is_hidden')" x-text="menu.row?.isHidden ? @js(__('grid.row_unhide')) : @js(__('grid.row_hide'))"></button>
-            <button type="button" @click="menuFlag('is_blocked_messages')" x-text="menu.row?.isBlocked ? @js(__('grid.row_unblock')) : @js(__('grid.row_block'))"></button>
-            <button type="button" @click="menuFlag('is_in_person')" x-text="menu.row?.isInPerson ? @js(__('grid.row_not_in_person')) : @js(__('grid.row_in_person'))"></button>
-            <button type="button" @click="menuFlag('excluded_from_send_all')" x-text="menu.row?.excludedSendAll ? @js(__('grid.row_include_bulk')) : @js(__('grid.row_exclude_bulk'))"></button>
-        @endif
+        <template x-if="!menu.row?.isDeleted">
+            <div>
+                <button type="button" @click="menuDo('details')">👁️ {{ __('actions.view_details') }}</button>
+                <button type="button" @click="menuDo('pay')">💶 {{ __('actions.add_payment') }}</button>
+                <button type="button" @click="menuDo('family')">👨‍👩‍👧‍👦 {{ __('actions.show_family') }}</button>
+                <button type="button" @click="menuDo('message')">📲 {{ __('actions.send_message') }}</button>
+                @if (auth()->user()?->canWrite())
+                    <button type="button" @click="menuDo('edit')">{{ __('student.edit') }}</button>
+                    <div class="divider"></div>
+                    <button type="button" @click="menuFlag('is_hidden')" x-text="menu.row?.isHidden ? @js(__('grid.row_unhide')) : @js(__('grid.row_hide'))"></button>
+                    <button type="button" @click="menuFlag('is_blocked_messages')" x-text="menu.row?.isBlocked ? @js(__('grid.row_unblock')) : @js(__('grid.row_block'))"></button>
+                    <button type="button" @click="menuFlag('is_in_person')" x-text="menu.row?.isInPerson ? @js(__('grid.row_not_in_person')) : @js(__('grid.row_in_person'))"></button>
+                    <button type="button" @click="menuFlag('excluded_from_send_all')" x-text="menu.row?.excludedSendAll ? @js(__('grid.row_include_bulk')) : @js(__('grid.row_exclude_bulk'))"></button>
+                @endif
+                @if (auth()->user()?->isAdmin())
+                    <div class="divider"></div>
+                    <button type="button" class="danger" @click="menuDo('delete')">{{ __('delete.student_button') }}</button>
+                @endif
+            </div>
+        </template>
+        {{-- A deleted student: its payment record and, for admins, the way back. --}}
+        <template x-if="menu.row?.isDeleted">
+            <div>
+                <button type="button" @click="menuDo('statement')">{{ __('grid.row_statement') }}</button>
+                @if (auth()->user()?->isAdmin())
+                    <button type="button" @click="menuDo('restore')">{{ __('grid.row_restore') }}</button>
+                @endif
+            </div>
+        </template>
     </div>
 
     {{-- Modals + student panel live in layouts/app.blade.php, not here.
@@ -356,7 +375,7 @@
 
             onKeydown(e) {
                 if (e.key !== 'Enter' && e.key !== ' ') return;
-                const cell = e.target.closest('.cell-month');
+                const cell = e.target.closest('.cell-month[data-act="pay"]');
                 if (!cell) return;
                 e.preventDefault();
                 this.openPay(+cell.closest('tr[data-sid]').dataset.sid, +cell.dataset.m);
@@ -433,6 +452,9 @@
                 else if (action === 'family') Livewire.dispatch('open-family-modal', { studentId: id });
                 else if (action === 'message') Livewire.dispatch('open-send-message', { studentId: id });
                 else if (action === 'edit') Livewire.dispatch('open-student-form', { studentId: id });
+                else if (action === 'delete') Livewire.dispatch('open-delete-student', { studentId: id });
+                else if (action === 'restore') this.$wire.restoreStudent(id);
+                else if (action === 'statement') window.open(cfg.statementUrl.replace('__ID__', id) + '?year=' + Number(this.$wire.year), '_blank', 'noopener');
             },
 
             menuFlag(flag) {

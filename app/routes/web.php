@@ -44,7 +44,7 @@ Route::middleware('auth')->group(function () {
 
     // Exports (all roles can export — viewers may need to print/check)
     Route::get('/exports/receipt/{payment}', [ExportController::class, 'receipt'])->name('exports.receipt');
-    Route::get('/exports/statement/{student}', [ExportController::class, 'statement'])->name('exports.statement');
+    Route::get('/exports/statement/{student}', [ExportController::class, 'statement'])->name('exports.statement')->withTrashed();
     Route::get('/exports/students.xlsx', [ExportController::class, 'students'])->name('exports.students');
     Route::get('/exports/payments.xlsx', [ExportController::class, 'payments'])->name('exports.payments');
     Route::get('/exports/monthly.xlsx', [ExportController::class, 'monthly'])->name('exports.monthly');

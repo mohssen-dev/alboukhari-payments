@@ -102,6 +102,12 @@
                             @if ($canWrite)
                                 <button type="button" class="btn btn-sm btn-soft-primary" @click="close(); Livewire.dispatch('open-student-form', { studentId: null, phone: @js($guardianPhone ?: null) })">{{ __('student.add_sibling') }}</button>
                             @endif
+                            @if ($isAdmin)
+                                <button type="button" class="btn btn-sm btn-soft-danger fp-delete-family"
+                                    @click="close(); {{ $familyId ? "Livewire.dispatch('open-delete-family', { familyId: " . (int) $familyId . ' })' : "Livewire.dispatch('open-delete-student', { studentId: " . (int) $studentId . ' })' }}">
+                                    {{ $familyId ? __('delete.family_button') : __('delete.student_button') }}
+                                </button>
+                            @endif
                         </div>
 
                         <div class="family-controls">
@@ -274,6 +280,9 @@
                                             <div class="member-actions">
                                                 <button type="button" class="btn btn-sm" @click="close(); abOpenPayment({{ $m['id'] }}, {{ $year }}, {{ $month }}, @js($m['name']))" title="{{ __('family.details') }}">💶</button>
                                                 <button type="button" class="btn btn-sm" @click="close(); Livewire.dispatch('open-student-form', { studentId: {{ $m['id'] }} })" title="{{ __('student.edit') }}">✏️</button>
+                                                @if ($isAdmin)
+                                                    <button type="button" class="btn btn-sm btn-soft-danger" @click="close(); Livewire.dispatch('open-delete-student', { studentId: {{ $m['id'] }} })" title="{{ __('delete.student_button') }}" aria-label="{{ __('delete.student_button') }} — {{ $m['name'] }}">🗑️</button>
+                                                @endif
                                             </div>
                                         </div>
                                     @endforeach
