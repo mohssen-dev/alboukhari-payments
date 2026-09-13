@@ -750,5 +750,18 @@
     "delete.selected_title": "Delete the selected students",
     "delete.selected_count": ":count students selected",
     "delete.selected_button_confirm": "Delete :count students",
-    "delete.selected_done": ":count students were deleted — the payments are kept"
+    "delete.selected_done": ":count students were deleted — the payments are kept",
+    "banksync.chip": "Bank",
+    "banksync.chip_title": "Bank payments synced up to :date",
+    "banksync.title": "Last bank sync",
+    "banksync.date": "Date of the last bank statement entered",
+    "banksync.hint": "Next time, look in the bank statement for payments after :date.",
+    "banksync.not_set": "Bank sync date not set",
+    "banksync.not_set_hint": "No date yet. Set the date of the last bank statement you entered, so the next check knows where to start.",
+    "banksync.today": "today",
+    "banksync.days_ago": "{1} 1 day ago|[2,*] :count days ago",
+    "banksync.set_by": "Set by :name on :at",
+    "banksync.today_button": "Today",
+    "banksync.saved": "Bank sync date saved: :date",
+    "payment.save_next_month": "Save & :month"
 }

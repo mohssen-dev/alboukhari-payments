@@ -119,6 +119,11 @@ html[data-theme="dark"] .user-dropdown {
     border-color: var(--color-border-strong);
     box-shadow: 0 18px 40px -12px rgba(0, 0, 0, 0.7), 0 4px 12px -4px rgba(0, 0, 0, 0.5);
 }
+html[data-theme="dark"] .bank-sync__pop {
+    background: var(--dm-elevated);
+    border-color: var(--color-border-strong);
+    box-shadow: 0 18px 40px -12px rgba(0, 0, 0, 0.7), 0 4px 12px -4px rgba(0, 0, 0, 0.5);
+}
 html[data-theme="dark"] .user-role { background: var(--dm-primary-solid); color: #ffffff; }
 html[data-theme="dark"] .dropdown-item:hover { background: var(--color-primary-soft); color: var(--color-primary-deep); }
 html[data-theme="dark"] .dropdown-item.danger:hover { background: var(--color-danger-soft); color: var(--color-danger); }

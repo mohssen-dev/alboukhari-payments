@@ -750,5 +750,18 @@
     "delete.selected_title": "حذف الطلاب المحدَّدين",
     "delete.selected_count": "عدد الطلاب المحدَّدين: :count",
     "delete.selected_button_confirm": "حذف :count طالب",
-    "delete.selected_done": "حُذف :count طالب — دفعاتهم محفوظة"
+    "delete.selected_done": "حُذف :count طالب — دفعاتهم محفوظة",
+    "banksync.chip": "البنك",
+    "banksync.chip_title": "دفعات البنك مُدخلة حتى :date",
+    "banksync.title": "آخر مزامنة لدفعات البنك",
+    "banksync.date": "تاريخ آخر كشف بنك تم إدخاله",
+    "banksync.hint": "في المرة القادمة ابحث في كشف البنك عن الدفعات بعد :date.",
+    "banksync.not_set": "لم يُحدَّد تاريخ مزامنة البنك",
+    "banksync.not_set_hint": "لا يوجد تاريخ بعد. حدّد تاريخ آخر كشف بنك أدخلته، لتعرف في المرة القادمة من أين تبدأ.",
+    "banksync.today": "اليوم",
+    "banksync.days_ago": "{1} منذ يوم|{2} منذ يومين|[3,10] منذ :count أيام|[11,*] منذ :count يوماً",
+    "banksync.set_by": "حدّده :name في :at",
+    "banksync.today_button": "اليوم",
+    "banksync.saved": "حُفظ تاريخ مزامنة البنك: :date",
+    "payment.save_next_month": "حفظ والانتقال إلى :month"
 }

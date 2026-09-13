@@ -2425,3 +2425,58 @@ html[data-theme="dark"] .theme-toggle .icon-sun { display: block; }
 /* min-width 0: a flex item never shrinks below its longest option otherwise, and spilled out of the panel on a phone. */
 .cost-tier .form-select { width: auto; max-width: 100%; min-width: 0; padding-block: 4px; font-size: 12px; }
 .cost-stale { color: var(--color-warning); font-weight: 600; }
+
+/* ============================================
+   Navbar: last bank sync date (App\Livewire\BankSyncDate)
+   A chip with the date; its popover holds the date picker.
+   ============================================ */
+.bank-sync { position: relative; margin-inline-start: 8px; }
+.bank-sync__chip {
+    display: inline-flex; align-items: center; gap: 6px;
+    height: 34px; padding-inline: 10px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    background: var(--color-surface-alt);
+    color: var(--color-text);
+    font-size: 12.5px; font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+}
+.bank-sync__chip:hover { border-color: var(--color-border-strong); }
+.bank-sync__chip:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; }
+.bank-sync__label { color: var(--color-text-muted); font-weight: 600; }
+.bank-sync__chip.is-unset { border-style: dashed; color: var(--color-text-muted); }
+
+.bank-sync__pop {
+    position: absolute;
+    top: calc(100% + 8px);
+    inset-inline-end: 0;
+    z-index: 110;
+    width: 300px;
+    max-width: calc(100vw - 24px);
+    padding: 14px;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    box-shadow: 0 18px 40px -12px rgba(15, 23, 42, 0.18), 0 4px 12px -4px rgba(15, 23, 42, 0.08);
+    white-space: normal;
+}
+.bank-sync__pop h4 { margin: 0 0 8px; font-size: 14px; }
+.bank-sync__pop p { margin: 0 0 6px; font-size: 12.5px; line-height: 1.6; }
+.bank-sync__current { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; }
+.bank-sync__current strong { font-size: 15px; }
+.bank-sync__ago, .bank-sync__meta { color: var(--color-text-muted); }
+.bank-sync__hint { color: var(--color-text); }
+.bank-sync__form { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--color-border); }
+.bank-sync__form label { font-size: 12px; font-weight: 600; color: var(--color-text-muted); }
+.bank-sync__row { display: flex; gap: 6px; }
+.bank-sync__row .form-input { flex: 1 1 auto; min-width: 0; }
+.bank-sync__save { align-self: flex-start; }
+
+/* Same collapse order as the rest of the bar: the word "Bank" goes first. */
+@media (max-width: 1440px) { .bank-sync__label { display: none; } }
+@media (max-width: 768px) {
+    .bank-sync__chip { padding-inline: 8px; }
+    .bank-sync__pop { position: fixed; top: 64px; inset-inline: 12px; width: auto; max-width: none; }
+}

@@ -200,18 +200,16 @@ class PaymentModal extends Component
         $this->dispatch('toast', message: __('flash.payment_saved'), type: 'success');
 
         if ($next) {
-            $nextStudent = Student::where('id', '>', $this->studentId)
-                ->where('is_hidden', false)
-                ->orderBy('id')
-                ->first();
-            if ($nextStudent) {
-                $year = $this->year;
-                $month = $this->month;
-                $this->resetFormState();
-                $this->open($nextStudent->id, $year, $month);
-            } else {
-                $this->close();
-            }
+            // The same student's next month (December → January of next
+            // year), so several months are paid from one window. It used to
+            // jump to the next student. The date and method carry over — a
+            // parent paying two months pays them the same day, the same way.
+            [$studentId, $method, $paidAt] = [$this->studentId, $this->method, $this->paid_at];
+            [$year, $month] = self::nextMonth($this->year, $this->month);
+            $this->resetFormState();
+            $this->open($studentId, $year, $month);
+            $this->method = $method;
+            $this->paid_at = $paidAt;
         } else {
             $this->close();
         }
@@ -263,6 +261,12 @@ class PaymentModal extends Component
         $this->open($student->id, $this->year, $this->month);
     }
 
+    /** @return array{0:int,1:int} [year, month] of the month after the given one */
+    public static function nextMonth(int $year, int $month): array
+    {
+        return $month >= 12 ? [$year + 1, 1] : [$year, $month + 1];
+    }
+
     private function monthLabel(): string
     {
         return (MonthNames::full()[$this->month] ?? '') . ' ' . $this->year;
@@ -281,8 +285,11 @@ class PaymentModal extends Component
         }
         $ym = ($this->year && $this->month) ? $this->year * 12 + $this->month : null;
 
+        [$nextYear, $nextMonth] = $this->month ? self::nextMonth((int) $this->year, (int) $this->month) : [null, null];
+
         return view('livewire.payment-modal', [
             'monthName' => $monthName,
+            'nextMonthLabel' => $nextMonth ? (MonthNames::full()[$nextMonth] ?? '') . ($nextYear !== (int) $this->year ? ' ' . $nextYear : '') : '',
             'enrollLabel' => $enrollLabel,
             'isEnrollMonth' => $ym !== null && $enrollYm === $ym,
             'beforeEnroll' => $ym !== null && $enrollYm !== null && $ym < $enrollYm,

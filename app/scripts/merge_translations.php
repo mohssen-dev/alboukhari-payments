@@ -601,6 +601,23 @@ $translations = [
     'delete.selected_count' => ['en' => ':count students selected', 'nl' => ':count leerlingen geselecteerd', 'ar' => 'عدد الطلاب المحدَّدين: :count'],
     'delete.selected_button_confirm' => ['en' => 'Delete :count students', 'nl' => ':count leerlingen verwijderen', 'ar' => 'حذف :count طالب'],
     'delete.selected_done' => ['en' => ':count students were deleted — the payments are kept', 'nl' => ':count leerlingen zijn verwijderd — de betalingen blijven bewaard', 'ar' => 'حُذف :count طالب — دفعاتهم محفوظة'],
+
+    // Navbar: last bank statement sync (App\Livewire\BankSyncDate)
+    'banksync.chip' => ['en' => 'Bank', 'nl' => 'Bank', 'ar' => 'البنك'],
+    'banksync.chip_title' => ['en' => 'Bank payments synced up to :date', 'nl' => 'Bankbetalingen bijgewerkt tot :date', 'ar' => 'دفعات البنك مُدخلة حتى :date'],
+    'banksync.title' => ['en' => 'Last bank sync', 'nl' => 'Laatste bankcontrole', 'ar' => 'آخر مزامنة لدفعات البنك'],
+    'banksync.date' => ['en' => 'Date of the last bank statement entered', 'nl' => 'Datum van het laatst verwerkte bankafschrift', 'ar' => 'تاريخ آخر كشف بنك تم إدخاله'],
+    'banksync.hint' => ['en' => 'Next time, look in the bank statement for payments after :date.', 'nl' => 'Zoek de volgende keer in het bankafschrift naar betalingen na :date.', 'ar' => 'في المرة القادمة ابحث في كشف البنك عن الدفعات بعد :date.'],
+    'banksync.not_set' => ['en' => 'Bank sync date not set', 'nl' => 'Datum bankcontrole niet ingesteld', 'ar' => 'لم يُحدَّد تاريخ مزامنة البنك'],
+    'banksync.not_set_hint' => ['en' => 'No date yet. Set the date of the last bank statement you entered, so the next check knows where to start.', 'nl' => 'Nog geen datum. Stel de datum in van het laatst verwerkte bankafschrift, zodat de volgende controle weet waar te beginnen.', 'ar' => 'لا يوجد تاريخ بعد. حدّد تاريخ آخر كشف بنك أدخلته، لتعرف في المرة القادمة من أين تبدأ.'],
+    'banksync.today' => ['en' => 'today', 'nl' => 'vandaag', 'ar' => 'اليوم'],
+    'banksync.days_ago' => ['en' => '{1} 1 day ago|[2,*] :count days ago', 'nl' => '{1} 1 dag geleden|[2,*] :count dagen geleden', 'ar' => '{1} منذ يوم|{2} منذ يومين|[3,10] منذ :count أيام|[11,*] منذ :count يوماً'],
+    'banksync.set_by' => ['en' => 'Set by :name on :at', 'nl' => 'Ingesteld door :name op :at', 'ar' => 'حدّده :name في :at'],
+    'banksync.today_button' => ['en' => 'Today', 'nl' => 'Vandaag', 'ar' => 'اليوم'],
+    'banksync.saved' => ['en' => 'Bank sync date saved: :date', 'nl' => 'Datum bankcontrole opgeslagen: :date', 'ar' => 'حُفظ تاريخ مزامنة البنك: :date'],
+
+    // Payment window: "save & next" moves to the same student's next month
+    'payment.save_next_month' => ['en' => 'Save & :month', 'nl' => 'Opslaan & :month', 'ar' => 'حفظ والانتقال إلى :month'],
 ];
 
 $locales = ['en', 'nl', 'ar'];

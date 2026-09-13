@@ -227,7 +227,7 @@
                             <span x-show="saving" x-cloak><span class="spinner-sm"></span> {{ __('payment.save') }}…</span>
                         </button>
                         <button type="button" class="btn btn-primary" @click="saveOnce(true)" :disabled="saving" title="{{ __('payment.save_shortcut_hint') }}">
-                            <span x-show="!saving">↩ {{ __('payment.save_and_next') }}</span>
+                            <span x-show="!saving">↩ {{ __('payment.save_next_month', ['month' => $nextMonthLabel]) }}</span>
                             <span x-show="saving" x-cloak><span class="spinner-sm"></span> …</span>
                         </button>
                     </div>

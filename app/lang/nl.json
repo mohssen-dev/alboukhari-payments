@@ -750,5 +750,18 @@
     "delete.selected_title": "Geselecteerde leerlingen verwijderen",
     "delete.selected_count": ":count leerlingen geselecteerd",
     "delete.selected_button_confirm": ":count leerlingen verwijderen",
-    "delete.selected_done": ":count leerlingen zijn verwijderd — de betalingen blijven bewaard"
+    "delete.selected_done": ":count leerlingen zijn verwijderd — de betalingen blijven bewaard",
+    "banksync.chip": "Bank",
+    "banksync.chip_title": "Bankbetalingen bijgewerkt tot :date",
+    "banksync.title": "Laatste bankcontrole",
+    "banksync.date": "Datum van het laatst verwerkte bankafschrift",
+    "banksync.hint": "Zoek de volgende keer in het bankafschrift naar betalingen na :date.",
+    "banksync.not_set": "Datum bankcontrole niet ingesteld",
+    "banksync.not_set_hint": "Nog geen datum. Stel de datum in van het laatst verwerkte bankafschrift, zodat de volgende controle weet waar te beginnen.",
+    "banksync.today": "vandaag",
+    "banksync.days_ago": "{1} 1 dag geleden|[2,*] :count dagen geleden",
+    "banksync.set_by": "Ingesteld door :name op :at",
+    "banksync.today_button": "Vandaag",
+    "banksync.saved": "Datum bankcontrole opgeslagen: :date",
+    "payment.save_next_month": "Opslaan & :month"
 }
