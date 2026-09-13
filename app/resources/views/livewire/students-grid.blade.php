@@ -1,9 +1,11 @@
 <div
     x-data="studentsGrid({
         nowMonth: {{ (int) date('n') }},
+        clientFilter: @js($clientFilter),
         t: { showing: @js(__('grid.showing')) },
     })"
     @grid-row-updated.window="patchRow($event.detail)"
+    @grid-show-row.window="showRow($event.detail.id)"
 >
     {{-- Row data for client-side search / filters / sort / CSV — re-read after every grid render. --}}
     <script type="application/json" data-grid-rows>@json(array_values(array_column($built, 'row')))</script>
@@ -14,9 +16,14 @@
     </div>
 
     @if ($focus)
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;font-size:12px;color:var(--color-text-muted)">
-            <span>🎯 <strong>{{ __('grid.title_focus') }}</strong></span>
-            <a href="{{ route('home') }}" wire:navigate class="btn btn-sm btn-ghost">← {{ __('grid.exit_focus') }}</a>
+        <div class="grid-focus-bar">
+            <span class="grid-focus-title">🎯 <strong>{{ __('grid.title_focus') }}</strong></span>
+            <div class="grid-focus-actions">
+                @if (auth()->user()?->canWrite())
+                    <button type="button" class="btn btn-primary btn-sm" @click="Livewire.dispatch('open-student-form', { studentId: null })">{{ __('student.add') }}</button>
+                @endif
+                <a href="{{ route('home') }}" wire:navigate class="btn btn-sm btn-ghost">← {{ __('grid.exit_focus') }}</a>
+            </div>
         </div>
     @endif
 
@@ -116,16 +123,15 @@
         </select>
 
         <select wire:model.live="year">
-            @for ($y = date('Y') + 1; $y >= 2020; $y--)
+            @foreach (\App\Livewire\StudentsGrid::yearRange() as $y)
                 <option value="{{ $y }}">{{ $y }}</option>
-            @endfor
+            @endforeach
         </select>
 
         <select wire:model.live="perPage">
-            <option value="50">50 {{ __('filters.rows_per_page') }}</option>
-            <option value="100">100 {{ __('filters.rows_per_page') }}</option>
-            <option value="200">200 {{ __('filters.rows_per_page') }}</option>
-            <option value="500">500 {{ __('filters.rows_per_page') }}</option>
+            @foreach (\App\Livewire\StudentsGrid::PER_PAGE as $n)
+                <option value="{{ $n }}">{{ $n }} {{ __('filters.rows_per_page') }}</option>
+            @endforeach
         </select>
 
         <span style="flex:1"></span>
@@ -184,6 +190,12 @@
         </table>
     </div>
 
+    {{-- Rows exist but the search / client filter hides them all (e.g. a remembered filter). --}}
+    <div class="grid-filtered-empty" x-show="totalCount > 0 && visibleCount === 0" x-cloak>
+        <span>🔎 {{ __('grid.filtered_empty') }}</span>
+        <button type="button" class="btn btn-sm" @click="search = ''; clientFilter = 'all'">{{ __('grid.clear_filter') }}</button>
+    </div>
+
     <div class="mt-3">
         {{ $students->links() }}
     </div>
@@ -225,10 +237,13 @@
         // i.e. O(n²) work on every keystroke and every refresh.)
         const index = new Map();
         let offMorphed = null;
+        // A just-added student stays visible whatever the search/filter,
+        // until the user changes one of them.
+        let pinnedId = null;
 
         return {
             search: '',
-            clientFilter: 'all',
+            clientFilter: cfg.clientFilter || 'all',
             sortKey: 'id',
             sortDir: 'asc',
             selectedIds: [],
@@ -240,8 +255,12 @@
             init() {
                 this.readRows();
                 this.applyView();
-                this.$watch('search', () => this.applyView());
-                this.$watch('clientFilter', () => this.applyView());
+                this.$watch('search', () => { pinnedId = null; this.applyView(); });
+                this.$watch('clientFilter', (value) => {
+                    pinnedId = null;
+                    this.applyView();
+                    this.$wire.rememberClientFilter(value); // survives a reload (cookie)
+                });
 
                 // Once per grid render (filters, paging, bulk actions) — not once
                 // per morphed element: the old 'morph.updated' hook re-parsed the
@@ -278,6 +297,7 @@
             },
 
             matches(row, q, f) {
+                if (row.id === pinnedId) return true;
                 if (q && !row.haystack.includes(q)) return false;
                 if (f === 'overdue' && row.balance <= 0) return false;
                 if (f === 'paid_full' && row.balance > 0) return false;
@@ -370,6 +390,21 @@
                 this.applyView();
                 fresh.classList.add('row-flash');
                 setTimeout(() => fresh.classList.remove('row-flash'), 900);
+            },
+
+            // ---- A just-added student: the server already moved to its page ----
+            showRow(id, tries = 0) {
+                const tr = this.$refs.tbody?.querySelector(`tr[data-sid="${id}"]`);
+                if (!tr) {
+                    // The event can arrive before the page's rows are morphed in.
+                    if (tries < 20) setTimeout(() => this.showRow(id, tries + 1), 50);
+                    return;
+                }
+                pinnedId = id;
+                this.applyView();
+                tr.scrollIntoView({ block: 'center', behavior: 'smooth' });
+                tr.classList.add('row-new');
+                setTimeout(() => tr.classList.remove('row-new'), 2500);
             },
 
             // ---- Row actions menu ----

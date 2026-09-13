@@ -690,5 +690,7 @@
     "send.preview_updating": "Bijwerken…",
     "send.per_message": "per bericht",
     "templates.translation_only": "Vertaling — alleen ter info, wordt niet verzonden",
-    "templates.body_ar_hint": "Zichtbaar voor u en collega's om het sjabloon te begrijpen; wordt nooit verzonden."
+    "templates.body_ar_hint": "Zichtbaar voor u en collega's om het sjabloon te begrijpen; wordt nooit verzonden.",
+    "grid.filtered_empty": "Geen leerling op deze pagina past bij de zoekopdracht of het filter.",
+    "grid.clear_filter": "Alles tonen"
 }

@@ -38,9 +38,9 @@
     </script>
 
     {{-- Preload CSS so wire:navigate transitions feel instant. --}}
-    <link rel="preload" as="style" href="{{ asset('assets/css/app.css') }}?v=7.6">
-    <link rel="stylesheet" href="{{ asset('assets/css/app.css') }}?v=7.6">
-    <link rel="stylesheet" href="{{ asset('assets/css/dark.css') }}?v=1.0">
+    <link rel="preload" as="style" href="{{ asset('assets/css/app.css') }}?v=7.7">
+    <link rel="stylesheet" href="{{ asset('assets/css/app.css') }}?v=7.7">
+    <link rel="stylesheet" href="{{ asset('assets/css/dark.css') }}?v=1.1">
     <link rel="preload" as="image" href="{{ asset('assets/img/logo.jpeg') }}">
 
     {{-- Prevent FOUC/x-cloak flicker across page transitions. --}}

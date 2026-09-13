@@ -533,6 +533,10 @@ $translations = [
     'send.per_message'       => ['en' => 'per message', 'nl' => 'per bericht', 'ar' => 'لكل رسالة'],
     'templates.translation_only' => ['en' => 'Translation — for staff only, not sent', 'nl' => 'Vertaling — alleen ter info, wordt niet verzonden', 'ar' => 'الترجمة — للاطلاع فقط، لا تُرسل'],
     'templates.body_ar_hint' => ['en' => 'Shown to you and other staff to understand the template; it is never sent.', 'nl' => 'Zichtbaar voor u en collega\'s om het sjabloon te begrijpen; wordt nooit verzonden.', 'ar' => 'تظهر لك ولمستخدمي النظام لفهم نص القالب، ولا تُرسل مع الرسالة.'],
+
+    // Grid: a remembered filter can hide every row on the page
+    'grid.filtered_empty' => ['en' => 'No student on this page matches the search or filter.', 'nl' => 'Geen leerling op deze pagina past bij de zoekopdracht of het filter.', 'ar' => 'لا يوجد طالب في هذه الصفحة يطابق البحث أو الفلتر المختار.'],
+    'grid.clear_filter' => ['en' => 'Show all', 'nl' => 'Alles tonen', 'ar' => 'عرض الكل'],
 ];
 
 $locales = ['en', 'nl', 'ar'];

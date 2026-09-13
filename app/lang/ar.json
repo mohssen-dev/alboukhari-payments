@@ -690,5 +690,7 @@
     "send.preview_updating": "جارٍ التحديث…",
     "send.per_message": "لكل رسالة",
     "templates.translation_only": "الترجمة — للاطلاع فقط، لا تُرسل",
-    "templates.body_ar_hint": "تظهر لك ولمستخدمي النظام لفهم نص القالب، ولا تُرسل مع الرسالة."
+    "templates.body_ar_hint": "تظهر لك ولمستخدمي النظام لفهم نص القالب، ولا تُرسل مع الرسالة.",
+    "grid.filtered_empty": "لا يوجد طالب في هذه الصفحة يطابق البحث أو الفلتر المختار.",
+    "grid.clear_filter": "عرض الكل"
 }

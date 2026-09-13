@@ -690,5 +690,7 @@
     "send.preview_updating": "Updating…",
     "send.per_message": "per message",
     "templates.translation_only": "Translation — for staff only, not sent",
-    "templates.body_ar_hint": "Shown to you and other staff to understand the template; it is never sent."
+    "templates.body_ar_hint": "Shown to you and other staff to understand the template; it is never sent.",
+    "grid.filtered_empty": "No student on this page matches the search or filter.",
+    "grid.clear_filter": "Show all"
 }

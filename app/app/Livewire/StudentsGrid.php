@@ -7,6 +7,9 @@ use App\Services\MonthNames;
 use App\Support\AuthorizesLivewireWrite;
 use App\Support\DispatchesGridRow;
 use App\Support\GridRow;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Cookie;
+use Livewire\Attributes\On;
 use Livewire\Component;
 use Livewire\WithPagination;
 
@@ -19,14 +22,27 @@ class StudentsGrid extends Component
     public function paginationView(): string { return 'pagination::custom'; }
     public function paginationSimpleView(): string { return 'pagination::custom'; }
 
+    /**
+     * The filter bar's choices (year, rows per page, state, client filter)
+     * outlive a reload: they are kept in this browser's cookie for a year —
+     * not in the session, which ends after two idle hours, and not in the
+     * URL, where mount() used to overwrite ?year= with the current year.
+     * The main page and focus mode share it.
+     */
+    public const VIEW_COOKIE = 'grid_view';
+    public const PER_PAGE = [50, 100, 200, 500];
+    public const STATUSES = ['all', 'visible', 'hidden', 'blocked', 'in_person', 'suspended'];
+    public const CLIENT_FILTERS = ['all', 'overdue', 'paid_full', 'with_siblings'];
+
     public string $filterStatus = 'all';
     public int $year;
     public int $perPage = 100;
 
+    /** Filtered in the browser (Alpine); kept here only so a reload restores it. */
+    public string $clientFilter = 'all';
+
     /** When true, hides the KPI/actions chrome — pure grid + filters only. */
     public bool $focus = false;
-
-    protected $queryString = ['filterStatus', 'year'];
 
     /**
      * Modals + student panel are mounted persistently in layouts/app.blade.php.
@@ -42,14 +58,45 @@ class StudentsGrid extends Component
     {
         $this->year = (int) date('Y');
         $this->focus = $focus;
+        $this->restoreView();
     }
-
-    /** A new student is a new row, not a patch — re-render once. */
-    protected $listeners = ['student-created' => '$refresh'];
 
     public function updatingFilterStatus() { $this->resetPage(); }
     public function updatingYear() { $this->resetPage(); }
     public function updatingPerPage() { $this->resetPage(); }
+
+    public function updated(string $property): void
+    {
+        if (in_array($property, ['year', 'perPage', 'filterStatus'], true)) {
+            $this->sanitizeView();
+            $this->rememberView();
+        }
+    }
+
+    /** The client filter changed in the browser — remember it, nothing to re-render. */
+    public function rememberClientFilter(string $value): void
+    {
+        $this->clientFilter = in_array($value, self::CLIENT_FILTERS, true) ? $value : 'all';
+        $this->rememberView();
+        $this->skipRender();
+    }
+
+    /**
+     * A new student is a new row, not a patch: re-render on the page that
+     * holds it (rows are ordered by id, so usually the last one) and let the
+     * browser scroll to it — on page 1 it was simply never seen.
+     */
+    #[On('student-created')]
+    public function showCreatedStudent(?int $studentId = null): void
+    {
+        if (!$studentId || !$this->filteredQuery()->whereKey($studentId)->exists()) {
+            return;
+        }
+
+        $before = $this->filteredQuery()->where('id', '<', $studentId)->count();
+        $this->setPage(intdiv($before, $this->perPage) + 1);
+        $this->dispatch('grid-show-row', id: $studentId);
+    }
 
     public function openStudent(int $studentId)
     {
@@ -108,7 +155,29 @@ class StudentsGrid extends Component
 
     public function render()
     {
-        $query = Student::query()->with(GridRow::relations($this->year));
+        $this->sanitizeView();
+
+        $students = $this->filteredQuery()
+            ->with(GridRow::relations($this->year))
+            ->orderBy('id')
+            ->paginate($this->perPage);
+
+        $built = [];
+        foreach ($students as $student) {
+            $built[$student->id] = GridRow::build($student, $this->year);
+        }
+
+        return view('livewire.students-grid', [
+            'students' => $students,
+            'months' => MonthNames::full(),
+            'built' => $built,
+            'totalStudents' => Student::count(),
+        ])->layout('layouts.app');
+    }
+
+    private function filteredQuery(): Builder
+    {
+        $query = Student::query();
 
         match ($this->filterStatus) {
             'hidden' => $query->where('is_hidden', true),
@@ -124,18 +193,46 @@ class StudentsGrid extends Component
             default => null,
         };
 
-        $students = $query->orderBy('id')->paginate($this->perPage);
+        return $query;
+    }
 
-        $built = [];
-        foreach ($students as $student) {
-            $built[$student->id] = GridRow::build($student, $this->year);
+    /** The years the year picker offers. */
+    public static function yearRange(): array
+    {
+        return range((int) date('Y') + 1, 2020);
+    }
+
+    private function restoreView(): void
+    {
+        $saved = json_decode((string) request()->cookie(self::VIEW_COOKIE), true);
+        if (!is_array($saved)) {
+            return;
         }
 
-        return view('livewire.students-grid', [
-            'students' => $students,
-            'months' => MonthNames::full(),
-            'built' => $built,
-            'totalStudents' => Student::count(),
-        ])->layout('layouts.app');
+        if (is_int($saved['year'] ?? null)) $this->year = $saved['year'];
+        if (is_int($saved['perPage'] ?? null)) $this->perPage = $saved['perPage'];
+        if (is_string($saved['filterStatus'] ?? null)) $this->filterStatus = $saved['filterStatus'];
+        if (is_string($saved['clientFilter'] ?? null)) $this->clientFilter = $saved['clientFilter'];
+
+        $this->sanitizeView();
+    }
+
+    /** Anything outside the pickers' own options (old cookie, crafted request) falls back to the default. */
+    private function sanitizeView(): void
+    {
+        if (!in_array($this->year, self::yearRange(), true)) $this->year = (int) date('Y');
+        if (!in_array($this->perPage, self::PER_PAGE, true)) $this->perPage = 100;
+        if (!in_array($this->filterStatus, self::STATUSES, true)) $this->filterStatus = 'all';
+        if (!in_array($this->clientFilter, self::CLIENT_FILTERS, true)) $this->clientFilter = 'all';
+    }
+
+    private function rememberView(): void
+    {
+        Cookie::queue(self::VIEW_COOKIE, json_encode([
+            'year' => $this->year,
+            'perPage' => $this->perPage,
+            'filterStatus' => $this->filterStatus,
+            'clientFilter' => $this->clientFilter,
+        ]), 60 * 24 * 365);
     }
 }

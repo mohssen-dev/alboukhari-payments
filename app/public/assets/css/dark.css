@@ -326,7 +326,8 @@ html[data-theme="dark"] .sibling-badge { background: var(--dm-success-solid); co
 html[data-theme="dark"] .sibling-badge:hover { background: var(--dm-success-solid-hover); }
 
 /* Row flash after an in-place update — stronger glow reads better on dark */
-html[data-theme="dark"] .students-grid tbody tr.row-flash > td { animation-name: rowFlashDark; }
+html[data-theme="dark"] .students-grid tbody tr.row-flash > td,
+html[data-theme="dark"] .students-grid tbody tr.row-new > td { animation-name: rowFlashDark; }
 @keyframes rowFlashDark {
     from { box-shadow: inset 0 0 0 999px rgba(95, 191, 135, 0.32); }
     to   { box-shadow: inset 0 0 0 999px rgba(95, 191, 135, 0); }
