@@ -147,8 +147,12 @@ class RecipientListBuilder
                 return true;
 
             case 'unpaid_by_month':
+                // Everyone who still owes for the chosen month — the same
+                // "owed" the grid, panel and statement use. It matched 'unpaid'
+                // only, but a month turns 'late' on the 15th of the next month,
+                // so picking any older month (May, in September) found nobody.
                 $status = MonthStatusResolver::resolve($student, $year, $month);
-                return $status === 'unpaid';
+                return in_array($status, ['unpaid', 'late', 'partial'], true);
 
             case 'late_mid_month':
                 $status = MonthStatusResolver::resolve($student, $year, $month);
