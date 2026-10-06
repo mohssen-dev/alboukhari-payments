@@ -942,8 +942,8 @@ html[dir="rtl"] .family-paybar .fp-label { text-transform: none; letter-spacing:
 .family-table tbody tr:last-child td { border-bottom: none; }
 .family-table .fam-name { text-align: start; min-width: 140px; position: sticky; inset-inline-start: 0; z-index: 1; background: var(--color-surface); font-weight: 600; }
 .family-table thead .fam-name, .family-table tfoot .fam-name { background: var(--color-surface-alt); }
-.family-table .fam-name-link { background: none; border: 0; padding: 0; font: inherit; color: var(--color-text); cursor: pointer; text-align: start; }
-.family-table .fam-name-link:hover { color: var(--color-primary); text-decoration: underline; }
+.family-table .fam-name-link, .bank-history__table .fam-name-link { background: none; border: 0; padding: 0; font: inherit; color: var(--color-text); cursor: pointer; text-align: start; }
+.family-table .fam-name-link:hover, .bank-history__table .fam-name-link:hover { color: var(--color-primary); text-decoration: underline; }
 .family-table tr.is-self .fam-name-link { color: var(--color-primary-text); }
 .family-table th.fam-month, .family-table td.fam-cell { cursor: pointer; min-width: 42px; }
 .family-table th.fam-month:hover { color: var(--color-text); }
@@ -964,6 +964,16 @@ html[dir="rtl"] .family-paybar .fp-label { text-transform: none; letter-spacing:
 .family-member .member-diff.is-adding { color: var(--color-success); }
 .family-member .member-diff.is-reducing { color: var(--color-danger); }
 .family-member .fp-fill { padding: 4px 8px; font-size: 11px; min-height: 0; }
+/* Several months at once: toggle, "owed months" shortcut, and a chip per picked month. */
+.family-controls .fp-multi.is-on { box-shadow: inset 0 0 0 1.5px var(--color-primary); }
+.family-controls .fp-multi-hint { align-self: center; }
+.family-table th.fam-month, .family-table td.fam-cell { user-select: none; }
+.family-member .member-months { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px; max-width: 260px; }
+.fam-chip { position: relative; display: inline-flex; flex-direction: column; align-items: center; min-width: 40px; padding: 3px 5px; border-radius: 6px; font-size: 11px; line-height: 1.25; font-variant-numeric: tabular-nums; }
+.fam-chip__m { font-weight: 600; opacity: 0.8; }
+.fam-chip__v { font-weight: 800; }
+.family-member .fp-per-month { font-size: 10.5px; font-weight: 600; }
+@media (max-width: 640px) { .family-member .member-months { justify-content: flex-start; max-width: none; } }
 @media (max-width: 640px) {
     .family-member { grid-template-columns: 1fr auto; }
     .family-member .member-diff { text-align: start; }
@@ -2473,6 +2483,40 @@ html[data-theme="dark"] .theme-toggle .icon-sun { display: block; }
 .bank-sync__row { display: flex; gap: 6px; }
 .bank-sync__row .form-input { flex: 1 1 auto; min-width: 0; }
 .bank-sync__save { align-self: flex-start; }
+
+.bank-sync__history-btn { width: 100%; margin-top: 10px; justify-content: center; }
+
+/* History window: one row per saved round, expandable to its payments. */
+.bank-history { width: 760px; }
+.bank-history .modal-body { overflow-y: auto; }
+.bank-history__intro { margin: 0 0 12px; line-height: 1.6; }
+.bank-history__empty { text-align: center; padding: 24px; }
+.bank-history__list { display: flex; flex-direction: column; gap: 8px; }
+.bank-history__round { border: 1px solid var(--color-border); border-radius: var(--radius); background: var(--color-surface); }
+.bank-history__round.is-open { border-color: var(--color-primary); }
+.bank-history__head {
+    display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) auto; align-items: center; gap: 4px 12px;
+    width: 100%; padding: 10px 12px; background: none; border: 0; font: inherit; color: var(--color-text); text-align: start; cursor: pointer;
+}
+.bank-history__head:disabled { cursor: default; }
+.bank-history__head:not(:disabled):hover { background: var(--color-surface-alt); }
+.bank-history__date { display: flex; flex-direction: column; gap: 2px; }
+.bank-history__date small { font-size: 11px; }
+.bank-history__who { font-size: 12px; }
+.bank-history__sum { font-size: 12.5px; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.bank-history__caret { display: inline-block; margin-inline-start: 6px; transition: transform 0.15s; }
+.bank-history__round.is-open .bank-history__caret { transform: rotate(180deg); }
+.bank-history__note { padding: 0 12px 10px; font-size: 12px; color: var(--color-text-muted); }
+.bank-history__payments { border-top: 1px solid var(--color-border); max-height: 320px; overflow: auto; }
+.bank-history__table { width: 100%; border-collapse: collapse; font-size: 12.5px; font-variant-numeric: tabular-nums; }
+.bank-history__table th, .bank-history__table td { padding: 6px 12px; text-align: start; border-bottom: 1px solid var(--color-border); }
+.bank-history__table thead th { position: sticky; top: 0; background: var(--color-surface-alt); color: var(--color-text-muted); font-size: 11px; }
+.bank-history__table tbody tr:last-child td { border-bottom: none; }
+.bank-history__amount { font-weight: 700; white-space: nowrap; }
+@media (max-width: 640px) {
+    .bank-history__head { grid-template-columns: 1fr; }
+    .bank-history__sum { white-space: normal; }
+}
 
 /* Same collapse order as the rest of the bar: the word "Bank" goes first. */
 @media (max-width: 1440px) { .bank-sync__label { display: none; } }

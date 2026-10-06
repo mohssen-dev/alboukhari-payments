@@ -274,4 +274,64 @@ class FamilyPaymentTest extends TestCase
         $lw->set("amounts.{$later->id}", '30')->call('saveAll');
         $this->assertSame(0, Payment::where('student_id', $later->id)->count());
     }
+
+    // ---- several months at once ----
+
+    public function test_several_months_are_paid_in_one_save_topping_up_only_what_is_missing(): void
+    {
+        [, $a, $b] = $this->family();
+        $this->pay($a, 30, 2);
+
+        $lw = Livewire::test(FamilyModal::class)->call('open', $a->id)->call('pickMonths', [1, 2, 3]);
+        $this->assertSame([1, 2, 3], $lw->get('selectedMonths'));
+        $this->assertSame('30', $lw->get('amounts')[$a->id], 'the amount is per month');
+        $this->assertSame('30', $lw->get('amounts')[$b->id]);
+
+        $lw->call('saveAll')->assertDispatched('toast', type: 'success');
+
+        foreach ([1, 2, 3] as $m) {
+            $this->assertEquals(30, $this->recorded($a, null, $m));
+            $this->assertEquals(30, $this->recorded($b, null, $m));
+        }
+        $this->assertSame(6, Payment::count(), 'the one before + A: months 1 and 3 · B: months 1, 2 and 3');
+        $this->assertSame([1, 2, 3], $lw->get('selectedMonths'), 'the window stays on the picked months');
+    }
+
+    public function test_several_months_never_reduce_a_month_holding_more(): void
+    {
+        [, $a, $b] = $this->family();
+        $this->pay($a, 40, 1);
+
+        Livewire::test(FamilyModal::class)->call('open', $a->id)
+            ->call('pickMonths', [1, 2])
+            ->set("amounts.{$a->id}", '30')
+            ->set("amounts.{$b->id}", '')
+            ->call('saveAll');
+
+        $this->assertEquals(40, $this->recorded($a, null, 1));
+        $this->assertEquals(30, $this->recorded($a, null, 2));
+        $this->assertSame(0, Payment::where('student_id', $b->id)->count(), 'an empty amount pays nothing');
+    }
+
+    public function test_picked_months_are_cleaned_and_a_single_month_choice_ends_multi_mode(): void
+    {
+        [, $a] = $this->family();
+
+        $lw = Livewire::test(FamilyModal::class)->call('open', $a->id)
+            ->call('pickMonths', [13, 0, 4, 2, 2, '3'])
+            ->assertSet('selectedMonths', [2, 3, 4])
+            ->assertSet('month', 2);
+
+        $lw->call('pickMonths', [])->assertSet('selectedMonths', [2, 3, 4]);
+        $lw->set('month', 6)->assertSet('selectedMonths', [6]);
+    }
+
+    public function test_a_failed_reload_closes_the_window_instead_of_an_error_page(): void
+    {
+        [, $a] = $this->family();
+        $lw = Livewire::test(FamilyModal::class)->call('open', $a->id);
+
+        $a->forceDelete();
+        $lw->set('month', 2)->assertOk()->assertSet('isOpen', false)->assertDispatched('toast', type: 'error');
+    }
 }

@@ -36,12 +36,19 @@ class FamilyModal extends Component
      * top. Raising it records the difference as a new payment; lowering it
      * reduces (or removes) what was recorded. It used to only ever add, so a
      * mistyped amount could not be corrected from here.
+     *
+     * Several months can be picked at once (a parent paying June–September
+     * in one go). Then each amount is what the child owes PER MONTH, and a
+     * save only tops up the picked months that hold less than it — it never
+     * reduces anything; lowering stays a one-month operation.
      */
     public int $year = 0;
     public int $month = 1;
+    /** @var list<int> the months being paid for, ascending; always holds $month */
+    public array $selectedMonths = [];
     public string $method = 'cash';
     public string $paid_at = '';
-    /** @var array<int, string> student id => the month's total as typed */
+    /** @var array<int, string> student id => the month's total (or, for several months, the amount per month) as typed */
     public array $amounts = [];
 
     public function mount(?int $initialStudentId = null): void
@@ -57,6 +64,7 @@ class FamilyModal extends Component
         $this->studentId = $studentId;
         $this->year = (int) date('Y');
         $this->month = (int) date('n');
+        $this->selectedMonths = [$this->month];
         $this->method = 'cash';
         $this->paid_at = now()->format('Y-m-d');
         $this->resetValidation();
@@ -84,13 +92,35 @@ class FamilyModal extends Component
     public function updatedYear(): void
     {
         $this->year = self::clampYear((int) $this->year);
-        $this->loadMembers();
+        $this->reload();
     }
 
     public function updatedMonth(): void
     {
         $this->month = max(1, min(12, (int) $this->month));
-        $this->loadMembers();
+        $this->selectedMonths = [$this->month];
+        $this->reload();
+    }
+
+    /** Pick the months to pay for: one month, or several to pay them together. */
+    public function pickMonths(array $months): void
+    {
+        $months = collect($months)
+            ->map(fn ($m) => (int) $m)
+            ->filter(fn ($m) => $m >= 1 && $m <= 12)
+            ->unique()->sort()->values()->all();
+        if (!$months) {
+            return;
+        }
+
+        $this->selectedMonths = $months;
+        $this->month = $months[0];
+        $this->reload();
+    }
+
+    public function isMultiMonth(): bool
+    {
+        return count($this->selectedMonths) > 1;
     }
 
     /**
@@ -115,6 +145,11 @@ class FamilyModal extends Component
         // Who may be paid for comes from the database — never from $members
         // or the keys of $amounts, which are both plain client state.
         $payable = $this->payableStudents();
+
+        if ($this->isMultiMonth()) {
+            $this->saveMultiMonth($payable);
+            return;
+        }
 
         try {
             [$added, $removed, $changed] = DB::transaction(function () use ($payable) {
@@ -192,7 +227,82 @@ class FamilyModal extends Component
         ]));
 
         // Stay open: the table now shows what was recorded.
-        $this->loadMembers();
+        $this->reload();
+    }
+
+    /**
+     * Several months at once: each child's amount is per month. A picked
+     * month holding less than it gets the difference as a new payment; a
+     * month already holding as much or more is left alone — never reduced.
+     *
+     * @param Collection<int, Student> $payable
+     */
+    private function saveMultiMonth(Collection $payable): void
+    {
+        $months = collect($this->selectedMonths)
+            ->map(fn ($m) => (int) $m)
+            ->filter(fn ($m) => $m >= 1 && $m <= 12)
+            ->unique()->sort()->values()->all();
+
+        try {
+            [$added, $count, $changed] = DB::transaction(function () use ($payable, $months) {
+                $added = 0.0;
+                $count = 0;
+                $changed = [];
+
+                foreach ($payable as $student) {
+                    $raw = $this->amounts[$student->id] ?? null;
+                    $target = ($raw === null || $raw === '') ? 0.0 : round((float) $raw, 2);
+                    if ($target <= 0.005) continue;
+
+                    foreach ($months as $m) {
+                        if (FeeResolver::isOutsideEnrollment($student, $this->year, $m)) continue;
+
+                        $current = round((float) Payment::where('student_id', $student->id)
+                            ->where('period_year', $this->year)
+                            ->where('period_month', $m)
+                            ->whereIn('method', ['cash', 'bank'])
+                            ->sum('amount'), 2);
+                        $diff = round($target - $current, 2);
+                        if ($diff <= 0.005) continue;
+
+                        Payment::create([
+                            'student_id' => $student->id,
+                            'period_year' => $this->year,
+                            'period_month' => $m,
+                            'amount' => $diff,
+                            'method' => $this->method,
+                            'paid_at' => $this->paid_at,
+                        ]);
+                        $added += $diff;
+                        $count++;
+                        $changed[$student->id] = true;
+                    }
+                }
+
+                return [$added, $count, array_keys($changed)];
+            });
+        } catch (\Throwable $e) {
+            report($e);
+            $this->dispatch('toast', message: __('flash.send_error') . ' ' . $e->getMessage(), type: 'error');
+            return;
+        }
+
+        if (!$changed) {
+            $this->dispatch('toast', message: __('family.no_changes'), type: 'error');
+            return;
+        }
+
+        foreach ($changed as $id) {
+            $this->dispatch('payment-saved', studentId: $id);
+            $this->dispatchGridRow($id, $this->year, 'year');
+        }
+        $this->dispatch('toast', type: 'success', message: __('family.saved_multi', [
+            'count' => $count,
+            'added' => number_format($added, 2),
+        ]));
+
+        $this->reload();
     }
 
     /** The chosen month becomes this child's first billed month (earlier months stop being owed). */
@@ -235,12 +345,28 @@ class FamilyModal extends Component
         $this->dispatchGridRow($studentId, $this->year, 'student');
         $this->dispatch('student-updated', studentId: $studentId);
         $this->dispatch('toast', message: $message, type: 'success');
-        $this->loadMembers();
+        $this->reload();
+    }
+
+    /**
+     * Rebuild the window after a change. If that fails (say the student was
+     * deleted in another tab) the window closes with a message — an uncaught
+     * error here used to replace the whole page with an error screen.
+     */
+    private function reload(): void
+    {
+        try {
+            $this->loadMembers();
+        } catch (\Throwable $e) {
+            report($e);
+            $this->close();
+            $this->dispatch('toast', message: __('flash.send_error') . ' ' . $e->getMessage(), type: 'error');
+        }
     }
 
     public function close(): void
     {
-        $this->reset(['isOpen', 'studentId', 'familyId', 'familyTitle', 'guardianPhone', 'members', 'amounts', 'year', 'month', 'method', 'paid_at']);
+        $this->reset(['isOpen', 'studentId', 'familyId', 'familyTitle', 'guardianPhone', 'members', 'amounts', 'year', 'month', 'selectedMonths', 'method', 'paid_at']);
         $this->resetValidation();
         $this->dispatch('close-modal');
     }
@@ -259,7 +385,14 @@ class FamilyModal extends Component
 
     public function render()
     {
+        // Months up to now that some child still owes — one click picks them all.
+        $nowYm = ((int) date('Y') * 12) + (int) date('n');
+        $owedMonths = array_values(array_filter(range(1, 12), fn ($m) => ($this->year * 12 + $m) <= $nowYm
+            && collect($this->members)->contains(fn ($x) => in_array($x['months'][$m]['status'] ?? '', ['unpaid', 'late', 'partial'], true))));
+
         return view('livewire.family-modal', [
+            'multi' => $this->isMultiMonth(),
+            'owedMonths' => $owedMonths,
             'monthNames' => MonthNames::full(),
             'yearOptions' => self::yearOptions(),
             'canWrite' => (bool) auth()->user()?->canWrite(),
@@ -306,6 +439,10 @@ class FamilyModal extends Component
         ])->findOrFail($this->studentId);
 
         $this->familyId = $student->family_id;
+        if (!in_array($this->month, $this->selectedMonths, true)) {
+            $this->selectedMonths = [$this->month];
+        }
+        $multi = $this->isMultiMonth();
 
         if ($student->family) {
             $members = $student->family->students->sortBy('id')->values();
@@ -321,7 +458,7 @@ class FamilyModal extends Component
         $nowYm = ((int) date('Y') * 12) + (int) date('n');
         $amounts = [];
 
-        $this->members = $members->map(function (Student $s) use ($nowYm, &$amounts) {
+        $this->members = $members->map(function (Student $s) use ($nowYm, $multi, &$amounts) {
             $statuses = MonthStatusResolver::resolveAll($s, $this->year);
             $dueAll   = FeeResolver::dueAllMonths($s, $this->year);
             $paidAll  = FeeResolver::paidAllMonths($s, $this->year);
@@ -337,6 +474,7 @@ class FamilyModal extends Component
                     'class' => GridRow::cellClass($st),
                     'display' => GridRow::cellDisplay($st, $paidAll[$m]),
                     'label' => MonthStatusResolver::label($st),
+                    'outside' => FeeResolver::isOutsideEnrollment($s, $this->year, $m),
                 ];
                 $isDueByNow = (($this->year * 12) + $m) <= $nowYm;
                 if ($isDueByNow && in_array($st, ['unpaid', 'late', 'partial'], true)) {
@@ -357,6 +495,16 @@ class FamilyModal extends Component
                 default => '',
             };
 
+            // Several months: the amount is per month — the fee of the first
+            // picked month that still owes something; empty when all are paid.
+            $selEnrolled = array_values(array_filter($this->selectedMonths, fn ($mm) => !$months[$mm]['outside']));
+            $selOwing = array_values(array_filter($selEnrolled, fn ($mm) => $dueAll[$mm] - $paidAll[$mm] > 0.005));
+            $selAllPaid = $selEnrolled && !$selOwing;
+            $selDue = $selOwing ? $dueAll[$selOwing[0]] : ($selEnrolled ? $dueAll[$selEnrolled[0]] : 0.0);
+            if ($multi) {
+                $amounts[$s->id] = $selOwing && $selDue > 0.005 ? self::plainAmount($selDue) : '';
+            }
+
             return [
                 'id' => $s->id,
                 'external_id' => $s->external_id,
@@ -373,7 +521,10 @@ class FamilyModal extends Component
                 'month_due' => round($dueAll[$m], 2),
                 'month_paid' => $paid,
                 'month_due_plain' => self::plainAmount($dueAll[$m]),
-                'outside' => $outside,
+                'outside' => $multi ? !$selEnrolled : $outside,
+                'sel_all_paid' => $selAllPaid,
+                'sel_due_plain' => self::plainAmount($selDue),
+                'sel_owing' => count($selOwing),
                 'enrolled_label' => $s->enrolled_at
                     ? (MonthNames::full()[$s->enrolled_at->month] ?? '') . ' ' . $s->enrolled_at->year
                     : null,

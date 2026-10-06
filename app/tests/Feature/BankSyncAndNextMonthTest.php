@@ -124,6 +124,53 @@ class BankSyncAndNextMonthTest extends TestCase
         $this->assertSame(['bank'], Payment::where('student_id', $s->id)->distinct()->pluck('method')->all());
     }
 
+    public function test_the_history_lists_each_round_with_the_bank_payments_entered_in_it(): void
+    {
+        $user = $this->user(User::ROLE_STAFF);
+        $this->actingAs($user);
+        $s = Student::create(['name' => 'Kid', 'default_fee_amount' => 30]);
+        $pay = fn (int $month, string $method = 'bank') => Payment::create([
+            'student_id' => $s->id, 'period_year' => 2026, 'period_month' => $month,
+            'amount' => 30, 'method' => $method, 'paid_at' => '2026-0' . $month . '-05',
+        ]);
+
+        $pay(1);
+        Livewire::test(BankSyncDate::class)->set('date', '2026-09-01')->call('save');
+
+        Carbon::setTestNow('2026-09-13 11:00:00');
+        $pay(2);
+        $pay(3);
+        $pay(4, 'cash');
+        Carbon::setTestNow('2026-09-13 12:00:00');
+        Livewire::test(BankSyncDate::class)->set('date', '2026-09-12')->set('note', 'ING statement')->call('save')->assertSet('note', '');
+
+        $rounds = BankSyncDate::history();
+        $this->assertCount(2, $rounds);
+        $this->assertSame('2026-09-12', $rounds[0]['date']);
+        $this->assertSame('ING statement', $rounds[0]['note']);
+        $this->assertSame('Staff User', $rounds[0]['by']);
+        $this->assertSame(2, $rounds[0]['count'], 'only bank payments entered since the round before');
+        $this->assertEquals(60, $rounds[0]['total']);
+        $this->assertFalse($rounds[1]['has_start']);
+
+        $listed = BankSyncDate::roundPayments($rounds[0]['id']);
+        $this->assertSame([2, 3], array_map(fn ($p) => (int) substr($p['paid_at'], 5, 2), $listed));
+
+        Livewire::test(BankSyncDate::class)
+            ->call('openHistory')
+            ->assertSee('ING statement')
+            ->call('toggleRound', $rounds[0]['id'])
+            ->assertSet('expanded', $rounds[0]['id'])
+            ->assertSee('Kid');
+    }
+
+    public function test_viewers_can_open_the_history(): void
+    {
+        $this->actingAs($this->user(User::ROLE_VIEWER));
+
+        Livewire::test(BankSyncDate::class)->call('openHistory')->assertOk()->assertSee(__('banksync.history_empty'));
+    }
+
     public function test_december_moves_on_to_january_of_the_next_year(): void
     {
         $this->assertSame([2027, 1], PaymentModal::nextMonth(2026, 12));
