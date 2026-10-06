@@ -8,7 +8,7 @@
     <meta charset="UTF-8">
     <title>{{ __('exports.receipt') }} #{{ $payment->id }}</title>
     <link rel="icon" type="image/x-icon" href="{{ asset('favicon.ico') }}">
-    <link rel="stylesheet" href="{{ asset('assets/css/app.css') }}?v=6.0">
+    <link rel="stylesheet" href="{{ asset('assets/css/app.css') }}?v={{ @filemtime(public_path('assets/css/app.css')) }}">
     <style>
         body { background: #fbfaf7; padding: 24px; }
         .receipt-shell { max-width: 640px; margin: 0 auto; }

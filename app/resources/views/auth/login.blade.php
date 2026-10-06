@@ -28,8 +28,8 @@
             }
         })();
     </script>
-    <link rel="stylesheet" href="{{ asset('assets/css/app.css') }}?v=8.1">
-    <link rel="stylesheet" href="{{ asset('assets/css/dark.css') }}?v=1.2">
+    <link rel="stylesheet" href="{{ asset('assets/css/app.css') }}?v={{ @filemtime(public_path('assets/css/app.css')) }}">
+    <link rel="stylesheet" href="{{ asset('assets/css/dark.css') }}?v={{ @filemtime(public_path('assets/css/dark.css')) }}">
 </head>
 <body class="auth-body">
 

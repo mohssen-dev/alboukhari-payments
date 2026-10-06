@@ -10,7 +10,7 @@
     <meta charset="UTF-8">
     <title>{{ __('exports.statement') }} · {{ $student->name }}</title>
     <link rel="icon" type="image/x-icon" href="{{ asset('favicon.ico') }}">
-    <link rel="stylesheet" href="{{ asset('assets/css/app.css') }}?v=6.0">
+    <link rel="stylesheet" href="{{ asset('assets/css/app.css') }}?v={{ @filemtime(public_path('assets/css/app.css')) }}">
     <style>
         body { background: #fbfaf7; padding: 24px; }
         .doc-shell { max-width: 860px; margin: 0 auto; }
