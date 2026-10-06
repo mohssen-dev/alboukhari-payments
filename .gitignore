@@ -15,6 +15,7 @@ app/storage/framework/testing/
 app/storage/app/public/
 app/bootstrap/cache/*.php
 !app/bootstrap/cache/.gitkeep
+mobile/
 
 # OS / Editor
 .DS_Store

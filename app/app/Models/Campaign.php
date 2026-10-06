@@ -21,8 +21,16 @@ class Campaign extends Model
             ->useLogName('campaign');
     }
 
+    /** قنوات الإرسال. الافتراضي هو السلوك القديم عبر BulkGate. */
+    public const CHANNEL_BULKGATE_SMS = 'bulkgate_sms';
+    public const CHANNEL_DEVICE_SMS = 'device_sms';
+    public const CHANNEL_DEVICE_WHATSAPP = 'device_whatsapp';
+
+    public const DEVICE_CHANNELS = [self::CHANNEL_DEVICE_SMS, self::CHANNEL_DEVICE_WHATSAPP];
+
     protected $fillable = [
-        'type', 'status', 'scheduled_at', 'period_year', 'period_month', 'threshold_amount',
+        'type', 'status', 'channel', 'sender_device_id',
+        'scheduled_at', 'period_year', 'period_month', 'threshold_amount',
         'template_id', 'body_template', 'tag', 'group_by_family',
         'total_recipients', 'sent_count', 'failed_count', 'skipped_count',
         'estimated_cost', 'actual_cost',
@@ -43,6 +51,37 @@ class Campaign extends Model
     public function isScheduled(): bool
     {
         return $this->status === 'queued' && $this->scheduled_at !== null;
+    }
+
+    /** حملة تُرسل من هاتف مقترن (SMS أو واتساب) بدل مزوّد BulkGate السحابي. */
+    public function isDeviceChannel(): bool
+    {
+        return in_array($this->channel, self::DEVICE_CHANNELS, true);
+    }
+
+    /** القناة كما يفهمها التطبيق: sms | whatsapp (null للحملات السحابية). */
+    public function deviceChannelName(): ?string
+    {
+        return match ($this->channel) {
+            self::CHANNEL_DEVICE_SMS => 'sms',
+            self::CHANNEL_DEVICE_WHATSAPP => 'whatsapp',
+            default => null,
+        };
+    }
+
+    /** قيمة message_logs.provider المناسبة لهذه الحملة. */
+    public function providerName(): string
+    {
+        return match ($this->channel) {
+            self::CHANNEL_DEVICE_SMS => SenderDevice::PROVIDER_SMS,
+            self::CHANNEL_DEVICE_WHATSAPP => SenderDevice::PROVIDER_WHATSAPP,
+            default => 'bulkgate',
+        };
+    }
+
+    public function senderDevice(): BelongsTo
+    {
+        return $this->belongsTo(SenderDevice::class);
     }
 
     public function recipients(): HasMany

@@ -27,6 +27,18 @@ class CampaignSender
             return ['status' => 'halted', 'sent' => 0];
         }
 
+        // حملات الهاتف المرسِل: لا BulkGate. المستلمون يبقون pending حتى يحجزهم
+        // التطبيق عبر /api/device/jobs/claim ويبلّغ نتائجهم. هذا الفحص قبل إعادة
+        // ضبط الرسائل العالقة عمداً: الرسائل بحالة sending هنا محجوزة لدى الهاتف
+        // ويعالج SenderDeviceQueue::requeueStale مهلتها بنفسه.
+        if ($campaign->isDeviceChannel()) {
+            $campaign->update(['status' => 'running', 'started_at' => $campaign->started_at ?? now()]);
+            $remaining = CampaignRecipient::where('campaign_id', $campaign->id)
+                ->whereIn('status', ['pending', 'sending'])->count();
+
+            return ['status' => 'handed_to_device', 'sent' => 0, 'failed' => 0, 'remaining' => $remaining];
+        }
+
         $campaign->update(['status' => 'running', 'started_at' => $campaign->started_at ?? now()]);
         $sent = 0;
         $failed = 0;
