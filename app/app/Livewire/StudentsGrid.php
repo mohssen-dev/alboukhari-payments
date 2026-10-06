@@ -138,7 +138,7 @@ class StudentsGrid extends Component
 
     public function openFamily(int $studentId): void
     {
-        $this->dispatch('open-family-modal', studentId: $studentId);
+        $this->dispatch('family-open', studentId: $studentId);
         $this->skipRender();
     }
 

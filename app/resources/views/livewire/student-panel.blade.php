@@ -29,7 +29,7 @@
                             {{ $sib->name }}
                         </span>
                     @endforeach
-                    <button type="button" class="btn btn-sm btn-soft-primary" @click="Livewire.dispatch('open-family-modal', { studentId: {{ $student->id }} })" style="margin-inline-start:auto">
+                    <button type="button" class="btn btn-sm btn-soft-primary" @click="abOpenFamily({{ $student->id }}, @js($student->name))" style="margin-inline-start:auto">
                         👨‍👩‍👧‍👦 {{ __('actions.show_family') }}
                     </button>
                 </div>

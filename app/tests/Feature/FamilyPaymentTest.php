@@ -79,7 +79,7 @@ class FamilyPaymentTest extends TestCase
         [, $a, $b] = $this->family();
         $this->pay($b, 30);
 
-        $lw = Livewire::test(FamilyModal::class)->call('open', $a->id);
+        $lw = Livewire::test(FamilyModal::class)->call('open', $a->id, null, $this->month);
 
         $this->assertTrue($lw->get('isOpen'));
         $this->assertSame('30', $lw->get('amounts')[$a->id], 'what A owes is suggested');
@@ -95,7 +95,7 @@ class FamilyPaymentTest extends TestCase
         [, $a, $b] = $this->family();
 
         $lw = Livewire::test(FamilyModal::class)
-            ->call('open', $a->id)
+            ->call('open', $a->id, null, $this->month)
             ->set("amounts.{$a->id}", '30')
             ->set("amounts.{$b->id}", '15')
             ->set('method', 'bank')
@@ -120,7 +120,7 @@ class FamilyPaymentTest extends TestCase
         $this->pay($b, 30);
 
         $lw = Livewire::test(FamilyModal::class)
-            ->call('open', $a->id)
+            ->call('open', $a->id, null, $this->month)
             ->set("amounts.{$a->id}", '')   // A: nothing today
             ->call('saveAll');              // B still shows its recorded 30
 
@@ -134,7 +134,7 @@ class FamilyPaymentTest extends TestCase
         $p = $this->pay($a, 30, null, null, 'cash');
 
         Livewire::test(FamilyModal::class)
-            ->call('open', $a->id)
+            ->call('open', $a->id, null, $this->month)
             ->set("amounts.{$a->id}", '20')
             ->set('method', 'bank')
             ->call('saveAll');
@@ -150,7 +150,7 @@ class FamilyPaymentTest extends TestCase
         $this->pay($a, 30);
 
         Livewire::test(FamilyModal::class)
-            ->call('open', $a->id)
+            ->call('open', $a->id, null, $this->month)
             ->set("amounts.{$a->id}", '')
             ->call('saveAll');
 
@@ -163,7 +163,7 @@ class FamilyPaymentTest extends TestCase
         $this->pay($a, 15, null, null, 'cash');
 
         Livewire::test(FamilyModal::class)
-            ->call('open', $a->id)
+            ->call('open', $a->id, null, $this->month)
             ->set("amounts.{$a->id}", '30')
             ->set('method', 'bank')
             ->call('saveAll');
@@ -180,7 +180,7 @@ class FamilyPaymentTest extends TestCase
         $newer = $this->pay($a, 15, null, date('Y-m-d', strtotime(date('Y-m-01') . ' +4 days')));
 
         Livewire::test(FamilyModal::class)
-            ->call('open', $a->id)
+            ->call('open', $a->id, null, $this->month)
             ->set("amounts.{$a->id}", '20')
             ->call('saveAll');
 
@@ -195,7 +195,7 @@ class FamilyPaymentTest extends TestCase
         $next = $this->year + 1;
 
         $lw = Livewire::test(FamilyModal::class)
-            ->call('open', $a->id)
+            ->call('open', $a->id, null, $this->month)
             ->set('year', $next)
             ->set('month', 1)
             ->set("amounts.{$a->id}", '30')
@@ -210,7 +210,7 @@ class FamilyPaymentTest extends TestCase
     {
         [, $a] = $this->family();
 
-        $lw = Livewire::test(FamilyModal::class)->call('open', $a->id)->set('year', 1990);
+        $lw = Livewire::test(FamilyModal::class)->call('open', $a->id, null, $this->month)->set('year', 1990);
 
         $this->assertSame($this->year - 1, $lw->get('year'));
     }
@@ -221,7 +221,7 @@ class FamilyPaymentTest extends TestCase
         $stranger = Student::create(['name' => 'Stranger', 'default_fee_amount' => 30]);
 
         Livewire::test(FamilyModal::class)
-            ->call('open', $a->id)
+            ->call('open', $a->id, null, $this->month)
             ->set("amounts.{$stranger->id}", '30')
             ->set("amounts.{$a->id}", '30')
             ->call('saveAll');
@@ -237,7 +237,7 @@ class FamilyPaymentTest extends TestCase
         $this->actingAs($this->user(User::ROLE_VIEWER));
 
         Livewire::test(FamilyModal::class)
-            ->call('open', $a->id)
+            ->call('open', $a->id, null, $this->month)
             ->set("amounts.{$a->id}", '30')
             ->call('saveAll');
 
@@ -249,7 +249,7 @@ class FamilyPaymentTest extends TestCase
         [, $a] = $this->family();
         $this->pay($a, 30, 1);
 
-        $lw = Livewire::test(FamilyModal::class)->call('open', $a->id);
+        $lw = Livewire::test(FamilyModal::class)->call('open', $a->id, null, $this->month);
 
         $lw->set('month', 1);
         $this->assertEquals(30, $this->member($lw, $a)['month_paid']);
@@ -268,11 +268,51 @@ class FamilyPaymentTest extends TestCase
             'enrolled_at' => ($this->year + 2) . '-01-01',
         ]);
 
-        $lw = Livewire::test(FamilyModal::class)->call('open', $a->id);
+        $lw = Livewire::test(FamilyModal::class)->call('open', $a->id, null, $this->month);
         $this->assertSame('', $lw->get('amounts')[$later->id]);
 
         $lw->set("amounts.{$later->id}", '30')->call('saveAll');
         $this->assertSame(0, Payment::where('student_id', $later->id)->count());
+    }
+
+    // ---- the month it opens on ----
+
+    public function test_it_opens_on_the_oldest_unpaid_month_not_the_current_one(): void
+    {
+        [, $a, $b] = $this->family();
+        // Everything before $owed is paid; in $owed only A paid — B still owes it.
+        $owed = max(1, $this->month - 1);
+        foreach (range(1, $owed) as $m) {
+            $this->pay($a, 30, $m);
+            if ($m < $owed) $this->pay($b, 30, $m);
+        }
+
+        $lw = Livewire::test(FamilyModal::class)->call('open', $a->id)
+            ->assertSet('selectedMonths', [$owed])
+            ->assertSet('month', $owed);
+        $this->assertSame('30', $lw->get('amounts')[$a->id], 'A paid it: shows what is recorded');
+        $this->assertSame('30', $lw->get('amounts')[$b->id], 'B owes it: the fee is suggested');
+    }
+
+    public function test_a_family_paid_up_to_now_opens_on_the_next_month_to_pay(): void
+    {
+        [, $a, $b] = $this->family();
+        foreach (range(1, $this->month) as $m) {
+            $this->pay($a, 30, $m);
+            $this->pay($b, 30, $m);
+        }
+
+        $next = $this->month === 12 ? 12 : $this->month + 1;
+        Livewire::test(FamilyModal::class)->call('open', $a->id)->assertSet('selectedMonths', [$next]);
+    }
+
+    public function test_months_before_enrolment_are_not_counted_as_unpaid(): void
+    {
+        [, $a, $b] = $this->family();
+        $a->update(['enrolled_at' => sprintf('%04d-%02d-01', $this->year, $this->month)]);
+        $b->update(['enrolled_at' => sprintf('%04d-%02d-01', $this->year, $this->month)]);
+
+        Livewire::test(FamilyModal::class)->call('open', $a->id)->assertSet('selectedMonths', [$this->month]);
     }
 
     // ---- several months at once ----
@@ -282,7 +322,7 @@ class FamilyPaymentTest extends TestCase
         [, $a, $b] = $this->family();
         $this->pay($a, 30, 2);
 
-        $lw = Livewire::test(FamilyModal::class)->call('open', $a->id)->call('pickMonths', [1, 2, 3]);
+        $lw = Livewire::test(FamilyModal::class)->call('open', $a->id, null, $this->month)->call('pickMonths', [1, 2, 3]);
         $this->assertSame([1, 2, 3], $lw->get('selectedMonths'));
         $this->assertSame('30', $lw->get('amounts')[$a->id], 'the amount is per month');
         $this->assertSame('30', $lw->get('amounts')[$b->id]);
@@ -302,7 +342,7 @@ class FamilyPaymentTest extends TestCase
         [, $a, $b] = $this->family();
         $this->pay($a, 40, 1);
 
-        Livewire::test(FamilyModal::class)->call('open', $a->id)
+        Livewire::test(FamilyModal::class)->call('open', $a->id, null, $this->month)
             ->call('pickMonths', [1, 2])
             ->set("amounts.{$a->id}", '30')
             ->set("amounts.{$b->id}", '')
@@ -317,7 +357,7 @@ class FamilyPaymentTest extends TestCase
     {
         [, $a] = $this->family();
 
-        $lw = Livewire::test(FamilyModal::class)->call('open', $a->id)
+        $lw = Livewire::test(FamilyModal::class)->call('open', $a->id, null, $this->month)
             ->call('pickMonths', [13, 0, 4, 2, 2, '3'])
             ->assertSet('selectedMonths', [2, 3, 4])
             ->assertSet('month', 2);
@@ -329,9 +369,9 @@ class FamilyPaymentTest extends TestCase
     public function test_a_failed_reload_closes_the_window_instead_of_an_error_page(): void
     {
         [, $a] = $this->family();
-        $lw = Livewire::test(FamilyModal::class)->call('open', $a->id);
+        $lw = Livewire::test(FamilyModal::class)->call('open', $a->id, null, $this->month);
 
         $a->forceDelete();
-        $lw->set('month', 2)->assertOk()->assertSet('isOpen', false)->assertDispatched('toast', type: 'error');
+        $lw->set('year', $this->year - 1)->assertOk()->assertSet('isOpen', false)->assertDispatched('toast', type: 'error');
     }
 }

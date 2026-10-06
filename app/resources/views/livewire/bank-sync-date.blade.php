@@ -72,7 +72,7 @@
                                                 <span class="bank-history__who text-muted">{{ $r['by'] }} · <span dir="ltr">{{ $r['at'] }}</span></span>
                                                 <span class="bank-history__sum {{ $r['count'] ? '' : 'text-muted' }}">
                                                     @if ($r['has_start'])
-                                                        {{ trans_choice('banksync.payments_count', $r['count'], ['count' => $r['count']]) }} · {{ number_format($r['total'], 2) }} €
+                                                        {{ trans_choice('banksync.payments_count', $r['count'], ['count' => $r['count']]) }}@if ($r['count']) · <span dir="ltr">{{ number_format($r['total'], 2) }} €</span>@endif
                                                     @else
                                                         {{ __('banksync.up_to_here', ['count' => $r['count']]) }}
                                                     @endif

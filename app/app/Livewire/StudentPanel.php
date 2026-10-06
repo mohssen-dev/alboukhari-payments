@@ -290,7 +290,7 @@ class StudentPanel extends Component
 
     public function openFamily()
     {
-        $this->dispatch('open-family-modal', studentId: $this->studentId);
+        $this->dispatch('family-open', studentId: $this->studentId);
     }
 
     public function openSendMessage()

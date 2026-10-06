@@ -624,6 +624,8 @@
     "family.no_changes": "No changes",
     "family.confirm_reduce": "This lowers or removes recorded payments:",
     "family.saved_changes": "Saved — added :added € · reduced :removed €",
+    "family.saved_added": "Saved — added :added €",
+    "family.saved_removed": "Saved — reduced :removed €",
     "family.multi": "Several months",
     "family.multi_title": "Pick more than one month and record them as one payment",
     "family.multi_hint": "Click months in the table to add or remove them · Shift + click picks a range",

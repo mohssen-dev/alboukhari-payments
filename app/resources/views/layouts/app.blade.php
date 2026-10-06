@@ -227,7 +227,7 @@
 
 @auth
     {{-- Persistent Livewire modals + side panel.
-         Mounted once per page; opened via events (open-payment-modal, open-family-modal, etc.).
+         Mounted once per page; opened via events (pay-open, family-open, open-student-panel, etc.).
          This lets any component open a modal without triggering a re-render of the caller. --}}
     <livewire:payment-modal />
     <livewire:family-modal />
@@ -246,6 +246,10 @@
     // event and fetches its own content (one round-trip, nothing to wait for).
     window.abOpenPayment = (studentId, year, month, name = '') =>
         window.dispatchEvent(new CustomEvent('pay-open', { detail: { studentId, year, month, name } }));
+
+    // Same for the family window (it opens on the family's oldest unpaid month).
+    window.abOpenFamily = (studentId, name = '') =>
+        window.dispatchEvent(new CustomEvent('family-open', { detail: { studentId, name } }));
 
     // Dark / light toggle — remembered per browser (see the <head> script).
     window.abToggleTheme = () => {

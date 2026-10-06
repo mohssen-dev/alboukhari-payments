@@ -624,6 +624,8 @@
     "family.no_changes": "لا توجد تغييرات",
     "family.confirm_reduce": "سيتم إنقاص أو حذف مبالغ مسجّلة:",
     "family.saved_changes": "تم الحفظ — أُضيف :added € · خُصم :removed €",
+    "family.saved_added": "تم الحفظ — أُضيف :added €",
+    "family.saved_removed": "تم الحفظ — خُصم :removed €",
     "family.multi": "عدة أشهر",
     "family.multi_title": "اختر أكثر من شهر وسجّلها في دفعة واحدة",
     "family.multi_hint": "انقر على الأشهر في الجدول لإضافتها أو إزالتها · Shift + نقر لتحديد نطاق",

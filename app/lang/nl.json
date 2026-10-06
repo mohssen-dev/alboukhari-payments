@@ -624,6 +624,8 @@
     "family.no_changes": "Geen wijzigingen",
     "family.confirm_reduce": "Hiermee worden geregistreerde betalingen verlaagd of verwijderd:",
     "family.saved_changes": "Opgeslagen — toegevoegd :added € · verlaagd :removed €",
+    "family.saved_added": "Opgeslagen — toegevoegd :added €",
+    "family.saved_removed": "Opgeslagen — verlaagd :removed €",
     "family.multi": "Meerdere maanden",
     "family.multi_title": "Kies meer dan één maand en boek ze als één betaling",
     "family.multi_hint": "Klik maanden in de tabel aan of uit · Shift + klik kiest een reeks",

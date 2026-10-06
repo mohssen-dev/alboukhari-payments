@@ -247,7 +247,7 @@
     </div>
 
     {{-- Modals + student panel live in layouts/app.blade.php, not here.
-         They subscribe to events (open-payment-modal, open-family-modal, etc.)
+         They subscribe to events (pay-open, family-open, etc.)
          so opening one does NOT trigger a grid re-render. --}}
 </div>
 
@@ -367,7 +367,7 @@
                 e.preventDefault();
                 const id = +tr.dataset.sid;
                 if (act.dataset.act === 'pay') this.openPay(id, +act.dataset.m);
-                else if (act.dataset.act === 'family') Livewire.dispatch('open-family-modal', { studentId: id });
+                else if (act.dataset.act === 'family') this.openFamily(id);
                 else if (act.dataset.act === 'menu') this.openMenu(id, act);
             },
 
@@ -382,6 +382,12 @@
                 if (!cell) return;
                 e.preventDefault();
                 this.openPay(+cell.closest('tr[data-sid]').dataset.sid, +cell.dataset.m);
+            },
+
+            openFamily(id) {
+                this.menu.open = false;
+                const row = index.get(id);
+                abOpenFamily(id, row ? row.name : '');
             },
 
             openPay(id, month) {
@@ -452,7 +458,7 @@
                 if (!id) return;
                 if (action === 'pay') this.openPay(id, cfg.nowMonth);
                 else if (action === 'details') Livewire.dispatch('open-student-panel', { studentId: id });
-                else if (action === 'family') Livewire.dispatch('open-family-modal', { studentId: id });
+                else if (action === 'family') this.openFamily(id);
                 else if (action === 'message') Livewire.dispatch('open-send-message', { studentId: id });
                 else if (action === 'edit') Livewire.dispatch('open-student-form', { studentId: id });
                 else if (action === 'delete') Livewire.dispatch('open-delete-student', { studentId: id });
