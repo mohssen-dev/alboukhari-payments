@@ -1063,6 +1063,40 @@ html[data-theme="dark"] .family-table td.is-selected-month::after { background: 
 }
 .tpl-message p { margin: 0; white-space: pre-wrap; }
 .tpl-message p + p { margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--color-border-strong); }
+/* Settings → Templates: a card per template, edited in place (App\Livewire\SettingsTemplates). */
+.settpl { display: flex; flex-direction: column; gap: 12px; }
+.settpl > .page-card { margin: 0; }
+.settpl-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+.settpl-card {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    padding: 14px 16px;
+    box-shadow: var(--shadow-sm);
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+.settpl-card.is-auto { border-inline-start: 4px solid var(--color-warning); }
+.settpl-card.is-editing { border-color: var(--color-primary); box-shadow: 0 0 0 3px var(--color-primary-soft); }
+.settpl-card__head { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; flex-wrap: wrap; margin-bottom: 8px; }
+.settpl-card__title { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 14px; }
+.settpl-card__actions { display: flex; gap: 6px; align-items: center; }
+.settpl-lock { padding: 0 6px; font-size: 14px; opacity: 0.6; cursor: help; }
+.settpl-label { margin: 8px 0 4px; font-size: 11px; font-weight: 700; color: var(--color-text-muted); }
+.settpl-body {
+    padding: 10px 12px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    background: var(--color-surface-alt);
+    font-size: 13px; line-height: 1.65;
+    white-space: pre-wrap; text-align: start;
+}
+.settpl-body.is-ar { background: transparent; border-style: dashed; color: var(--color-text-muted); }
+.settpl-meta { margin-top: 8px; font-size: 11.5px; color: var(--color-text-muted); }
+.settpl-card__foot { display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px; }
+.settpl-section { margin: 10px 0 0; font-size: 14px; }
+.settpl-section-hint { margin: -6px 0 0; }
+.settpl-empty { text-align: center; color: var(--color-text-soft); }
+
 .tpl-preview { margin-top: 6px; }
 /* A template's Arabic translation: for staff only, never sent — so it reads
    as a note beside the message, not as part of it. */

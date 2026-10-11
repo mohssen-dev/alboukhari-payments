@@ -2,14 +2,9 @@
 
 namespace App\Livewire;
 
-use App\Models\Family;
-use App\Models\Setting;
-use App\Models\Student;
 use App\Models\Template;
-use App\Services\MonthNames;
-use App\Services\TemplateRenderer;
+use App\Services\TemplatePreview;
 use App\Support\AuthorizesLivewireWrite;
-use App\Support\SmsCounter;
 use App\Support\TemplateVariables;
 use Illuminate\Validation\Rule;
 use Livewire\Component;
@@ -108,7 +103,13 @@ class TemplatesList extends Component
     {
         $this->assertCanWrite();
 
-        Template::findOrFail($id)->delete();
+        $template = Template::findOrFail($id);
+        if ($template->reminderKind()) {
+            $this->dispatch('flash', message: __('settpl.cannot_delete_reminder'), type: 'error');
+            return;
+        }
+
+        $template->delete();
         $this->dispatch('flash', message: __('flash.deleted'));
     }
 
@@ -134,55 +135,8 @@ class TemplatesList extends Component
         return view('livewire.templates-list', [
             'libraryTemplates' => Template::library()->orderBy('language')->orderBy('code')->get(),
             'manualTemplates' => Template::manual()->latest('id')->get(),
-            'preview' => $this->editing ? $this->samplePreview() : null,
+            // The message exactly as a real parent receives it this month.
+            'preview' => $this->editing ? TemplatePreview::sample($this->body, $this->body_ar) : null,
         ])->layout('layouts.app');
-    }
-
-    /**
-     * The message exactly as a real parent receives it this month (SMS count
-     * and cost), and the translation filled in for the same child — shown to
-     * staff, never sent.
-     */
-    private function samplePreview(): ?array
-    {
-        $body = trim($this->body);
-        if ($body === '') {
-            return null;
-        }
-
-        $translation = trim($this->body_ar);
-        $both = $body . "\n" . $translation;
-
-        $year = (int) date('Y');
-        $month = (int) date('n');
-        $usesFamily = (bool) array_intersect(TemplateVariables::usedIn($both), array_keys(TemplateVariables::FAMILY));
-
-        $student = $usesFamily
-            ? Student::whereIn('family_id', Family::has('students', '>=', 2)->select('id'))->orderBy('id')->first()
-            : null;
-        $student ??= Student::orderBy('id')->first();
-
-        $who = null;
-        $render = fn (string $text) => $text;
-        if ($student) {
-            if ($usesFamily && $student->family) {
-                $render = fn (string $text) => TemplateRenderer::renderForFamily($text, $student->family, $year, $month);
-                $who = $student->family->displayName();
-            } else {
-                $render = fn (string $text) => TemplateRenderer::renderForStudent($text, $student, $year, $month);
-                $who = $student->name;
-            }
-        }
-
-        $counter = SmsCounter::count($render($body), Setting::get('force_ascii', '1') === '1');
-
-        return [
-            'counter' => $counter,
-            'translation' => $translation !== '' ? $render($translation) : null,
-            'who' => $who,
-            'month' => (MonthNames::full()[$month] ?? '') . ' ' . $year,
-            'quote' => app(\App\Services\BulkGatePricing::class)->quote((int) $counter['segments']),
-            'unknown' => TemplateVariables::unknownIn($both),
-        ];
     }
 }

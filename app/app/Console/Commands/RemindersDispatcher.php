@@ -34,11 +34,11 @@ class RemindersDispatcher extends Command
 
         if ($first) {
             $this->info('Triggering: first_friday');
-            $this->launch('first_friday', 'nl_first_friday');
+            $this->launch('first_friday', Template::REMINDER_FIRST_FRIDAY);
         }
         if ($mid) {
             $this->info('Triggering: mid_month_auto');
-            $this->launch('mid_month_auto', 'nl_mid_month');
+            $this->launch('mid_month_auto', Template::REMINDER_MID_MONTH);
         }
         if (!$first && !$mid) {
             $this->line('Nothing to trigger today.');

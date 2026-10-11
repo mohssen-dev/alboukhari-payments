@@ -38,6 +38,9 @@
             <button :class="{ 'active': tab === 'reminders' }" @click="tab='reminders'; updateUrl()">
                 <span class="icon">⏰</span> {{ __('Reminders') }}
             </button>
+            <button :class="{ 'active': tab === 'templates' }" @click="tab='templates'; updateUrl()">
+                <span class="icon">📝</span> {{ __('nav.templates') }}
+            </button>
             <button :class="{ 'active': tab === 'advanced' }" @click="tab='advanced'; updateUrl()">
                 <span class="icon">🔧</span> {{ __('Advanced') }}
             </button>
@@ -397,6 +400,11 @@
                     <button type="submit" class="btn btn-primary btn-lg">💾 {{ __('common.save') }}</button>
                 </div>
             </form>
+
+            {{-- ===== Tab: Templates — every template, edited in place (App\Livewire\SettingsTemplates) ===== --}}
+            <div x-show="tab === 'templates'" x-cloak>
+                @livewire('settings-templates')
+            </div>
 
             {{-- ===== Tab: Advanced ===== --}}
             <form method="POST" action="{{ route('settings.update') }}" x-show="tab === 'advanced'" x-cloak>
