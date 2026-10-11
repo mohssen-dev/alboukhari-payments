@@ -139,7 +139,11 @@
 
         @if($currentUser?->canWrite())
             @php $halted = \App\Services\HaltService::isHalted(); @endphp
-            <form method="POST" action="{{ route('halt') }}" style="display:inline;margin-inline-start:8px">
+            {{-- Stops ALL sending. It was pressed to stop the automatic reminders,
+                 which blocked manual campaigns too — the confirm says what it does
+                 and where the reminders alone are switched off. --}}
+            <form method="POST" action="{{ route('halt') }}" style="display:inline;margin-inline-start:8px"
+                  @unless ($halted) onsubmit="return confirm({{ \Illuminate\Support\Js::from(__('halt.confirm')) }})" @endunless>
                 @csrf
                 <input type="hidden" name="action" value="{{ $halted ? 'resume' : 'halt' }}">
                 <button type="submit" class="btn btn-sm {{ $halted ? 'btn-success' : 'btn-danger' }}" title="{{ $halted ? __('topbar.resume') : __('topbar.halt') }}">
@@ -185,6 +189,27 @@
         </div>
     @endguest
 </nav>
+
+{{-- Sending halted (⛔): said on every page. The only sign used to be the
+     top-bar button turning green, so campaigns were made, silently left
+     waiting, and nobody knew why. --}}
+@auth
+    @if (\App\Services\HaltService::isHalted())
+        <div class="halt-bar" role="alert">
+            <span>⛔ <strong>{{ __('halt.bar_title') }}</strong> {{ __('halt.bar_text') }}</span>
+            @if ($currentUser?->isAdmin())
+                <span class="halt-bar__hint">{{ __('halt.reminders_hint') }} <a href="{{ route('settings', ['tab' => 'reminders']) }}">{{ __('halt.reminders_link') }}</a></span>
+            @endif
+            @if ($currentUser?->canWrite())
+                <form method="POST" action="{{ route('halt') }}">
+                    @csrf
+                    <input type="hidden" name="action" value="resume">
+                    <button type="submit" class="btn btn-sm btn-success">▶ {{ __('topbar.resume') }}</button>
+                </form>
+            @endif
+        </div>
+    @endif
+@endauth
 
 @if (session('flash'))
     <div

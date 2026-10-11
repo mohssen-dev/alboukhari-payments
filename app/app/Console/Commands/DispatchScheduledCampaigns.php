@@ -3,20 +3,15 @@
 namespace App\Console\Commands;
 
 use App\Models\Campaign;
-use App\Models\CampaignRecipient;
-use App\Models\Setting;
+use App\Services\CampaignLauncher;
 use App\Services\CampaignSender;
 use App\Services\HaltService;
-use App\Services\RecipientListBuilder;
 use Illuminate\Console\Command;
 
 class DispatchScheduledCampaigns extends Command
 {
     protected $signature = 'campaigns:dispatch-scheduled';
     protected $description = 'يطلق الحملات المجدولة التي حان وقتها (يُشغَّل كل دقيقة عبر الـ scheduler).';
-
-    /** A 'running' campaign untouched for this long is treated as interrupted. */
-    private const STALE_RUNNING_MINUTES = 15;
 
     public function handle(): int
     {
@@ -65,28 +60,7 @@ class DispatchScheduledCampaigns extends Command
             try {
                 // Recipients are built NOW, not at scheduling time, so students
                 // who paid meanwhile drop off dunning lists automatically.
-                $builder = new RecipientListBuilder();
-                $r = $builder->build($campaign);
-
-                $campaign->update([
-                    'total_recipients' => $r['stats']['total_recipients'],
-                    'estimated_cost' => (float) Setting::get('bulkgate_price_per_sms', '0.08') * $r['stats']['total_segments'],
-                ]);
-
-                foreach ($r['recipients'] as $rec) {
-                    CampaignRecipient::firstOrCreate(
-                        ['idempotency_key' => $rec['idempotency_key']],
-                        [
-                            'campaign_id' => $campaign->id,
-                            'student_id' => $rec['student_id'] ?? null,
-                            'family_id' => $rec['family_id'] ?? null,
-                            'phone_e164' => $rec['phone'],
-                            'body_personalized' => $rec['body'],
-                            'status' => 'pending',
-                            'segments' => $rec['segments'],
-                        ]
-                    );
-                }
+                app(CampaignLauncher::class)->rebuildRecipients($campaign->refresh());
 
                 $result = app(CampaignSender::class)->sendCampaign($campaign);
                 $this->info("Campaign #{$campaign->id}: " . json_encode($result));
@@ -117,7 +91,7 @@ class DispatchScheduledCampaigns extends Command
                 $q->where('status', 'paused')
                   ->orWhere(function ($w) {
                       $w->where('status', 'running')
-                        ->where('updated_at', '<', now()->subMinutes(self::STALE_RUNNING_MINUTES));
+                        ->where('updated_at', '<', now()->subMinutes(CampaignLauncher::STALE_RUNNING_MINUTES));
                   });
             })
             ->whereHas('recipients', fn ($q) => $q->whereIn('status', ['pending', 'sending']))

@@ -53,6 +53,10 @@
                 @else ⚠ {{ __('Partial') }}
                 @endif
             </div>
+            {{-- Switched off here — not with ⛔, which stops manual campaigns too. --}}
+            @if (auth()->user()?->isAdmin())
+                <div class="meta"><a href="{{ route('settings', ['tab' => 'reminders']) }}">{{ __('halt.reminders_manage') }}</a></div>
+            @endif
         </div>
         <div class="kpi danger" x-show="selectedIds.length > 0" x-cloak>
             <div class="label">{{ __('Selected') }}</div>

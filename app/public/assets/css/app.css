@@ -2470,6 +2470,35 @@ html[data-theme="dark"] .theme-toggle .icon-sun { display: block; }
 .cost-stale { color: var(--color-warning); font-weight: 600; }
 
 /* ============================================
+   Sending halted (⛔): a bar under the top bar on every page, and a line
+   by the launch button on the send page.
+   ============================================ */
+.halt-bar {
+    display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 6px 14px;
+    padding: 8px 16px;
+    background: var(--color-danger-soft, #fef2f2);
+    border-bottom: 1px solid var(--color-danger);
+    color: var(--color-danger);
+    font-size: 13px; line-height: 1.5; text-align: center;
+}
+.halt-bar strong { font-weight: 800; }
+.halt-bar__hint { font-size: 12px; color: var(--color-text-muted); }
+.halt-bar__hint a { color: inherit; font-weight: 700; text-decoration: underline; }
+.halt-bar form { margin: 0; }
+.halt-inline {
+    padding: 10px 12px;
+    border: 1px solid var(--color-danger);
+    border-radius: var(--radius);
+    background: var(--color-danger-soft, #fef2f2);
+    color: var(--color-danger);
+    font-size: 13px; font-weight: 600; line-height: 1.5;
+}
+.campaign-actions { display: inline-flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.campaign-actions form { display: inline; margin: 0; }
+.campaign-waiting-hint { margin-top: 3px; font-size: 11px; color: var(--color-text-muted); white-space: nowrap; }
+.campaign-waiting-note { padding: 12px 16px; font-size: 13px; line-height: 1.6; border-inline-start: 4px solid var(--color-warning); }
+
+/* ============================================
    Navbar: last bank sync date (App\Livewire\BankSyncDate)
    A chip with the date; its popover holds the date picker.
    ============================================ */

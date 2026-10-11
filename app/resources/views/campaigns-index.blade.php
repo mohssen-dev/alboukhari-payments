@@ -70,18 +70,17 @@
                             @endphp
                             <span class="pill {{ $statusCls }}">{{ $statusLabel }}</span>
                             @if ($c->isScheduled())
-                                <div class="fs-xs text-muted" style="margin-top:3px;white-space:nowrap">⏰ {{ $c->scheduled_at->format('Y-m-d H:i') }}</div>
+                                <div class="campaign-waiting-hint">⏰ {{ $c->scheduled_at->format('Y-m-d H:i') }}</div>
+                            @elseif (in_array($c->status, ['queued', 'paused'], true))
+                                <div class="campaign-waiting-hint">{{ trans_choice('campaign.waiting_count', $c->waiting_count, ['count' => $c->waiting_count]) }}</div>
                             @endif
                         </td>
                         <td class="text-muted fs-xs">{{ $c->created_at->format('Y-m-d H:i') }}</td>
                         <td style="white-space:nowrap">
-                            <a href="{{ route('campaigns.show', $c) }}" class="btn btn-sm btn-soft-primary">👁️ {{ __('common.open') }}</a>
-                            @if ($c->isScheduled() && auth()->user()?->canWrite())
-                                <form method="POST" action="{{ route('campaigns.cancel', $c) }}" style="display:inline" onsubmit="return confirm('{{ __('common.confirm') }}')">
-                                    @csrf
-                                    <button type="submit" class="btn btn-sm btn-soft-danger" title="{{ __('campaign.cancel_scheduled') }}">✕ {{ __('campaign.cancel_scheduled') }}</button>
-                                </form>
-                            @endif
+                            <div class="campaign-actions">
+                                <a href="{{ route('campaigns.show', $c) }}" class="btn btn-sm btn-soft-primary">👁️ {{ __('common.open') }}</a>
+                                @include('partials.campaign-actions', ['campaign' => $c])
+                            </div>
                         </td>
                     </tr>
                 @empty

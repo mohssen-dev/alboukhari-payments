@@ -7,7 +7,9 @@ use App\Models\CampaignRecipient;
 use App\Models\Setting;
 use App\Models\Template;
 use App\Services\BulkGatePricing;
+use App\Services\CampaignLauncher;
 use App\Services\CampaignSender;
+use App\Services\HaltService;
 use App\Services\MonthNames;
 use App\Services\RecipientListBuilder;
 use App\Support\AuthorizesLivewireWrite;
@@ -277,6 +279,10 @@ class SendCampaign extends Component
             'time' => $campaign->scheduled_at->format('Y-m-d H:i'),
             'count' => $this->previewStats['total_recipients'],
         ]);
+        // Scheduling while halted is allowed — it fires on the first minute after resuming.
+        if (HaltService::isHalted()) {
+            $this->resultMessage .= ' ' . __('send.scheduled_while_halted');
+        }
         $this->dispatch('flash', message: $this->resultMessage);
     }
 
@@ -289,6 +295,14 @@ class SendCampaign extends Component
         // double-billing every SMS. Force an explicit page refresh to send again.
         if ($this->campaignId) {
             $this->dispatch('flash', message: __('send.already_launched'));
+            return;
+        }
+
+        // Halted (⛔ in the top bar): say so and create nothing. It used to
+        // save the campaign as "waiting" with a bare "Status: halted", and
+        // that campaign then never went out — not even after resuming.
+        if (HaltService::isHalted()) {
+            $this->dispatch('flash', message: __('send.halted_cannot_launch'), type: 'error');
             return;
         }
 
@@ -340,9 +354,9 @@ class SendCampaign extends Component
         $campaign = Campaign::find($this->campaignId);
         $sender = app(CampaignSender::class);
         $r = $sender->sendCampaign($campaign);
-        $this->resultMessage = __('Sent') . ': ' . ($r['sent'] ?? 0) . ' · ' . __('Failed') . ': ' . ($r['failed'] ?? 0) . ' · ' . __('columns.status') . ': ' . ($r['status'] ?? '');
+        $this->resultMessage = CampaignLauncher::resultMessage($r);
 
-        $this->dispatch('flash', message: $this->resultMessage);
+        $this->dispatch('flash', message: $this->resultMessage, type: CampaignLauncher::resultType($r));
     }
 
     /**
@@ -393,6 +407,7 @@ class SendCampaign extends Component
         }
 
         return view('livewire.send-campaign', [
+            'halted' => HaltService::isHalted(),
             'libraryTemplates' => Template::library()->orderBy('id')->get(),
             'manualTemplates' => Template::manual()->latest('id')->limit(15)->get(),
             'months' => MonthNames::full(),

@@ -43,6 +43,6 @@ Schedule::command('db:backup --keep=14')
     ->onOneServer();
 
 // Weekly cleanup of old activity logs (older than 365 days)
-Schedule::command('activitylog:clean')
+Schedule::command('activitylog:clean --force')
     ->weekly()
     ->onOneServer();

@@ -126,6 +126,10 @@
             @endif
         </div>
 
+        @if ($halted)
+            <div class="halt-inline mt-3" role="alert">⛔ {{ __('send.halted_inline') }}</div>
+        @endif
+
         <div style="display:flex;gap:8px;margin-top:16px">
             @if ($scheduleEnabled)
                 <button class="btn btn-primary" wire:click="schedule" wire:confirm="{{ __('common.confirm') }}" wire:loading.attr="disabled" wire:target="launch,schedule,sendTest" style="flex:1">
@@ -133,7 +137,7 @@
                     <span wire:loading wire:target="schedule">⏳ …</span>
                 </button>
             @else
-                <button class="btn btn-success" wire:click="launch" wire:confirm="{{ __('common.confirm') }}" wire:loading.attr="disabled" wire:target="launch,schedule,sendTest" style="flex:1">
+                <button class="btn btn-success" wire:click="launch" wire:confirm="{{ __('common.confirm') }}" wire:loading.attr="disabled" wire:target="launch,schedule,sendTest" style="flex:1" @disabled($halted) title="{{ $halted ? __('send.halted_inline') : '' }}">
                     <span wire:loading.remove wire:target="launch">🚀 {{ __('send.launch') }}</span>
                     <span wire:loading wire:target="launch">⏳ {{ __('send.launching') }}</span>
                 </button>
@@ -141,7 +145,12 @@
         </div>
 
         @if ($resultMessage)
-            <div class="pill pill-success mt-3" style="display:block;padding:10px 14px">{{ $resultMessage }}</div>
+            <div class="pill pill-success mt-3" style="display:block;padding:10px 14px">
+                {{ $resultMessage }}
+                @if ($campaignId)
+                    · <a href="{{ route('campaigns.show', $campaignId) }}" class="fw-700">{{ __('send.open_campaign') }} ←</a>
+                @endif
+            </div>
         @endif
     </div>
 

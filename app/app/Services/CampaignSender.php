@@ -6,6 +6,7 @@ use App\Models\Campaign;
 use App\Models\CampaignRecipient;
 use App\Models\MessageLog;
 use App\Models\Setting;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
 class CampaignSender
@@ -39,6 +40,23 @@ class CampaignSender
             return ['status' => 'handed_to_device', 'sent' => 0, 'failed' => 0, 'remaining' => $remaining];
         }
 
+        // One run per campaign at a time. "Send now" on the campaigns page and
+        // a scheduler tick resuming the same campaign must not both walk its
+        // pending list — every parent would be messaged (and billed) twice.
+        $lock = Cache::lock('campaign-send:' . $campaign->id, 900);
+        if (!$lock->get()) {
+            return ['status' => 'busy', 'sent' => 0, 'failed' => 0];
+        }
+
+        try {
+            return $this->runCampaign($campaign);
+        } finally {
+            $lock->release();
+        }
+    }
+
+    private function runCampaign(Campaign $campaign): array
+    {
         $campaign->update(['status' => 'running', 'started_at' => $campaign->started_at ?? now()]);
         $sent = 0;
         $failed = 0;
@@ -75,7 +93,14 @@ class CampaignSender
                 return ['status' => 'quota_exceeded', 'sent' => $sent, 'failed' => $failed];
             }
 
-            $recipient->update(['status' => 'sending', 'attempts' => $recipient->attempts + 1]);
+            // Claim the recipient only if it is still waiting — it may have
+            // been skipped meanwhile (campaign canceled) or taken elsewhere.
+            $claimed = CampaignRecipient::where('id', $recipient->id)
+                ->where('status', 'pending')
+                ->update(['status' => 'sending', 'attempts' => $recipient->attempts + 1]);
+            if (!$claimed) {
+                continue;
+            }
 
             try {
                 $result = $this->client->send(
@@ -149,7 +174,8 @@ class CampaignSender
             ->whereIn('status', ['pending', 'sending'])
             ->count();
 
-        if ($remaining === 0) {
+        // A campaign canceled while this batch ran stays canceled.
+        if ($remaining === 0 && $campaign->fresh()?->status === 'running') {
             $totalFailed = CampaignRecipient::where('campaign_id', $campaign->id)
                 ->where('status', 'failed')->count();
             $totalSent = CampaignRecipient::where('campaign_id', $campaign->id)

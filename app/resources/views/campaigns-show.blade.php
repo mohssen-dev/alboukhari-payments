@@ -25,15 +25,36 @@
         <h1 style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
             <span>📨 #{{ $campaign->id }} — {{ $campaign->typeLabel() }}</span>
             @php
-                $statusKey = 'campaign.status.' . $campaign->status;
+                // 'campaigns.status.*' — the list's keys. This page looked up
+                // 'campaign.status.*', which does not exist, so it showed "queued".
+                $statusKey = 'campaigns.status.' . $campaign->status;
                 $statusLabel = __($statusKey);
                 if ($statusLabel === $statusKey) { $statusLabel = $campaign->status; }
                 $statusCls = $campaignStatusPills[$campaign->status] ?? 'pill-muted';
             @endphp
             <span class="pill {{ $statusCls }}" style="font-size:12px">{{ $statusLabel }}</span>
+            @if ($campaign->isScheduled())
+                <span class="fs-xs text-muted">⏰ {{ $campaign->scheduled_at->format('Y-m-d H:i') }}</span>
+            @endif
         </h1>
-        <a href="{{ route('campaigns.index') }}" class="btn">← {{ __('campaign.back_to_log') }}</a>
+        <div class="campaign-actions">
+            @include('partials.campaign-actions', ['campaign' => $campaign])
+            <a href="{{ route('campaigns.index') }}" class="btn">← {{ __('campaign.back_to_log') }}</a>
+        </div>
     </div>
+
+    @if (in_array($campaign->status, ['queued', 'paused'], true) && !$campaign->isScheduled())
+        {{-- Why it is waiting, in words — "queued" alone explained nothing. --}}
+        <div class="page-card campaign-waiting-note">
+            @if ($campaign->status === 'paused')
+                ⏸️ {{ __('campaign.why_paused') }}
+            @elseif (\App\Services\HaltService::isHalted())
+                ⛔ {{ __('campaign.why_waiting_halted') }}
+            @else
+                ⏳ {{ __('campaign.why_waiting') }}
+            @endif
+        </div>
+    @endif
 
     <div class="kpi-grid">
         <div class="kpi info">
@@ -63,7 +84,7 @@
         </div>
 
         <h3 class="mt-4">{{ __('campaign.original_message') }}</h3>
-        <div style="background:var(--color-warning-soft);padding:12px;border-radius:var(--radius);white-space:pre-wrap;font-size:13px;line-height:1.6">{{ $campaign->body_template }}</div>
+        <div dir="auto" style="background:var(--color-warning-soft);padding:12px;border-radius:var(--radius);white-space:pre-wrap;font-size:13px;line-height:1.6;text-align:start">{{ $campaign->body_template }}</div>
     </div>
 
     <div class="page-card" style="padding:0">

@@ -489,3 +489,7 @@ html[data-theme="dark"] .dash-hero .btn.btn-primary:hover:not(:disabled) { backg
 html[data-theme="dark"] .stat-card:hover { box-shadow: 0 16px 28px -16px rgba(0, 0, 0, 0.8), var(--shadow-md); }
 html[data-theme="dark"] .dash-bar.danger > span { background: linear-gradient(135deg, #e05555 0%, #b83333 100%); }
 
+
+/* Sending halted bar / notice (layouts.app, send page) */
+html[data-theme="dark"] .halt-bar,
+html[data-theme="dark"] .halt-inline { background: rgba(220, 38, 38, 0.16); color: #fca5a5; border-color: rgba(248, 113, 113, 0.55); }
