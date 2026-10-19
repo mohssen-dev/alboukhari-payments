@@ -41,9 +41,11 @@
             <button :class="{ 'active': tab === 'templates' }" @click="tab='templates'; updateUrl()">
                 <span class="icon">📝</span> {{ __('nav.templates') }}
             </button>
-            <button :class="{ 'active': tab === 'sender' }" @click="tab='sender'; updateUrl()">
-                <span class="icon">📱</span> {{ __('sender.tab') }}
-            </button>
+            @if (config('features.sender_phone'))
+                <button :class="{ 'active': tab === 'sender' }" @click="tab='sender'; updateUrl()">
+                    <span class="icon">📱</span> {{ __('sender.tab') }}
+                </button>
+            @endif
             <button :class="{ 'active': tab === 'advanced' }" @click="tab='advanced'; updateUrl()">
                 <span class="icon">🔧</span> {{ __('Advanced') }}
             </button>
@@ -409,10 +411,12 @@
                 @livewire('settings-templates')
             </div>
 
-            {{-- ===== Tab: Sender phone — pairing, phones, pace (App\Livewire\SettingsSender) ===== --}}
-            <div x-show="tab === 'sender'" x-cloak>
-                @livewire('settings-sender')
-            </div>
+            {{-- ===== Tab: Sender phone — pairing, phones, pace (App\Livewire\SettingsSender). Hidden until SENDER_PHONE_ENABLED=true (config/features.php). ===== --}}
+            @if (config('features.sender_phone'))
+                <div x-show="tab === 'sender'" x-cloak>
+                    @livewire('settings-sender')
+                </div>
+            @endif
 
             {{-- ===== Tab: Advanced ===== --}}
             <form method="POST" action="{{ route('settings.update') }}" x-show="tab === 'advanced'" x-cloak>
@@ -517,8 +521,10 @@
     </div>
 </div>
 
-{{-- QR codes for pairing the sender phone (MIT, Kazuhiko Arase) — served from this site. --}}
-<script src="{{ asset('assets/js/qrcode-generator-1.4.4.js') }}" defer></script>
+@if (config('features.sender_phone'))
+    {{-- QR codes for pairing the sender phone (MIT, Kazuhiko Arase) — served from this site. --}}
+    <script src="{{ asset('assets/js/qrcode-generator-1.4.4.js') }}" defer></script>
+@endif
 <script>
 function updateUrl() {
     // Update URL with current tab on click (handled inline by Alpine)

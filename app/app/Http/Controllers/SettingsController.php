@@ -42,6 +42,9 @@ class SettingsController extends Controller
     public function edit(Request $request)
     {
         $tab = $request->query('tab', 'general');
+        if ($tab === 'sender' && !config('features.sender_phone')) {
+            $tab = 'general'; // the sender phone tab is hidden (config/features.php)
+        }
 
         $settings = [];
         foreach (self::KEYS as $key) {

@@ -135,11 +135,20 @@ class SendCampaign extends Component
         return in_array($this->channel, Campaign::DEVICE_CHANNELS, true);
     }
 
-    /** Rules shared by preview, launch and schedule: a phone channel needs an active phone. */
+    /**
+     * Rules shared by preview, launch and schedule: a phone channel needs an
+     * active phone — and is not accepted at all while the sender phone is
+     * hidden (config/features.php), so nothing can slip through the picker's
+     * absence.
+     */
     private function channelRules(): array
     {
+        $channels = config('features.sender_phone')
+            ? [Campaign::CHANNEL_BULKGATE_SMS, ...Campaign::DEVICE_CHANNELS]
+            : [Campaign::CHANNEL_BULKGATE_SMS];
+
         return [
-            'channel' => 'required|in:' . implode(',', [Campaign::CHANNEL_BULKGATE_SMS, ...Campaign::DEVICE_CHANNELS]),
+            'channel' => 'required|in:' . implode(',', $channels),
             'senderDeviceId' => $this->isDeviceChannel()
                 ? ['required', Rule::exists('sender_devices', 'id')->where('is_active', true)]
                 : 'nullable',
@@ -504,8 +513,9 @@ class SendCampaign extends Component
 
         return view('livewire.send-campaign', [
             'halted' => HaltService::isHalted(),
+            'senderPhone' => (bool) config('features.sender_phone'),
             'isDevice' => $this->isDeviceChannel(),
-            'devices' => SenderDevice::where('is_active', true)->orderByDesc('last_seen_at')->get(),
+            'devices' => config('features.sender_phone') ? SenderDevice::where('is_active', true)->orderByDesc('last_seen_at')->get() : collect(),
             'libraryTemplates' => Template::library()->orderBy('id')->get(),
             'manualTemplates' => Template::manual()->latest('id')->limit(15)->get(),
             'months' => MonthNames::full(),

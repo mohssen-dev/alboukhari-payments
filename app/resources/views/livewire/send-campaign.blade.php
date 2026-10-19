@@ -57,7 +57,8 @@
             </label>
         </div>
 
-        {{-- How it goes out: BulkGate, or a paired phone's SIM / WhatsApp. --}}
+        {{-- How it goes out: BulkGate, or a paired phone's SIM / WhatsApp. Shown only while the sender phone is enabled (config/features.php). --}}
+        @if ($senderPhone)
         <div class="form-group">
             <label>{{ __('send.channel') }}</label>
             <div class="channel-pick">
@@ -93,6 +94,7 @@
                 <div class="field-help">{{ __('send.device_channel_help') }}</div>
             @endif
         </div>
+        @endif
 
         <div class="form-group">
             <label>{{ __('send.template') }}</label>

@@ -26,6 +26,13 @@ class SenderWebUiTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+        // The sender phone is hidden by default (config/features.php); these tests exercise it switched on.
+        config(['features.sender_phone' => true]);
+    }
+
     private function user(string $role): User
     {
         return User::create(['name' => $role, 'email' => "$role@senderui.test", 'password' => Hash::make('secret123'), 'role' => $role, 'is_active' => true]);
@@ -206,6 +213,37 @@ class SenderWebUiTest extends TestCase
         $this->assertSame('TEST', $campaign->tag);
         $this->assertSame($d->id, $campaign->sender_device_id);
         $this->assertSame('+31612345678', CampaignRecipient::sole()->phone_e164);
+    }
+
+    // ---- hidden by default ----
+
+    public function test_nothing_about_the_phone_shows_while_the_feature_is_off(): void
+    {
+        config(['features.sender_phone' => false]);
+        $this->actingAs($this->user(User::ROLE_ADMIN));
+        $this->student('A');
+        $d = $this->device();
+        $campaign = Campaign::create(['type' => 'send_all', 'status' => 'completed', 'channel' => Campaign::CHANNEL_DEVICE_SMS, 'sender_device_id' => $d->id, 'body_template' => 'x', 'tag' => 't']);
+
+        $this->get(route('settings', ['tab' => 'sender']))->assertOk()
+            ->assertDontSee(__('sender.tab'))
+            ->assertDontSee('settings-sender')
+            ->assertDontSee('qrcode-generator');
+        $this->get(route('send.form'))->assertOk()
+            ->assertDontSee(__('send.channel'))
+            ->assertDontSee('channel-pick');
+        $this->get(route('campaigns.index'))->assertOk()->assertDontSee('campaign-channel');
+        $this->get(route('campaigns.show', $campaign))->assertOk()->assertDontSee('campaign-channel');
+
+        // A phone channel smuggled into the request is refused, not sent.
+        Livewire::test(SendCampaign::class)
+            ->set('type', 'send_all')
+            ->set('body', 'Hallo')
+            ->set('channel', Campaign::CHANNEL_DEVICE_SMS)
+            ->set('senderDeviceId', $d->id)
+            ->call('launch')
+            ->assertHasErrors('channel');
+        $this->assertSame(1, Campaign::count(), 'nothing new was created');
     }
 
     public function test_campaign_pages_show_the_channel_and_phone(): void
