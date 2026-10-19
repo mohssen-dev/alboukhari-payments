@@ -43,7 +43,8 @@ class RecipientListBuilder
 
         foreach ($students as $student) {
             // فلتر الاستثناءات الأساسية
-            $skipReason = $student->skipReason();
+            // WhatsApp campaigns ask the WhatsApp opt-in; everything else the SMS one.
+            $skipReason = $student->skipReason($campaign->channel === Campaign::CHANNEL_DEVICE_WHATSAPP ? 'whatsapp' : 'sms');
             if ($skipReason !== null) {
                 $skipped[] = [
                     'student_id' => $student->id,

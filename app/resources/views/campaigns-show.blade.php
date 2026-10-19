@@ -24,6 +24,7 @@
     <div class="page-header">
         <h1 style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
             <span>📨 #{{ $campaign->id }} — {{ $campaign->typeLabel() }}</span>
+            @include('partials.campaign-channel', ['campaign' => $campaign])
             @php
                 // 'campaigns.status.*' — the list's keys. This page looked up
                 // 'campaign.status.*', which does not exist, so it showed "queued".

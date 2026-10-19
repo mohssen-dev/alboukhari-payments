@@ -29,7 +29,7 @@ class SettingsController extends Controller
         // Sender phone (تطبيق mobile/) — نفس القائمة في SenderDeviceConfig::KEYS
         'sender_min_delay_sec', 'sender_max_delay_sec', 'sender_batch_size', 'sender_batch_pause_sec',
         'sender_daily_cap_whatsapp', 'sender_daily_cap_sms', 'sender_window_start', 'sender_window_end',
-        'sender_whatsapp_mode', 'sender_poll_interval_sec', 'sender_max_attempts', 'sender_claim_stale_minutes',
+        'sender_whatsapp_mode', 'sender_poll_interval_sec', 'sender_max_attempts',
     ];
 
     private const ENCRYPTED_KEYS = ['bulkgate_app_token', 'whatsapp_access_token', 'whatsapp_app_secret'];

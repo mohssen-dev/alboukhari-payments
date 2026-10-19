@@ -4,6 +4,7 @@ namespace App\Livewire;
 
 use App\Models\Campaign;
 use App\Models\CampaignRecipient;
+use App\Models\SenderDevice;
 use App\Models\Setting;
 use App\Models\Template;
 use App\Services\BulkGatePricing;
@@ -13,9 +14,11 @@ use App\Services\HaltService;
 use App\Services\MonthNames;
 use App\Services\RecipientListBuilder;
 use App\Support\AuthorizesLivewireWrite;
+use App\Support\PhoneNormalizer;
 use App\Support\SmsCounter;
 use App\Support\TemplateVariables;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Livewire\Component;
 
@@ -35,6 +38,13 @@ class SendCampaign extends Component
     public string $tag = '';
 
     public string $testPhone = '';
+
+    /**
+     * How the campaign goes out: BulkGate (the default), or a paired phone's
+     * SIM or WhatsApp — then the phone is required and must be active.
+     */
+    public string $channel = Campaign::CHANNEL_BULKGATE_SMS;
+    public ?int $senderDeviceId = null;
 
     public ?array $previewStats = null;
     public ?array $previewRecipients = null;
@@ -109,9 +119,31 @@ class SendCampaign extends Component
             }
         }
 
-        if (in_array($property, ['type', 'year', 'month', 'thresholdAmount', 'groupByFamily', 'templateId', 'body'], true)) {
+        if ($property === 'channel' && $this->isDeviceChannel() && !$this->senderDeviceId) {
+            // One active phone → pick it, so the usual case is one click.
+            $active = SenderDevice::where('is_active', true)->pluck('id');
+            $this->senderDeviceId = $active->count() === 1 ? $active->first() : null;
+        }
+
+        if (in_array($property, ['type', 'year', 'month', 'thresholdAmount', 'groupByFamily', 'templateId', 'body', 'channel'], true)) {
             $this->refreshPreview();
         }
+    }
+
+    public function isDeviceChannel(): bool
+    {
+        return in_array($this->channel, Campaign::DEVICE_CHANNELS, true);
+    }
+
+    /** Rules shared by preview, launch and schedule: a phone channel needs an active phone. */
+    private function channelRules(): array
+    {
+        return [
+            'channel' => 'required|in:' . implode(',', [Campaign::CHANNEL_BULKGATE_SMS, ...Campaign::DEVICE_CHANNELS]),
+            'senderDeviceId' => $this->isDeviceChannel()
+                ? ['required', Rule::exists('sender_devices', 'id')->where('is_active', true)]
+                : 'nullable',
+        ];
     }
 
     public function updatedType()
@@ -166,7 +198,10 @@ class SendCampaign extends Component
             'year' => 'required|integer',
             'month' => 'required|integer|min:1|max:12',
             'thresholdAmount' => in_array($this->type, ['paid_less_than', 'balance_above']) ? 'required|numeric|min:0' : 'nullable',
-        ], [], [
+        ] + $this->channelRules(), [
+            'senderDeviceId.required' => __('send.device_required'),
+            'senderDeviceId.exists' => __('send.device_required'),
+        ], [
             'body' => __('send.body'),
             'thresholdAmount' => __('send.threshold'),
         ]);
@@ -175,6 +210,7 @@ class SendCampaign extends Component
         $tempCampaign = new Campaign([
             'type' => $this->type,
             'status' => 'draft',
+            'channel' => $this->channel,
             'period_year' => $this->year,
             'period_month' => $this->month,
             'threshold_amount' => $this->thresholdAmount,
@@ -186,10 +222,15 @@ class SendCampaign extends Component
         $builder = new RecipientListBuilder();
         $result = $builder->build($tempCampaign);
 
-        // Stored on the campaign in euros: the dearest operator, so it never under-promises.
-        $quote = app(BulkGatePricing::class)->quote((int) $result['stats']['total_segments']);
-        $result['stats']['estimated_cost'] = $quote['max']['eur']
-            ?? (float) Setting::get('bulkgate_price_per_sms', '0.08') * $result['stats']['total_segments'];
+        // Stored on the campaign in euros: the dearest operator, so it never
+        // under-promises. From the phone the school pays nothing per message.
+        if ($this->isDeviceChannel()) {
+            $result['stats']['estimated_cost'] = 0.0;
+        } else {
+            $quote = app(BulkGatePricing::class)->quote((int) $result['stats']['total_segments']);
+            $result['stats']['estimated_cost'] = $quote['max']['eur']
+                ?? (float) Setting::get('bulkgate_price_per_sms', '0.08') * $result['stats']['total_segments'];
+        }
 
         $this->previewStats = $result['stats'];
         $this->previewRecipients = array_slice($result['recipients'], 0, 20);
@@ -212,6 +253,11 @@ class SendCampaign extends Component
         // The real message of the first recipient, not the raw {{…}} template.
         $text = $this->previewRecipients[0]['body'] ?? $this->body;
 
+        if ($this->isDeviceChannel()) {
+            $this->sendDeviceTest($text);
+            return;
+        }
+
         try {
             $client = app(\App\Services\BulkGateClient::class);
             $result = $client->send($this->testPhone, $text, 'TEST');
@@ -233,6 +279,52 @@ class SendCampaign extends Component
     }
 
     /**
+     * A test from the phone: a one-recipient campaign the phone picks up on
+     * its next sync (there is no direct line to the phone to send through).
+     */
+    private function sendDeviceTest(string $text): void
+    {
+        $this->validate($this->channelRules(), ['senderDeviceId.required' => __('send.device_required'), 'senderDeviceId.exists' => __('send.device_required')]);
+
+        $phone = PhoneNormalizer::normalize($this->testPhone);
+        if (!PhoneNormalizer::isValid($phone)) {
+            $this->dispatch('flash', message: __('flash.enter_test_phone'), type: 'error');
+            return;
+        }
+        if (HaltService::isHalted()) {
+            $this->dispatch('flash', message: __('send.halted_cannot_launch'), type: 'error');
+            return;
+        }
+
+        $campaign = \DB::transaction(function () use ($text, $phone) {
+            $campaign = Campaign::create([
+                'type' => 'specific_students',
+                'status' => 'queued',
+                'channel' => $this->channel,
+                'sender_device_id' => $this->senderDeviceId,
+                'period_year' => $this->year,
+                'period_month' => $this->month,
+                'body_template' => $text,
+                'tag' => 'TEST',
+                'total_recipients' => 1,
+            ]);
+            CampaignRecipient::create([
+                'campaign_id' => $campaign->id,
+                'phone_e164' => $phone,
+                'body_personalized' => $text,
+                'status' => 'pending',
+                'segments' => SmsCounter::count($text, false)['segments'],
+                'idempotency_key' => hash('sha1', "{$campaign->id}|test|{$phone}"),
+            ]);
+
+            return $campaign;
+        });
+
+        $device = SenderDevice::find($this->senderDeviceId);
+        $this->dispatch('flash', message: __('send.device_test_queued', ['phone' => $phone, 'device' => $device?->name ?? '', 'id' => $campaign->id]));
+    }
+
+    /**
      * Save the campaign with a future fire time instead of sending now.
      * Recipients are NOT built here — campaigns:dispatch-scheduled builds
      * them at fire time so the list reflects payments made in between.
@@ -248,7 +340,7 @@ class SendCampaign extends Component
 
         $this->validate([
             'scheduledAt' => 'required|date|after:now',
-        ], [], ['scheduledAt' => __('send.schedule_time')]);
+        ] + $this->channelRules(), ['senderDeviceId.required' => __('send.device_required'), 'senderDeviceId.exists' => __('send.device_required')], ['scheduledAt' => __('send.schedule_time')]);
 
         // Preview to catch empty target lists early (final list is rebuilt at fire time).
         $this->preview();
@@ -262,6 +354,8 @@ class SendCampaign extends Component
         $campaign = Campaign::create([
             'type' => $this->type,
             'status' => 'queued',
+            'channel' => $this->channel,
+            'sender_device_id' => $this->isDeviceChannel() ? $this->senderDeviceId : null,
             'scheduled_at' => $this->scheduledAt,
             'period_year' => $this->year,
             'period_month' => $this->month,
@@ -318,6 +412,8 @@ class SendCampaign extends Component
             $campaign = Campaign::create([
                 'type' => $this->type,
                 'status' => 'queued',
+                'channel' => $this->channel,
+                'sender_device_id' => $this->isDeviceChannel() ? $this->senderDeviceId : null,
                 'period_year' => $this->year,
                 'period_month' => $this->month,
                 'threshold_amount' => $this->thresholdAmount,
@@ -408,6 +504,8 @@ class SendCampaign extends Component
 
         return view('livewire.send-campaign', [
             'halted' => HaltService::isHalted(),
+            'isDevice' => $this->isDeviceChannel(),
+            'devices' => SenderDevice::where('is_active', true)->orderByDesc('last_seen_at')->get(),
             'libraryTemplates' => Template::library()->orderBy('id')->get(),
             'manualTemplates' => Template::manual()->latest('id')->limit(15)->get(),
             'months' => MonthNames::full(),

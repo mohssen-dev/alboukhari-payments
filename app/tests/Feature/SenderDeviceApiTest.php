@@ -195,18 +195,41 @@ class SenderDeviceApiTest extends TestCase
             ->assertOk()->assertJsonPath('halt', true)->assertJsonCount(0, 'jobs');
     }
 
-    public function test_stale_claims_are_requeued_on_next_claim(): void
+    public function test_a_claim_held_overnight_stays_the_phones(): void
     {
         [$device, $token] = $this->pairedDevice();
         $campaign = $this->deviceCampaign($device, Campaign::CHANNEL_DEVICE_SMS, 1);
         $this->postJson('/api/device/jobs/claim', [], $this->auth($token))->assertJsonCount(1, 'jobs');
 
-        CampaignRecipient::where('campaign_id', $campaign->id)->update(['claimed_at' => now()->subHours(2)]);
+        // Outside the sending window all night: the phone still holds it.
+        CampaignRecipient::where('campaign_id', $campaign->id)->update(['claimed_at' => now()->subHours(12)]);
+        $this->postJson('/api/device/jobs/claim', [], $this->auth($token))->assertOk()->assertJsonCount(0, 'jobs');
 
-        // الرسالة تعود للطابور وتُحجز من جديد (المحاولة الثانية)
+        $recipient = CampaignRecipient::where('campaign_id', $campaign->id)->first();
+        $this->assertSame('sending', $recipient->status, 'never marked failed while the phone holds it');
+    }
+
+    public function test_a_claim_lost_for_a_day_is_offered_again(): void
+    {
+        [$device, $token] = $this->pairedDevice();
+        $campaign = $this->deviceCampaign($device, Campaign::CHANNEL_DEVICE_SMS, 1);
+        $this->postJson('/api/device/jobs/claim', [], $this->auth($token))->assertJsonCount(1, 'jobs');
+
+        CampaignRecipient::where('campaign_id', $campaign->id)->update(['claimed_at' => now()->subHours(25)]);
+
         $this->postJson('/api/device/jobs/claim', [], $this->auth($token))
             ->assertOk()->assertJsonCount(1, 'jobs');
-        $this->assertSame(2, CampaignRecipient::where('campaign_id', $campaign->id)->value('attempts'));
+    }
+
+    public function test_unpairing_releases_what_the_phone_had_claimed(): void
+    {
+        [$device, $token] = $this->pairedDevice();
+        $campaign = $this->deviceCampaign($device, Campaign::CHANNEL_DEVICE_SMS, 2);
+        $this->postJson('/api/device/jobs/claim', [], $this->auth($token))->assertJsonCount(2, 'jobs');
+
+        $this->postJson('/api/device/unpair', [], $this->auth($token))->assertOk();
+
+        $this->assertSame(2, CampaignRecipient::where('campaign_id', $campaign->id)->where('status', 'pending')->whereNull('sender_device_id')->count());
     }
 
     public function test_campaign_sender_hands_device_campaigns_off_without_calling_bulkgate(): void

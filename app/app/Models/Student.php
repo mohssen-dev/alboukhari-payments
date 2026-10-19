@@ -150,7 +150,7 @@ class Student extends Model
      * preview, so they must be translated — they used to be hardcoded Arabic
      * and were shown verbatim to Dutch and English users.
      */
-    public function skipReason(): ?string
+    public function skipReason(string $channel = 'sms'): ?string
     {
         if ($this->is_hidden) return __('skip.hidden');
         if ($this->is_blocked_messages) return __('skip.blocked');
@@ -162,7 +162,12 @@ class Student extends Model
                 ? __('skip.suspended_until', ['date' => $end->format('Y-m-d')])
                 : __('skip.suspended');
         }
-        if (!$this->allow_sms) return __('skip.sms_disabled');
+        // A WhatsApp campaign (sent from the phone) asks the WhatsApp opt-in, not the SMS one.
+        if ($channel === 'whatsapp') {
+            if (!$this->allow_whatsapp) return __('skip.whatsapp_disabled');
+        } elseif (!$this->allow_sms) {
+            return __('skip.sms_disabled');
+        }
         if (empty($this->phone_primary_e164)) return __('skip.no_phone');
         // A landline passes every "valid number" check but can never
         // receive an SMS — the provider would bill for a message that

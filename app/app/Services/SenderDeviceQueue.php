@@ -178,32 +178,38 @@ class SenderDeviceQueue
     }
 
     /**
-     * رسائل حُجزت ولم يصل تقرير عنها خلال المهلة (الهاتف انطفأ، التطبيق أُغلق):
-     * تعود للطابور ما دامت المحاولات لم تنفد، وإلا تُعلَّم فاشلة.
+     * A message the phone claimed is the phone's until it reports it — even
+     * for hours: outside the sending window at night, with the screen locked,
+     * or paused, it still holds it in its own queue and sends it later.
+     *
+     * This used to take claims back after 30 minutes and count each take-back
+     * as an attempt, so after three nights a message the phone was about to
+     * send was marked failed. Only a claim with no report for a whole day is
+     * offered again — the phone has lost it (app data cleared). Offering it
+     * again is harmless: the phone ignores a job it already holds (same id).
      */
+    public const STALE_CLAIM_HOURS = 24;
+
     public function requeueStale(SenderDevice $device): int
     {
-        $cutoff = now()->subMinutes(SenderDeviceConfig::claimStaleMinutes());
-        $max = SenderDeviceConfig::maxAttempts();
-
-        $base = CampaignRecipient::query()
+        return CampaignRecipient::query()
             ->where('sender_device_id', $device->id)
             ->where('status', 'sending')
-            ->where('claimed_at', '<', $cutoff);
-
-        $abandoned = (clone $base)->where('attempts', '>=', $max)
-            ->update(['status' => 'failed', 'last_error' => "abandoned after {$max} attempts (no report from phone)"]);
-
-        $requeued = (clone $base)->where('attempts', '<', $max)
+            ->where('claimed_at', '<', now()->subHours(self::STALE_CLAIM_HOURS))
             ->update(['status' => 'pending', 'claimed_at' => null]);
+    }
 
-        if ($abandoned > 0) {
-            foreach (Campaign::where('sender_device_id', $device->id)->whereIn('status', ['running'])->get() as $campaign) {
-                $this->finalizeIfDone($campaign);
-            }
-        }
-
-        return $requeued;
+    /**
+     * The phone is unpaired, disabled or deleted: everything it claimed but
+     * never reported goes back to the queue, so the campaign can be handed to
+     * another phone.
+     */
+    public function releaseClaims(SenderDevice $device): int
+    {
+        return CampaignRecipient::query()
+            ->where('sender_device_id', $device->id)
+            ->where('status', 'sending')
+            ->update(['status' => 'pending', 'claimed_at' => null, 'sender_device_id' => null]);
     }
 
     /** نفس قاعدة CampaignSender: لا pending/sending → completed (أو failed إن لم تنجح أي رسالة). */

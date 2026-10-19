@@ -57,6 +57,43 @@
             </label>
         </div>
 
+        {{-- How it goes out: BulkGate, or a paired phone's SIM / WhatsApp. --}}
+        <div class="form-group">
+            <label>{{ __('send.channel') }}</label>
+            <div class="channel-pick">
+                @foreach ([
+                    \App\Models\Campaign::CHANNEL_BULKGATE_SMS => ['📲', __('send.channel_bulkgate'), __('send.channel_bulkgate_hint')],
+                    \App\Models\Campaign::CHANNEL_DEVICE_SMS => ['📱', __('send.channel_device_sms'), __('send.channel_device_sms_hint')],
+                    \App\Models\Campaign::CHANNEL_DEVICE_WHATSAPP => ['💬', __('send.channel_device_whatsapp'), __('send.channel_device_whatsapp_hint')],
+                ] as $value => [$icon, $label, $hint])
+                    <label class="channel-pick__item {{ $channel === $value ? 'is-on' : '' }}">
+                        <input type="radio" wire:model.live="channel" value="{{ $value }}">
+                        <span class="channel-pick__icon" aria-hidden="true">{{ $icon }}</span>
+                        <span class="channel-pick__text"><strong>{{ $label }}</strong><small>{{ $hint }}</small></span>
+                    </label>
+                @endforeach
+            </div>
+            @if ($isDevice)
+                @if ($devices->isEmpty())
+                    <div class="pill pill-warning send-unknown" style="display:block;margin-top:8px">
+                        ⚠️ {{ __('send.no_device') }}
+                        @if (auth()->user()?->isAdmin())
+                            <a href="{{ route('settings', ['tab' => 'sender']) }}" class="fw-700">{{ __('send.pair_a_phone') }} ←</a>
+                        @endif
+                    </div>
+                @else
+                    <select class="form-select mt-2" wire:model.live="senderDeviceId">
+                        <option value="">— {{ __('send.pick_device') }} —</option>
+                        @foreach ($devices as $d)
+                            <option value="{{ $d->id }}">{{ $d->isOnline() ? '🟢' : '⚪' }} {{ $d->name }} — {{ $d->isOnline() ? __('sender.online') : __('sender.last_seen') . ' ' . ($d->last_seen_at?->diffForHumans() ?? '—') }}</option>
+                        @endforeach
+                    </select>
+                @endif
+                @error('senderDeviceId') <div class="field-error">{{ $message }}</div> @enderror
+                <div class="field-help">{{ __('send.device_channel_help') }}</div>
+            @endif
+        </div>
+
         <div class="form-group">
             <label>{{ __('send.template') }}</label>
             <select class="form-select" wire:model.live="templateId">
@@ -106,8 +143,11 @@
             <label>🧪 {{ __('send.test_phone') }}</label>
             <div style="display:flex;gap:6px">
                 <input type="text" class="form-input" wire:model="testPhone" placeholder="+316xxxxxxxx" style="flex:1" dir="ltr">
-                <button class="btn btn-warning" wire:click="sendTest" wire:loading.attr="disabled" wire:target="sendTest">{{ __('send.test_send') }}</button>
+                <button class="btn btn-warning" wire:click="sendTest" wire:loading.attr="disabled" wire:target="sendTest">{{ $isDevice ? __('send.test_send_device') : __('send.test_send') }}</button>
             </div>
+            @if ($isDevice)
+                <div class="field-help">{{ __('send.test_device_help') }}</div>
+            @endif
         </div>
 
         {{-- Schedule for later --}}
@@ -172,7 +212,7 @@
                 </div>
                 @if ($sampleCounter)
                     <x-sms-meter :counter="$sampleCounter" />
-                    @if ($quote && $quote['available'])
+                    @if (!$isDevice && $quote && $quote['available'])
                         @php
                             $partMin = $quote['per_part']['min']['credits'] * $sampleCounter['segments'];
                             $partMax = $quote['per_part']['max']['credits'] * $sampleCounter['segments'];
@@ -204,7 +244,7 @@
                 </div>
             </div>
 
-            @if ($quote)
+            @if ($quote && !$isDevice)
                 @include('livewire.partials.cost-panel', ['quote' => $quote])
             @endif
 

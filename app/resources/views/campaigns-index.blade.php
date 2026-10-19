@@ -53,7 +53,10 @@
                     @endphp
                     <tr>
                         <td style="text-align:start;padding:10px 16px;color:var(--color-text-muted);font-size:11px">#{{ $c->id }}</td>
-                        <td style="text-align:start;font-weight:600">{{ $c->typeLabel() }}</td>
+                        <td style="text-align:start;font-weight:600">
+                            {{ $c->typeLabel() }}
+                            @include('partials.campaign-channel', ['campaign' => $c])
+                        </td>
                         <td style="font-family:ui-monospace,monospace;font-size:11px">
                             {{ $c->period_year }}/{{ str_pad($c->period_month, 2, '0', STR_PAD_LEFT) }}
                         </td>

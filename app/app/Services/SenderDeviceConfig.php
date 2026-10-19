@@ -25,13 +25,12 @@ class SenderDeviceConfig
         'sender_whatsapp_mode' => 'auto',      // auto | assisted
         'sender_poll_interval_sec' => 20,
         'sender_max_attempts' => 3,
-        'sender_claim_stale_minutes' => 30,    // رسالة محجوزة بلا تقرير بعد هذه المدة تعود للطابور
     ];
 
     public const KEYS = [
         'sender_min_delay_sec', 'sender_max_delay_sec', 'sender_batch_size', 'sender_batch_pause_sec',
         'sender_daily_cap_whatsapp', 'sender_daily_cap_sms', 'sender_window_start', 'sender_window_end',
-        'sender_whatsapp_mode', 'sender_poll_interval_sec', 'sender_max_attempts', 'sender_claim_stale_minutes',
+        'sender_whatsapp_mode', 'sender_poll_interval_sec', 'sender_max_attempts',
     ];
 
     /** كل الإعدادات بمفاتيحها الكاملة (للويب). */
@@ -51,9 +50,6 @@ class SenderDeviceConfig
         $out = [];
         foreach (self::all() as $key => $value) {
             $short = substr($key, strlen('sender_'));
-            if ($short === 'claim_stale_minutes') {
-                continue; // شأن الخادم وحده
-            }
             $out[$short] = is_numeric(self::DEFAULTS[$key]) ? (int) $value : (string) $value;
         }
 
@@ -63,10 +59,5 @@ class SenderDeviceConfig
     public static function maxAttempts(): int
     {
         return max(1, (int) Setting::get('sender_max_attempts', self::DEFAULTS['sender_max_attempts']));
-    }
-
-    public static function claimStaleMinutes(): int
-    {
-        return max(5, (int) Setting::get('sender_claim_stale_minutes', self::DEFAULTS['sender_claim_stale_minutes']));
     }
 }

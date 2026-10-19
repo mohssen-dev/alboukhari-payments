@@ -163,6 +163,7 @@ class SenderDeviceController extends Controller
     {
         $device = $this->device($request);
         $device->forceFill(['is_active' => false, 'token_hash' => SenderDevice::hashToken('revoked:' . $device->id . ':' . bin2hex(random_bytes(8)))])->save();
+        app(\App\Services\SenderDeviceQueue::class)->releaseClaims($device);
         activity('sender_device')->performedOn($device)->log("unpaired: {$device->name}");
 
         return response()->json(['ok' => true]);

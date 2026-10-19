@@ -14,7 +14,7 @@ class CampaignsController extends Controller
     {
         // waiting_count: recipients not sent yet — shown on "send now".
         $campaigns = Campaign::withCount(['recipients as waiting_count' => fn ($q) => $q->whereIn('status', ['pending', 'sending'])])
-            ->latest()
+            ->with('senderDevice')->latest()
             ->paginate(30);
 
         return view('campaigns-index', compact('campaigns'));
