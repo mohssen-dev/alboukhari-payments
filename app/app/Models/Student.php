@@ -18,7 +18,9 @@ class Student extends Model
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()
-            ->logOnly(['name', 'family_id', 'phone_primary_e164', 'allow_sms', 'is_hidden', 'is_blocked_messages', 'is_in_person', 'default_fee_amount', 'withdrawn_at'])
+            // Shown on the logs page — enrolment and the WhatsApp opt-in were
+            // changed from the family window without leaving any trace.
+            ->logOnly(['name', 'family_id', 'phone_primary_e164', 'phone_secondary_e164', 'allow_sms', 'allow_whatsapp', 'is_hidden', 'is_blocked_messages', 'is_in_person', 'excluded_from_send_all', 'default_fee_amount', 'enrolled_at', 'withdrawn_at'])
             ->logOnlyDirty()
             ->dontLogEmptyChanges()
             ->useLogName('student');

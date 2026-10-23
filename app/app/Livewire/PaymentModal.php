@@ -7,6 +7,7 @@ use App\Models\Student;
 use App\Services\FeeResolver;
 use App\Services\MonthNames;
 use App\Support\AuthorizesLivewireWrite;
+use App\Support\Defaults;
 use App\Support\DispatchesGridRow;
 use Livewire\Attributes\On;
 use Livewire\Component;
@@ -22,7 +23,7 @@ class PaymentModal extends Component
     public ?int $month = null;
 
     public ?float $amount = null;
-    public string $method = 'cash';
+    public string $method = '';
     public string $note = '';
     public string $paid_at = '';
 
@@ -63,10 +64,13 @@ class PaymentModal extends Component
         $this->paidSoFar = FeeResolver::paidAmount($student, $year, $month);
 
         $remaining = $this->dueAmount - $this->paidSoFar;
-        $this->amount = $remaining > 0 ? $remaining : $this->dueAmount;
-        $this->method = 'cash';
+        // Settings → Defaults: suggest what is owed, or leave the amount to be typed.
+        $this->amount = Defaults::suggestAmount() ? ($remaining > 0 ? $remaining : $this->dueAmount) : null;
+        // Nothing picked unless Settings → Defaults names a method: a bank
+        // payment entered in a hurry used to be saved as the preset "cash".
+        $this->method = Defaults::paymentMethod();
         $this->note = '';
-        $this->paid_at = now()->format('Y-m-d');
+        $this->paid_at = Defaults::paymentDate();
         $this->editingPaymentId = null;
 
         $this->existingPayments = $student->payments()
@@ -96,7 +100,7 @@ class PaymentModal extends Component
     private function resetFormState(): void
     {
         $this->reset(['isOpen', 'studentId', 'year', 'month', 'amount', 'method', 'note', 'paid_at', 'editingPaymentId', 'existingPayments', 'studentName', 'dueAmount', 'paidSoFar', 'enrolledAt', 'paymentsBefore']);
-        $this->method = 'cash';
+        $this->method = Defaults::paymentMethod();
     }
 
     public function editExisting(int $paymentId): void
@@ -150,6 +154,10 @@ class PaymentModal extends Component
             'method' => 'required|in:cash,bank',
             'paid_at' => 'required|date',
             'note' => 'nullable|string|max:500',
+        ], [
+            'method.required' => __('payment.method_required'),
+            'method.in' => __('payment.method_required'),
+            'paid_at.required' => __('payment.date_required'),
         ]);
 
         // Block payments for months outside the student's enrollment window.
@@ -202,8 +210,10 @@ class PaymentModal extends Component
         if ($next) {
             // The same student's next month (December → January of next
             // year), so several months are paid from one window. It used to
-            // jump to the next student. The date and method carry over — a
-            // parent paying two months pays them the same day, the same way.
+            // jump to the next student. The date and the method picked carry
+            // over for the whole chain — a parent paying several months pays
+            // them the same day, the same way. Closing the window ends the
+            // chain: the next payment starts again from Settings → Defaults.
             [$studentId, $method, $paidAt] = [$this->studentId, $this->method, $this->paid_at];
             [$year, $month] = self::nextMonth($this->year, $this->month);
             $this->resetFormState();

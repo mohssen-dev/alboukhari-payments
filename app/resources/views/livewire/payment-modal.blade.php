@@ -198,20 +198,14 @@
                         <div class="form-group">
                             <label>{{ __('payment.method') }} <small class="text-muted">{{ __('payment.shortcuts') }}</small></label>
                             {{-- Pure client-side toggle: the value rides along with save(). --}}
-                            <div class="method-toggle">
-                                <button type="button" class="cash {{ $method === 'cash' ? 'active' : '' }}" :class="{ active: $wire.method === 'cash' }" @click="$wire.method = 'cash'">
-                                    💵 {{ __('payment.method_cash') }}
-                                </button>
-                                <button type="button" class="bank {{ $method === 'bank' ? 'active' : '' }}" :class="{ active: $wire.method === 'bank' }" @click="$wire.method = 'bank'">
-                                    🏦 {{ __('payment.method_bank') }}
-                                </button>
-                            </div>
+                            <x-method-toggle :method="$method" :error="$errors->first('method')" />
                         </div>
 
                         <div class="form-row cols-2">
                             <div class="form-group">
                                 <label>{{ __('payment.date') }}</label>
                                 <input type="date" class="form-input" wire:model="paid_at" required>
+                                @error('paid_at') <small class="text-danger">{{ $message }}</small> @enderror
                             </div>
                             <div class="form-group">
                                 <label>{{ __('payment.note') }}</label>

@@ -32,7 +32,7 @@ class StudentsGrid extends Component
     public const VIEW_COOKIE = 'grid_view';
     public const PER_PAGE = [50, 100, 200, 500];
     public const STATUSES = ['all', 'visible', 'hidden', 'blocked', 'in_person', 'suspended', 'deleted'];
-    public const CLIENT_FILTERS = ['all', 'overdue', 'paid_full', 'with_siblings'];
+    public const CLIENT_FILTERS = ['all', 'overdue', 'earlier_unpaid', 'paid_full', 'with_siblings'];
 
     public string $filterStatus = 'all';
     public int $year;

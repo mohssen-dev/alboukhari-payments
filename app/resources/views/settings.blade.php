@@ -38,6 +38,9 @@
             <button :class="{ 'active': tab === 'reminders' }" @click="tab='reminders'; updateUrl()">
                 <span class="icon">⏰</span> {{ __('Reminders') }}
             </button>
+            <button :class="{ 'active': tab === 'defaults' }" @click="tab='defaults'; updateUrl()">
+                <span class="icon">⭐</span> {{ __('defaults.tab') }}
+            </button>
             <button :class="{ 'active': tab === 'templates' }" @click="tab='templates'; updateUrl()">
                 <span class="icon">📝</span> {{ __('nav.templates') }}
             </button>
@@ -405,6 +408,11 @@
                     <button type="submit" class="btn btn-primary btn-lg">💾 {{ __('common.save') }}</button>
                 </div>
             </form>
+
+            {{-- ===== Tab: Defaults — what the payment and send windows start with (App\Livewire\SettingsDefaults) ===== --}}
+            <div x-show="tab === 'defaults'" x-cloak>
+                @livewire('settings-defaults')
+            </div>
 
             {{-- ===== Tab: Templates — every template, edited in place (App\Livewire\SettingsTemplates) ===== --}}
             <div x-show="tab === 'templates'" x-cloak>

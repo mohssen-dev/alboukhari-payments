@@ -95,6 +95,22 @@ final class GridRow
             }
         }
 
+        // "Has earlier unpaid months": a month was paid while a month before
+        // it still owes — the parent skipped one, often by mistake. Counts the
+        // owing months that come before the last paid month of the year.
+        $lastPaid = 0;
+        foreach (range(1, 12) as $m) {
+            if ($cells[$m]['paid'] > 0.005 || $cells[$m]['status'] === 'legacy_zero') {
+                $lastPaid = $m;
+            }
+        }
+        $gapMonths = 0;
+        for ($m = 1; $m < $lastPaid; $m++) {
+            if (in_array($cells[$m]['status'], ['unpaid', 'late', 'partial'], true)) {
+                $gapMonths++;
+            }
+        }
+
         $siblings = $student->family ? max(0, $student->family->students->count() - 1) : 0;
 
         // A deleted student is shown read-only, for its payment record.
@@ -119,6 +135,7 @@ final class GridRow
                 'phone' => $student->phone_primary_e164 ?: '',
                 'siblings' => $siblings,
                 'balance' => round($balance, 2),
+                'gapMonths' => $gapMonths,
                 'isHidden' => (bool) $student->is_hidden,
                 'isBlocked' => (bool) $student->is_blocked_messages,
                 'isInPerson' => (bool) $student->is_in_person,

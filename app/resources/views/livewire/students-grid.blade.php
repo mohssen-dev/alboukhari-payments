@@ -117,6 +117,7 @@
         <select x-model="clientFilter">
             <option value="all">📋 {{ __('filters.all') }}</option>
             <option value="overdue">⚠️ {{ __('filters.has_overdue') }}</option>
+            <option value="earlier_unpaid">⏪ {{ __('filters.earlier_unpaid') }}</option>
             <option value="paid_full">✅ {{ __('Fully paid') }}</option>
             <option value="with_siblings">👨‍👧 {{ __('filters.with_siblings') }}</option>
         </select>
@@ -326,6 +327,7 @@
                 if (row.id === pinnedId) return true;
                 if (q && !row.haystack.includes(q)) return false;
                 if (f === 'overdue' && row.balance <= 0) return false;
+                if (f === 'earlier_unpaid' && !(row.gapMonths > 0)) return false;
                 if (f === 'paid_full' && row.balance > 0) return false;
                 if (f === 'with_siblings' && row.siblings === 0) return false;
                 return true;

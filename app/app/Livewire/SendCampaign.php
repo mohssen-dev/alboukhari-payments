@@ -14,6 +14,7 @@ use App\Services\HaltService;
 use App\Services\MonthNames;
 use App\Services\RecipientListBuilder;
 use App\Support\AuthorizesLivewireWrite;
+use App\Support\Defaults;
 use App\Support\PhoneNormalizer;
 use App\Support\SmsCounter;
 use App\Support\TemplateVariables;
@@ -72,6 +73,7 @@ class SendCampaign extends Component
     {
         $this->year = (int) date('Y');
         $this->month = (int) date('n');
+        $this->groupByFamily = Defaults::sendGroupByFamily();
 
         // Honor the grid's targeted-send links (/send?type=late_mid_month …).
         // Ignoring this param silently opened every link as "send to ALL".
@@ -87,7 +89,8 @@ class SendCampaign extends Component
 
     public function loadDefaultTemplate()
     {
-        $tpl = Template::library()->orderBy('id')->first();
+        // Settings → Defaults: the chosen template, else the first one.
+        $tpl = Defaults::sendTemplate();
         if ($tpl) {
             $this->templateId = $tpl->id;
             $this->body = $tpl->messageBody();

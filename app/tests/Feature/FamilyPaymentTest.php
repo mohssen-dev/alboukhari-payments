@@ -30,6 +30,9 @@ class FamilyPaymentTest extends TestCase
         $this->year = (int) date('Y');
         $this->month = (int) date('n');
         $this->actingAs($this->user(User::ROLE_ADMIN));
+        // These tests are about the amounts; a default method spares picking one in each.
+        // Picking is covered by PaymentDefaultsTest.
+        \App\Models\Setting::put(\App\Support\Defaults::PAYMENT_METHOD, 'cash');
     }
 
     private function user(string $role): User

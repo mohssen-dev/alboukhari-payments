@@ -2,16 +2,11 @@
 
 namespace App\Http\Controllers;
 
-use Spatie\Activitylog\Models\Activity;
-
 class ActivityLogController extends Controller
 {
+    /** The logs page — App\Livewire\LogsPage does the work. */
     public function index()
     {
-        $activities = Activity::with('causer')
-            ->latest()
-            ->paginate(50);
-
-        return view('activity.index', compact('activities'));
+        return view('activity.index');
     }
 }

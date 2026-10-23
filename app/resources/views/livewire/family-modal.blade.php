@@ -27,6 +27,7 @@
         seq: 0,
         sel: [],
         multi: false,
+        suggestOwed: @js(\App\Support\Defaults::suggestAmount()),
         amounts: {},
         savedIds: [],
         monthNames: @js($monthNames),
@@ -147,6 +148,7 @@
             if (this.sel.length === 1) return this.cell(id, this.sel[0]).suggest ?? '';
             const months = this.enrolledSel(id);
             const owing = months.filter((m) => this.cell(id, m).due - this.cell(id, m).paid > 0.005);
+            if (!this.suggestOwed) return ''; {{-- Settings → Defaults: amounts are typed, not suggested --}}
             return owing.length && this.cell(id, owing[0]).due > 0.005 ? this.plain(this.cell(id, owing[0]).due) : '';
         },
         resetAmounts() {
@@ -192,6 +194,14 @@
             if (this.saving || this.closing || this.pending || this.busy) return;
             const d = this.diffs();
             if (!d.length) return;
+            {{-- Checked here, not only on the server: a refused save would come back and reset the typed amounts. --}}
+            const missing = !$wire.method ? @js(__('payment.method_required')) : (!$wire.paid_at ? @js(__('payment.date_required')) : null);
+            if (missing) {
+                window.dispatchEvent(new CustomEvent('toast', { detail: { message: missing, type: 'error' } }));
+                const el = this.$root.querySelector(!$wire.method ? '.method-pick button' : '.fp-date');
+                if (el) { el.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); el.focus({ preventScroll: true }); }
+                return;
+            }
             if (this.sel.length > 1 && !confirm(@js(__('family.confirm_multi')) + ' ' + this.selLabel() + '\n\n' + d.map((x) => '• ' + x.name + ': +' + x.d.toFixed(2) + ' €').join('\n'))) return;
             const cuts = d.filter((x) => x.d < 0);
             if (cuts.length && !confirm(@js(__('family.confirm_reduce')) + '\n\n' + cuts.map((x) => '• ' + x.name + ': ' + x.from + ' € → ' + x.to + ' €').join('\n'))) return;
@@ -403,10 +413,7 @@
                                     </div>
 
                                     <div class="family-paybar">
-                                        <div class="method-toggle fp-method">
-                                            <button type="button" class="cash {{ $method === 'cash' ? 'active' : '' }}" :class="{ active: $wire.method === 'cash' }" @click="$wire.method = 'cash'">💵 {{ __('payment.method_cash') }}</button>
-                                            <button type="button" class="bank {{ $method === 'bank' ? 'active' : '' }}" :class="{ active: $wire.method === 'bank' }" @click="$wire.method = 'bank'">🏦 {{ __('payment.method_bank') }}</button>
-                                        </div>
+                                        <x-method-toggle :method="$method" :error="$errors->first('method')" class="fp-method" />
                                         <label class="fp-field">
                                             <span class="fp-label">{{ __('payment.date') }}</span>
                                             <input type="date" class="form-input fp-date" wire:model="paid_at">

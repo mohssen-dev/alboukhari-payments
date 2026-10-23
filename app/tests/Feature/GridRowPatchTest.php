@@ -33,6 +33,8 @@ class GridRowPatchTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        // About the row patch, not the method — see PaymentDefaultsTest for picking.
+        \App\Models\Setting::put(\App\Support\Defaults::PAYMENT_METHOD, 'cash');
 
         $this->year = (int) date('Y');
         $this->month = (int) date('n');

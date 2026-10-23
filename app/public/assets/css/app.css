@@ -321,6 +321,13 @@ html[dir="rtl"] .topbar .search-global {
 
 /* Method toggle */
 .method-toggle { display: flex; gap: 8px; }
+/* No method picked yet (no default in Settings → Defaults): outline the choice and say so. */
+.method-pick { display: flex; flex-direction: column; gap: 4px; }
+.method-pick.is-unpicked .method-toggle > button { border-style: dashed; border-color: var(--color-warning); }
+.method-pick__hint { font-size: 11.5px; font-weight: 700; color: var(--color-warning); }
+.method-pick.has-error .method-pick__hint { color: var(--color-danger); }
+.method-pick.has-error.is-unpicked .method-toggle > button { border-color: var(--color-danger); }
+html[data-theme="dark"] .method-pick__hint { color: #f5c26b; }
 .method-toggle button {
     flex: 1;
     padding: 12px;
@@ -1063,6 +1070,78 @@ html[data-theme="dark"] .family-table td.is-selected-month::after { background: 
 }
 .tpl-message p { margin: 0; white-space: pre-wrap; }
 .tpl-message p + p { margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--color-border-strong); }
+/* ============================================
+   Logs page (App\Livewire\LogsPage)
+   ============================================ */
+.logs-page { max-width: 1200px; margin: 0 auto; }
+.logs-tabs { display: inline-flex; gap: 4px; padding: 4px; margin-bottom: 12px; background: var(--color-surface-alt); border: 1px solid var(--color-border); border-radius: var(--radius-lg); }
+.logs-tabs button { padding: 8px 18px; border: 0; border-radius: var(--radius); background: none; color: var(--color-text-muted); font: inherit; font-weight: 700; cursor: pointer; transition: background 0.15s, color 0.15s; }
+.logs-tabs button:hover { color: var(--color-text); }
+.logs-tabs button.is-on { background: var(--color-surface); color: var(--color-primary-text); box-shadow: var(--shadow-sm); }
+.logs-filters { padding: 14px 16px; }
+.logs-filters__row { display: flex; flex-wrap: wrap; gap: 10px 12px; align-items: flex-end; }
+.logs-field { display: flex; flex-direction: column; gap: 4px; min-width: 140px; flex: 0 1 auto; }
+.logs-field > span { font-size: 11px; font-weight: 700; color: var(--color-text-muted); }
+.logs-field--search { flex: 1 1 240px; }
+.logs-field--date { min-width: 140px; }
+.logs-filters__foot { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-top: 10px; }
+.logs-filters__foot > .btn { margin-inline-start: auto; }
+.logs-student-chip { display: inline-flex; align-items: center; gap: 4px; padding: 3px 4px 3px 10px; border-radius: 999px; background: var(--color-primary-soft); color: var(--color-primary-text); font-size: 12.5px; font-weight: 700; }
+html[dir="rtl"] .logs-student-chip { padding: 3px 10px 3px 4px; }
+.logs-results { transition: opacity 0.15s; }
+.logs-results.is-loading { opacity: 0.55; }
+.logs-day { margin: 16px 2px 6px; font-size: 12px; font-weight: 800; color: var(--color-text-muted); text-transform: uppercase; letter-spacing: 0.04em; }
+html[dir="rtl"] .logs-day { text-transform: none; letter-spacing: 0; }
+.log-row {
+    display: grid; grid-template-columns: 40px minmax(0, 1fr) auto; gap: 12px; align-items: start;
+    padding: 12px 14px; margin-bottom: 8px;
+    background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius);
+    border-inline-start: 4px solid var(--color-border-strong);
+}
+.log-row.is-add { border-inline-start-color: var(--color-success); }
+.log-row.is-edit { border-inline-start-color: var(--color-warning); }
+.log-row.is-delete { border-inline-start-color: var(--color-danger); }
+.log-row.is-info { border-inline-start-color: var(--color-info, #0ea5e9); }
+.log-row__icon { width: 36px; height: 36px; display: grid; place-items: center; border-radius: 50%; background: var(--color-surface-alt); font-size: 18px; }
+.log-row__title { font-weight: 800; font-size: 14px; }
+.log-row__line { margin-top: 3px; font-size: 13px; color: var(--color-text); line-height: 1.55; }
+.log-row__meta { display: flex; flex-wrap: wrap; gap: 4px 14px; margin-top: 6px; font-size: 11.5px; color: var(--color-text-muted); }
+.log-student { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; min-width: 150px; }
+html[dir="rtl"] .log-student { align-items: flex-start; }
+.log-student.is-compact { align-items: flex-start; min-width: 0; }
+.log-student__name { padding: 0; border: 0; background: none; font: inherit; font-weight: 800; color: var(--color-primary-text); cursor: pointer; text-align: start; }
+.log-student__name:hover { text-decoration: underline; }
+.log-student__name.is-deleted { color: var(--color-text-muted); cursor: default; text-decoration: none; }
+.log-student__actions { display: flex; gap: 2px; }
+.log-student__actions .btn { padding: 2px 6px; min-height: 0; }
+.logs-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.logs-table th, .logs-table td { padding: 10px 12px; border-bottom: 1px solid var(--color-border); text-align: start; vertical-align: top; }
+.logs-table thead th { background: var(--color-surface-alt); color: var(--color-text-muted); font-size: 11px; font-weight: 700; }
+.logs-table tbody tr:last-child td { border-bottom: none; }
+.logs-table__when { white-space: nowrap; }
+.logs-table__when small { display: block; color: var(--color-text-muted); }
+.logs-table__msg { min-width: 260px; max-width: 460px; }
+.logs-table__msg summary { cursor: pointer; line-height: 1.5; }
+.logs-table__msg p { margin: 6px 0 0; white-space: pre-wrap; line-height: 1.6; padding: 8px 10px; background: var(--color-surface-alt); border-radius: var(--radius); }
+.logs-empty { text-align: center; padding: 40px; color: var(--color-text-soft); }
+.logs-pager { display: flex; justify-content: center; align-items: center; gap: 12px; margin: 14px 0; }
+@media (max-width: 720px) {
+    .log-row { grid-template-columns: 32px minmax(0, 1fr); }
+    .log-row > .log-student { grid-column: 2; align-items: flex-start; }
+}
+
+/* Settings → Defaults (App\Livewire\SettingsDefaults). */
+.defaults-tab > .page-card { margin-bottom: 12px; }
+.defaults-choices { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 8px; }
+.defaults-choice { display: flex; align-items: center; gap: 10px; padding: 12px; cursor: pointer; border: 1px solid var(--color-border); border-radius: var(--radius); background: var(--color-surface); transition: border-color 0.15s, background 0.15s; }
+.defaults-choice:hover { border-color: var(--color-border-strong); }
+.defaults-choice.is-on { border-color: var(--color-primary); background: var(--color-primary-soft); }
+.defaults-choice input { position: absolute; opacity: 0; width: 0; height: 0; }
+.defaults-choice__icon { font-size: 22px; flex: none; }
+.defaults-choice__text { display: flex; flex-direction: column; gap: 2px; }
+.defaults-choice__text small { font-size: 11px; color: var(--color-text-muted); line-height: 1.4; }
+.defaults-actions { display: flex; justify-content: flex-end; gap: 8px; flex-wrap: wrap; }
+
 /* Send page: how the campaign goes out (BulkGate / phone SMS / phone WhatsApp). */
 .channel-pick { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 8px; }
 .channel-pick__item {

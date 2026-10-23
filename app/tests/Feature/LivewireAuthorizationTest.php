@@ -50,7 +50,7 @@ class LivewireAuthorizationTest extends TestCase
 
         Livewire::test(\App\Livewire\PaymentModal::class)
             ->call('open', $student->id, (int) date('Y'), (int) date('n'))
-            ->set('amount', 30)
+            ->set('amount', 30)->set('method', 'cash')
             ->call('save');
 
         $this->assertSame(0, Payment::count(),
@@ -243,7 +243,7 @@ class LivewireAuthorizationTest extends TestCase
 
         Livewire::test(\App\Livewire\QuickEntry::class)
             ->call('selectStudent', $student->id)
-            ->set('amount', 30)
+            ->set('amount', 30)->set('method', 'cash')
             ->call('save');
 
         $this->assertSame(0, Payment::count(),
@@ -257,7 +257,7 @@ class LivewireAuthorizationTest extends TestCase
 
         Livewire::test(\App\Livewire\QuickEntry::class)
             ->call('selectStudent', $student->id)
-            ->set('amount', 30)
+            ->set('amount', 30)->set('method', 'cash')
             ->call('save');
 
         $this->assertSame(1, Payment::count(), 'Staff must still be able to use quick entry');
@@ -285,7 +285,7 @@ class LivewireAuthorizationTest extends TestCase
 
         Livewire::test(\App\Livewire\PaymentModal::class)
             ->call('open', $student->id, (int) date('Y'), (int) date('n'))
-            ->set('amount', 30)
+            ->set('amount', 30)->set('method', 'cash')
             ->call('save');
 
         $this->assertSame(1, Payment::count(),

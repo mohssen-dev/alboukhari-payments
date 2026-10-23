@@ -7,6 +7,7 @@ use App\Models\Student;
 use App\Services\FeeResolver;
 use App\Services\MonthNames;
 use App\Support\AuthorizesLivewireWrite;
+use App\Support\Defaults;
 use Livewire\Component;
 
 class QuickEntry extends Component
@@ -19,7 +20,8 @@ class QuickEntry extends Component
     public int $month;
 
     public ?float $amount = null;
-    public string $method = 'cash';
+    /** '' until picked, unless Settings → Defaults names a method. */
+    public string $method = '';
     public string $note = '';
 
     public int $sessionCount = 0;
@@ -30,6 +32,7 @@ class QuickEntry extends Component
     {
         $this->year = (int) date('Y');
         $this->month = (int) date('n');
+        $this->method = Defaults::paymentMethod();
     }
 
     public function selectStudent(int $id)
@@ -38,8 +41,8 @@ class QuickEntry extends Component
         $this->selectedStudentId = $id;
         $remaining = FeeResolver::balance($student, $this->year, $this->month);
         // Fully-paid month → suggest 0, not the full fee again (double-charge trap).
-        $this->amount = $remaining > 0.005 ? round($remaining, 2) : 0.0;
-        $this->method = 'cash';
+        $this->amount = Defaults::suggestAmount() ? ($remaining > 0.005 ? round($remaining, 2) : 0.0) : null;
+        $this->method = Defaults::paymentMethod();
         $this->note = '';
     }
 
@@ -58,6 +61,9 @@ class QuickEntry extends Component
             'selectedStudentId' => 'required|exists:students,id',
             'amount' => 'required|numeric|min:0',
             'method' => 'required|in:cash,bank',
+        ], [
+            'method.required' => __('payment.method_required'),
+            'method.in' => __('payment.method_required'),
         ]);
 
         // Same enrollment-window guard as PaymentModal::save.
@@ -91,7 +97,7 @@ class QuickEntry extends Component
 
         // Reset for next entry
         $this->reset(['search', 'selectedStudentId', 'amount', 'method', 'note']);
-        $this->method = 'cash';
+        $this->method = Defaults::paymentMethod();
 
         $this->dispatch('flash', message: __('flash.quick_saved', ['amount' => (string) $payment->amount]));
         $this->dispatch('focus-search');

@@ -8,6 +8,7 @@ use App\Services\FeeResolver;
 use App\Services\MonthNames;
 use App\Services\MonthStatusResolver;
 use App\Support\AuthorizesLivewireWrite;
+use App\Support\Defaults;
 use App\Support\DispatchesGridRow;
 use App\Support\GridRow;
 use Illuminate\Support\Collection;
@@ -45,7 +46,8 @@ class FamilyModal extends Component
     public int $month = 1;
     /** @var list<int> the months being paid for, ascending; always holds $month */
     public array $selectedMonths = [];
-    public string $method = 'cash';
+    /** '' until picked, unless Settings → Defaults names a method. */
+    public string $method = '';
     public string $paid_at = '';
     /** @var array<int, string> student id => the month's total (or, for several months, the amount per month) as typed */
     public array $amounts = [];
@@ -69,8 +71,8 @@ class FamilyModal extends Component
     {
         $this->studentId = $studentId;
         $this->year = self::clampYear($year ?? (int) date('Y'));
-        $this->method = 'cash';
-        $this->paid_at = now()->format('Y-m-d');
+        $this->method = Defaults::paymentMethod();
+        $this->paid_at = Defaults::paymentDate();
         $this->resetValidation();
 
         try {
@@ -125,6 +127,11 @@ class FamilyModal extends Component
      */
     public function defaultMonths(): array
     {
+        // Settings → Defaults can make it open on the current month instead.
+        if (!Defaults::familyOpensOnOldestUnpaid()) {
+            return [$this->year === (int) date('Y') ? (int) date('n') : 1];
+        }
+
         $nowYm = ((int) date('Y') * 12) + (int) date('n');
         $open = fn (int $m, bool $dueOnly) => collect($this->members)->contains(function ($x) use ($m, $dueOnly) {
             $c = $x['months'][$m] ?? null;
@@ -192,6 +199,10 @@ class FamilyModal extends Component
             'paid_at' => 'required|date',
             'amounts' => 'array',
             'amounts.*' => 'nullable|numeric|min:0|max:100000',
+        ], [
+            'method.required' => __('payment.method_required'),
+            'method.in' => __('payment.method_required'),
+            'paid_at.required' => __('payment.date_required'),
         ]);
 
         // Who may be paid for comes from the database — never from $members
@@ -284,7 +295,9 @@ class FamilyModal extends Component
             'removed' => number_format($removed, 2),
         ]));
 
-        // Stay open: the table now shows what was recorded.
+        // Stay open: the table now shows what was recorded. The next payment
+        // picks its method again (unless Settings → Defaults names one).
+        $this->method = Defaults::paymentMethod();
         $this->reload();
     }
 
@@ -360,6 +373,7 @@ class FamilyModal extends Component
             'added' => number_format($added, 2),
         ]));
 
+        $this->method = Defaults::paymentMethod();
         $this->reload();
     }
 
@@ -516,7 +530,8 @@ class FamilyModal extends Component
         // "Owed" counts only months that are due by now, as the grid does.
         $nowYm = ((int) date('Y') * 12) + (int) date('n');
 
-        $this->members = $members->map(function (Student $s) use ($nowYm) {
+        $suggestOwed = Defaults::suggestAmount();
+        $this->members = $members->map(function (Student $s) use ($nowYm, $suggestOwed) {
             $statuses = MonthStatusResolver::resolveAll($s, $this->year);
             $dueAll   = FeeResolver::dueAllMonths($s, $this->year);
             $paidAll  = FeeResolver::paidAllMonths($s, $this->year);
@@ -537,10 +552,13 @@ class FamilyModal extends Component
                     'label' => MonthStatusResolver::label($st),
                     'outside' => $outside,
                     // One month picked: what is recorded, or what is owed.
+                    // The recorded total is always shown — the amount IS the
+                    // month's total, so leaving it blank would reduce it.
+                    // What is owed is suggested only if Settings → Defaults says so.
                     'suggest' => match (true) {
                         $outside => '',
                         $paid > 0.005 => self::plainAmount($paid),
-                        $remaining > 0.005 => self::plainAmount($remaining),
+                        $remaining > 0.005 && $suggestOwed => self::plainAmount($remaining),
                         default => '',
                     },
                 ];
@@ -595,7 +613,7 @@ class FamilyModal extends Component
             $selDue = $selOwing ? $x['months'][$selOwing[0]]['due'] : 0.0;
 
             $amounts[$x['id']] = $multi
-                ? ($selDue > 0.005 ? self::plainAmount($selDue) : '')
+                ? ($selDue > 0.005 && Defaults::suggestAmount() ? self::plainAmount($selDue) : '')
                 : $c['suggest'];
 
             $this->members[$i] = array_merge($x, [

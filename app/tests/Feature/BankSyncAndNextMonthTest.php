@@ -95,13 +95,15 @@ class BankSyncAndNextMonthTest extends TestCase
 
     // ---- payment window: save & next month ----
 
-    public function test_save_and_next_opens_the_same_students_next_month_keeping_date_and_method(): void
+    public function test_save_and_next_opens_the_same_students_next_month_keeping_the_date(): void
     {
         $this->actingAs($this->user(User::ROLE_STAFF));
         $s = Student::create(['name' => 'Two Months', 'default_fee_amount' => 30, 'enrolled_at' => '2026-01-01']);
         $other = Student::create(['name' => 'Next Student', 'default_fee_amount' => 30, 'enrolled_at' => '2026-01-01']);
 
-        Livewire::test(PaymentModal::class)
+        // No default method (Settings → Defaults): picked once, it carries over
+        // for the whole chain; closing the window starts again with nothing picked.
+        $lw = Livewire::test(PaymentModal::class)
             ->call('open', $s->id, 2026, 5)
             ->assertSee(__('payment.save_next_month', ['month' => __('June')]))
             ->set('amount', 30)
@@ -117,7 +119,10 @@ class BankSyncAndNextMonthTest extends TestCase
             ->assertSet('paid_at', '2026-09-02')
             ->set('amount', 30)
             ->call('save', true)
-            ->assertSet('month', 7);
+            ->assertSet('month', 7)
+            ->assertSet('method', 'bank');
+
+        $lw->call('close')->call('open', $s->id, 2026, 8)->assertSet('method', '');
 
         $this->assertSame([5, 6], Payment::where('student_id', $s->id)->orderBy('period_month')->pluck('period_month')->all());
         $this->assertSame(0, Payment::where('student_id', $other->id)->count());
@@ -169,6 +174,22 @@ class BankSyncAndNextMonthTest extends TestCase
         $this->actingAs($this->user(User::ROLE_VIEWER));
 
         Livewire::test(BankSyncDate::class)->call('openHistory')->assertOk()->assertSee(__('banksync.history_empty'));
+    }
+
+    public function test_with_a_default_method_save_and_next_keeps_the_method_picked(): void
+    {
+        Setting::put(\App\Support\Defaults::PAYMENT_METHOD, 'cash');
+        $this->actingAs($this->user(User::ROLE_STAFF));
+        $s = Student::create(['name' => 'Two Months', 'default_fee_amount' => 30, 'enrolled_at' => '2026-01-01']);
+
+        Livewire::test(PaymentModal::class)
+            ->call('open', $s->id, 2026, 5)
+            ->assertSet('method', 'cash')
+            ->set('method', 'bank')
+            ->set('amount', 30)
+            ->call('save', true)
+            ->assertSet('month', 6)
+            ->assertSet('method', 'bank', 'the method picked carries to the next month');
     }
 
     public function test_december_moves_on_to_january_of_the_next_year(): void
